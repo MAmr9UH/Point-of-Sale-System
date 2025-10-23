@@ -1,0 +1,43 @@
+.topnav {
+  position: fixed;
+  top: 0; left: 0; right: 0;
+  height: 64px;
+  background: #ffffff;
+  border-bottom: 1px solid #eee;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 16px;
+  z-index: 1000;
+}
+
+.nav-left, .nav-center, .nav-right { display: flex; align-items: center; gap: 10px; }
+.brand {
+  font-weight: 700;
+  text-decoration: none;
+  color: #3B82F6;        
+}
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 14px;
+  border-radius: 8px;
+  border: 1px solid transparent;
+  text-decoration: none;
+  font-weight: 600;
+  font-size: 0.95rem;
+  line-height: 1;
+}
+.btn-primary {
+  background: #3B82F6;
+  color: #fff;
+}
+.btn-primary:hover { background: #3B82F6; }
+.btn-ghost {
+  background: #f3f4f6;
+  color: #111827;
+  border-color: #e5e7eb;
+}
+.btn-ghost:hover { background: #e5e7eb; }

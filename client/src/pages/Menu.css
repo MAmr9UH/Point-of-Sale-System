@@ -1,0 +1,13 @@
+.menu {
+    display: flex;
+    width: 100%;
+    background-color: white;
+    border: 1px solid #eee;
+}
+
+.menu-page {
+    min-height: 100vh;
+    min-width: 100vw;
+    display: flex;
+    justify-content: center;
+}

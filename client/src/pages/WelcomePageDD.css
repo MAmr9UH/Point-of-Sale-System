@@ -1,0 +1,57 @@
+/* Main */
+.welcome-container {
+  height: 100vh;
+  width : 100vw;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  background: lightgrey;
+  padding-top: 80px;
+  font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+}
+
+/* Info Card */
+.welcome-card {
+  background: white;
+  padding: 2rem;
+  border-radius: 16px;
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.2);
+  width: 90%;
+  max-width: 600px;
+  text-align: center;
+}
+
+.welcome-title {
+  font-size: 2.5rem;
+  color: #3B82F6;
+  margin-bottom: 0.5rem;
+}
+
+.welcome-subtitle {
+  font-size: 1.2rem;
+  color: #555;
+  margin-bottom: 1.5rem;
+}
+
+.welcome-section {
+  margin-bottom: 1.5rem;
+}
+
+.welcome-section h2 {
+  margin-bottom: 0.5rem;
+  color: #3B82F6;
+}
+
+.welcome-section p {
+  margin: 0.3rem 0;
+  color: #333;
+}
+
+/* Footer */
+.welcome-footer {
+  color: black;
+  margin-top: 1.5rem;
+  font-size: 0.9rem;
+  text-align: center;
+}
