@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useShoppingCart } from './../contexts/ShoppingCart'
 
 const ShoppingCart: React.FC<React.SVGProps<SVGSVGElement>> = (props) => (
   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" xmlns="http://www.w3.org/2000/svg" {...props}>
@@ -26,15 +27,6 @@ const X: React.FC<React.SVGProps<SVGSVGElement>> = (props) => (
 );
 
 import './Checkout.css'
-
-// Define the shape of a Cart Item for TypeScript
-interface CartItem {
-  id: number;
-  name: string;
-  price: number;
-  quantity: number;
-  image: string;
-}
 
 // Define the shape of the Form Data
 interface FormData {
@@ -91,10 +83,7 @@ const ErrorNotification: React.FC<{ message: string; onClose: () => void }> = ({
 };
 
 export default function FoodTruckCheckout() {
-  const [cart, setCart] = useState<CartItem[]>([
-    { id: 1, name: 'Classic Burger', price: 6.99, quantity: 1, image: '🍔' },
-    { id: 2, name: 'Fries', price: 2.99, quantity: 2, image: '🍟' }
-  ]);
+  const { items, total : cartTotal, tax, grandTotal, adjustQuantity, clearCart, removeItem } = useShoppingCart();
   const [formData, setFormData] = useState<FormData>({
     name: '',
     email: '', 
@@ -158,26 +147,7 @@ export default function FoodTruckCheckout() {
   };
   // -------------------------
 
-  // update item quantity
-  const updateQuantity = (id: number, add: number): void => {
-    const updatedCart = cart.map(item => {
-      if (item.id === id) {
-        const newQuantity = item.quantity + add;
-        return newQuantity > 0 ? { ...item, quantity: newQuantity } : null;
-      }
-      return item;
-    }).filter((item): item is CartItem => item !== null);
-
-    setCart(updatedCart);
-  };
-
-  // remove item
-  const removeItem = (id: number): void => {
-    setCart(cart.filter(item => item.id !== id));
-  };
-
   // total price calculation
-  const total = cart.reduce((acc, item) => acc + (item.price * item.quantity), 0);
 
   // collects inputs to form with formatting logic
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>): void => {
@@ -286,7 +256,7 @@ export default function FoodTruckCheckout() {
             }}>{formData.email || formData.phone || 'Contact information not provided'}</p>
           </div>
           <button 
-            onClick={() => { setOrderPlaced(false); setCart([]); }}
+            onClick={() => { setOrderPlaced(false); clearCart(); }}
             style={{
               width: '100%',
               color: 'white',
@@ -337,7 +307,7 @@ export default function FoodTruckCheckout() {
       {/* Main Content Area */}
       <div style={{ padding: '16px' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '32px' }}>
-          <h1 style={{ fontSize: '30px', fontWeight: 'bold', color: '#1f2937', margin: 0 }}>Checkout</h1>
+          <h1 style={{ fontSize: '30px', fontWeight: 'bold', color: '#1f2937', margin: 0 }}><ShoppingCart style={{width: '24px', height: '24px'}} />   Checkout</h1>
         </div>
 
         <div style={{
@@ -643,9 +613,8 @@ export default function FoodTruckCheckout() {
                 marginTop: 0,
                 borderBottom: '1px solid #e5e7eb',
                 paddingBottom: '12px'
-              }}>Your Order ({cart.length} items)</h2>
-              
-              {cart.length === 0 ? (
+              }}>Your Order ({Object.keys(items).length} items)</h2>
+              {Object.keys(items).length === 0 ? (
                 <div style={{ textAlign: 'center', padding: '32px 0' }}>
                   <p style={{ color: '#6b7280', fontSize: '18px', marginBottom: '4px' }}>Your cart is empty</p>
                   <p style={{ fontSize: '14px', color: '#9ca3af', marginTop: '4px' }}>Add items to place an order!</p>
@@ -668,8 +637,8 @@ export default function FoodTruckCheckout() {
                 </div>
               ) : (
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-                  {cart.map(item => (
-                    <div key={item.id} style={{
+                  {Object.values(items).map((item) => (
+                    <div key={String(item.id)} style={{
                       display: 'flex',
                       alignItems: 'center',
                       gap: '16px',
@@ -689,7 +658,7 @@ export default function FoodTruckCheckout() {
                       
                       <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexShrink: 0 }}>
                         <button 
-                          onClick={() => updateQuantity(item.id, -1)}
+                          onClick={() => adjustQuantity(String(item.id), -1)}
                           style={{
                             width: '32px',
                             height: '32px',
@@ -717,7 +686,7 @@ export default function FoodTruckCheckout() {
                           color: '#1f2937' 
                         }}>{item.quantity}</span>
                         <button 
-                          onClick={() => updateQuantity(item.id, 1)}
+                          onClick={() => adjustQuantity(String(item.id), 1)}
                           style={{
                             width: '32px',
                             height: '32px',
@@ -751,7 +720,7 @@ export default function FoodTruckCheckout() {
                       </div>
                       
                       <button 
-                        onClick={() => removeItem(item.id)}
+                        onClick={() => removeItem(String(item.id))}
                         style={{
                           color: '#ef4444',
                           background: 'transparent',
@@ -772,6 +741,7 @@ export default function FoodTruckCheckout() {
                         }}
                         aria-label={`Remove ${item.name}`}
                       >
+                      <Trash style={{ width: '20px', height: '20px' }} />
                       </button>
                     </div>
                   ))}
@@ -780,7 +750,7 @@ export default function FoodTruckCheckout() {
             </div>
 
             {/* Order Summary & Final Button */}
-            {cart.length > 0 && (
+            {Object.keys(items).length > 0 && (
               <div style={{
                 backgroundColor: 'white',
                 borderRadius: '16px',
@@ -805,8 +775,34 @@ export default function FoodTruckCheckout() {
                     fontWeight: 800,
                     color: '#1f2937'
                   }}>
+                    <span>Total</span>
+                    <span>${cartTotal.toFixed(2)}</span>
+                  </div>
+                </div>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                  <div style={{
+                    display: 'flex',
+                    justifyContent: 'space-between',
+                    paddingTop: '12px',
+                    fontSize: '24px',
+                    fontWeight: 800,
+                    color: '#1f2937'
+                  }}>
+                    <span>Tax (8%)</span>
+                    <span>${tax.toFixed(2)}</span>
+                  </div>
+                </div>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                  <div style={{
+                    display: 'flex',
+                    justifyContent: 'space-between',
+                    paddingTop: '12px',
+                    fontSize: '24px',
+                    fontWeight: 800,
+                    color: '#1f2937'
+                  }}>
                     <span>Grand Total</span>
-                    <span>${total.toFixed(2)}</span>
+                    <span>${grandTotal.toFixed(2)}</span>
                   </div>
                 </div>
 
@@ -833,7 +829,7 @@ export default function FoodTruckCheckout() {
                   onMouseOver={(e) => e.currentTarget.style.backgroundColor = '#6b0fd4'}
                   onMouseOut={(e) => e.currentTarget.style.backgroundColor = 'var(--color-primary)'}
                 >
-                  Pay & Place Order - ${total .toFixed(2)}
+                  Pay & Place Order - ${grandTotal.toFixed(2)}
                 </button>
               </div>
             )}
