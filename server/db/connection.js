@@ -6,7 +6,7 @@ loadEnv();
 export const db = mysql.createConnection({
     host: process.env.URL || 'localhost',
     user: process.env.USER || 'root',
-    password: process.env.PASSWORD || 'admin',
+    password: process.env.PASSWORD || 'F@@dtruckpos',
     port: process.env.PORT || '3306',
     database: process.env.DATABASE || 'pos',
     ssl: {

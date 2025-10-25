@@ -1,6 +1,6 @@
 export const fetchMenuEm = async () => {
     try {
-        const response = await fetch('/api/menuItems');
+        const response = await fetch('/api/menu/items');
         if (!response.ok) {
             throw new Error('Network response was not ok');
         }

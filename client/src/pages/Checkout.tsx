@@ -83,6 +83,7 @@ const ErrorNotification: React.FC<{ message: string; onClose: () => void }> = ({
 };
 
 export default function FoodTruckCheckout() {
+  //const customer = 
   const { items, total : cartTotal, tax, grandTotal, adjustQuantity, clearCart, removeItem } = useShoppingCart();
   const [formData, setFormData] = useState<FormData>({
     name: '',
@@ -172,8 +173,8 @@ export default function FoodTruckCheckout() {
     setFormData({ ...formData, [name]: newValue });
   };
 
-  // check if info is entered before order placement
-  const handlePlaceOrder = (): void => {
+  const handlePlaceOrder = async (): Promise<void> => {
+    // Validate form first
     if (
       formData.name && 
       (formData.email || formData.phone) && 
@@ -182,12 +183,47 @@ export default function FoodTruckCheckout() {
       formData.cardCVC.length >= 3 &&
       formData.cardName
     ) {
-      setOrderPlaced(true);
-      setShowError('');
+      try {
+        // Prepare cart items
+        const itemsArray = Object.values(items).map(item => ({
+          id: item.id,
+          name: item.name,
+          price: item.price,
+          quantity: item.quantity
+        }));
+
+        const payload = {
+          userId: 1, // replace with real user id if available
+          items: itemsArray,
+          total: grandTotal,
+          formData
+        };
+
+        const res = await fetch('/api/checkout/createOrder', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+
+        const data = await res.json();
+
+        if (res.ok && data.success) {
+          setOrderPlaced(true);
+          setShowError('');
+          clearCart();
+        } else {
+          setShowError(data.error || 'Something went wrong. Try again.');
+        }
+      } catch (err) {
+        console.error(err);
+        setShowError('Unable to connect to server.');
+      }
+
     } else {
       setShowError('Please check all required (*) fields and card details are complete.');
     }
   };
+
 
   // Success Confirmation Screen
   if (orderPlaced) {

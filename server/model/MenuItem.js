@@ -149,7 +149,7 @@ import { db } from '../db/connection.js';
 
 export const getAllMenuItems = async () => {
     return new Promise((resolve, reject) => {
-        const query = 'SELECT * FROM MenuItems';
+        const query = "SELECT * FROM pos.menu_item";
         db.query(query, (err, results) => {
             if (err) {
                 reject(err);
