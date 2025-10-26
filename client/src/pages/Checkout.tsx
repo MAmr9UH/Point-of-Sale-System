@@ -85,6 +85,8 @@ const ErrorNotification: React.FC<{ message: string; onClose: () => void }> = ({
 export default function FoodTruckCheckout() {
   //const customer = 
   const { items, total : cartTotal, tax, grandTotal, adjustQuantity, clearCart, removeItem } = useShoppingCart();
+   console.log('Items in cart:', items);
+  console.log('First item:', Object.values(items)[0]);
   const [formData, setFormData] = useState<FormData>({
     name: '',
     email: '', 
@@ -185,10 +187,10 @@ export default function FoodTruckCheckout() {
     ) {
       try {
         // Prepare cart items
-        const itemsArray = Object.values(items).map(item => ({
-          id: item.id,
-          name: item.name,
-          price: item.price,
+       const itemsArray = Object.values(items).map(item => ({
+          id: item.MenuItemID || item.id,           
+          name: item.Name || item.name,             
+          price: item.Price || item.price,          
           quantity: item.quantity
         }));
 
@@ -674,7 +676,7 @@ export default function FoodTruckCheckout() {
               ) : (
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
                   {Object.values(items).map((item) => (
-                    <div key={String(item.id)} style={{
+                    <div key={String(item.MenuItemID ||item.id)} style={{
                       display: 'flex',
                       alignItems: 'center',
                       gap: '16px',
@@ -683,18 +685,18 @@ export default function FoodTruckCheckout() {
                     }}>
                       <div style={{ fontSize: '30px', flexShrink: 0 }}>{item.image}</div>
                       <div style={{ flex: 1 }}>
-                        <h3 style={{ fontWeight: 600, color: '#1f2937', margin: 0, marginBottom: '4px' }}>{item.name}</h3>
+                        <h3 style={{ fontWeight: 600, color: '#1f2937', margin: 0, marginBottom: '4px' }}>{item.Name ||item.name}</h3>
                         <p style={{ 
                           fontWeight: 500, 
                           fontSize: '14px', 
                           color: COLOR2,
                           margin: 0
-                        }}>${item.price.toFixed(2)} / ea</p>
+                        }}>${parseFloat(item.Price || item.price || 0).toFixed(2)} / ea</p>
                       </div>
                       
                       <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexShrink: 0 }}>
                         <button 
-                          onClick={() => adjustQuantity(String(item.id), -1)}
+                          onClick={() => adjustQuantity(String(item.MenuItemID || item.id), -1)}
                           style={{
                             width: '32px',
                             height: '32px',
@@ -722,7 +724,7 @@ export default function FoodTruckCheckout() {
                           color: '#1f2937' 
                         }}>{item.quantity}</span>
                         <button 
-                          onClick={() => adjustQuantity(String(item.id), 1)}
+                          onClick={() => adjustQuantity(String(item.MenuItemID || item.id), 1)}
                           style={{
                             width: '32px',
                             height: '32px',
@@ -752,11 +754,11 @@ export default function FoodTruckCheckout() {
                         textAlign: 'right', 
                         flexShrink: 0 
                       }}>
-                        ${(item.price * item.quantity).toFixed(2)}
+                       ${(parseFloat(item.Price || item.price || 0) * item.quantity).toFixed(2)}
                       </div>
                       
                       <button 
-                        onClick={() => removeItem(String(item.id))}
+                        onClick={() => removeItem(String(item.MenuItemID || item.id))}
                         style={{
                           color: '#ef4444',
                           background: 'transparent',
@@ -775,7 +777,7 @@ export default function FoodTruckCheckout() {
                           e.currentTarget.style.color = '#ef4444';
                           e.currentTarget.style.backgroundColor = 'transparent';
                         }}
-                        aria-label={`Remove ${item.name}`}
+                        aria-label={`Remove ${item.Name ||item.name}`}
                       >
                       <Trash style={{ width: '20px', height: '20px' }} />
                       </button>

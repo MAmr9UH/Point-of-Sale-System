@@ -1,38 +1,29 @@
 import "./MenuItem.css"
 import { useShoppingCart } from "../contexts/ShoppingCart";
 import { useToaster } from "../contexts/ToastContext";
+import type { MenuItem as MenuItemType } from "../types/MenuItem";
 
-const MenuItem = ({ item } : any) => {
+const MenuItem = ({ item }: { item: MenuItemType }) => {
     const { addItem } = useShoppingCart();
     const { addToast } = useToaster();
-    if (item.image) {
-        return (
-            <div className="menu-item" onClick={() => {
-            addItem(item);
-            addToast(`Added ${item.name} to cart`, 'info', 2000);
-        }}>
-                <img src={item.image} alt={item.name} className="menu-item-image" />
-                <span className="menu-item-name">{item.name}</span>
-            </div>
-        );
-    }
     
     // Note: Background color is dynamic from data, so it remains an inline style.
     // All other styling is handled by the 'menu-item-color' class.
     const itemStyle = {
-        backgroundColor: item.color,
-        color: item.color === '#f5f5f5' ? '#333' : '#fff',
+        backgroundColor: '#f5f5f5',
+        color: '#333',
     };
 
 
     return (
+        
         <div className="menu-item menu-item-color" style={itemStyle} onClick={() => {
             addItem(item);
-            addToast(`Added ${item.name} to cart`, 'info', 2000);
+            addToast(`Added ${item.Name} to cart`, 'info', 2000);
         }}>
-            {item.icon === '%' && <div className="menu-item-percent-icon">%</div>}
-            <span className="menu-item-name">{item.name}</span>
-            {item.count && <span className="menu-item-count">{item.count} items</span>}
+            <img src={item.ImageURL ? item.ImageURL : "https://placehold.co/1920x1080/bca28e/ffffff?text=" + encodeURI(item.Name)} alt={item.Name} className="menu-item-image" />
+            <span className="menu-item-name">{item.Name}</span>
+            <span className="menu-item-price">${item.Price}</span>
         </div>
     );
 };

@@ -1,5 +1,5 @@
-import { createContext, useContext }  from 'react';
-import { useState } from 'react';
+import { createContext, useContext, useState, useEffect } from 'react';
+
 interface ShoppingCartContextType {
     items: any[];
     addItem: (item: any) => void;
@@ -10,74 +10,77 @@ interface ShoppingCartContextType {
     tax: number;
     grandTotal: number;
 }
+
 const ShoppingCartContext = createContext<ShoppingCartContextType | undefined>(undefined);
 
 export const ShoppingCartProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-    const [items, setItems] = useState<any>({});
+    // Load from sessionStorage on mount
+    const [items, setItems] = useState<any>(() => {
+        const saved = sessionStorage.getItem('cart-items');
+        return saved ? JSON.parse(saved) : {};
+    });
+
+    // Save to sessionStorage whenever items change
+    useEffect(() => {
+        sessionStorage.setItem('cart-items', JSON.stringify(items));
+    }, [items]);
+
+    // Calculate totals from items (derived state - no separate useState needed)
+    const total = Object.values(items).reduce((sum: number, item: any) => {
+        const price = parseFloat(item.Price || item.price || 0);
+        return sum + (price * item.quantity);
+    }, 0);
+    
+    const tax = total * 0.0825; // 8.25% tax
+    const grandTotal = total + tax;
+
     const addItem = (item: any) => { 
         setItems((prev : any) => {
             console.log('addItem called with:', item);
-            if (item.id in prev) {
-                let temp = { ...prev };
-
-                temp[item.id].quantity += 1;
-                return temp;
+            const itemId = String(item.MenuItemID || item.id);
+            if (itemId in prev) {
+                return {
+                    ...prev,
+                    [itemId]: { ...prev[itemId], quantity: prev[itemId].quantity + 1 }
+                };
             } else {
-                return { ...prev, [item.id]: { ...item, quantity: 1 } };
+                return { ...prev, [itemId]: { ...item, quantity: 1 } };
             }
         });
-        if (!item.price) return;
-        setTotal(total + item.price);
-        setTax((total + item.price) * 0.1); // Example: 10% tax
-        setGrandTotal(total + item.price + (total + item.price) * 0.1); 
-     };
+    };
+
     const removeItem = (itemId: string) => { 
         setItems((prev: any) => {
             if (!(itemId in prev)) return prev;
-            const newItems = { ...prev };
-            delete newItems[itemId];
-            return newItems;
+            const { [itemId]: removed, ...rest } = prev;
+            return rest;
         });
-        const item = items[itemId];
-        if (!item || !item.price) {
-            return;
-        }
-        setTotal(total - item.price);
-        setTax((total - (item ? item.price : 0)) * 0.1); // Example: 10% tax
-        setGrandTotal(total - (item ? item.price : 0) + (total - (item ? item.price : 0)) * 0.1);
-     }
-    const clearCart = () => {
-        setItems([]);
-        setTotal(0);
-        setTax(0);
-        setGrandTotal(0);
     };
+
+    const clearCart = () => {
+        setItems({});
+        sessionStorage.removeItem('cart-items');
+    };
+
     const adjustQuantity = (itemId: string, delta: number) => {
         setItems((prev: any) => {
             if (!(itemId in prev)) return prev;
-            const newItems = { ...prev };
-            const item = newItems[itemId];
-            if (!item || !item["price"]) {
-                return newItems;
-            }
-            newItems[itemId].quantity += delta;
-            if (newItems[itemId].quantity <= 0) {
-                delete newItems[itemId];
-            }
-            console.log(total, grandTotal, tax, delta, item.price, item);
-            setTax((total + delta * item["price"]) * 0.1); // Example: 10% tax
-            setGrandTotal((total + delta * item["price"]) * 1.1);
-            setTotal(total + delta * item["price"]);
             
+            const newQuantity = prev[itemId].quantity + delta;
             
-            return newItems;
-
+            // Remove item if quantity becomes 0 or less
+            if (newQuantity <= 0) {
+                const { [itemId]: removed, ...rest } = prev;
+                return rest;
+            }
+            
+            // Update quantity
+            return {
+                ...prev,
+                [itemId]: { ...prev[itemId], quantity: newQuantity }
+            };
         });
     };
-
-    const [total, setTotal] = useState(0);
-    const [tax, setTax] = useState(0);
-    const [grandTotal, setGrandTotal] = useState(0);
 
     return (
         <ShoppingCartContext.Provider value={{ items, addItem, removeItem, clearCart, adjustQuantity, total, tax, grandTotal }}>
