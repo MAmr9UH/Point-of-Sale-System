@@ -1,8 +1,25 @@
-import { createContext, useContext, useState, useEffect } from 'react';
+import { createContext, useContext }  from 'react';
+import { useState } from 'react';
+import type { MenuItem } from '../types/MenuItem';
+
+export interface ItemCustomization {
+    ingredientId: number;
+    ingredientName: string;
+    changeType: 'added' | 'removed' | 'substituted';
+    quantityDelta: number;
+    priceAdjustment: number; // Price adjustment for this ingredient
+}
+
+interface CartItem extends MenuItem {
+    quantity: number;
+    customizations?: ItemCustomization[];
+    cartItemId: string; // Unique ID for cart item (to handle same item with different customizations)
+    adjustedPrice: number; // Base price + customization adjustments
+}
 
 interface ShoppingCartContextType {
-    items: any[];
-    addItem: (item: any) => void;
+    items: Record<string, CartItem>;
+    addItem: (item: MenuItem, customizations?: ItemCustomization[]) => void;
     removeItem: (itemId: string) => void;
     clearCart: () => void;
     adjustQuantity: (itemId: string, delta: number) => void;
@@ -14,47 +31,95 @@ interface ShoppingCartContextType {
 const ShoppingCartContext = createContext<ShoppingCartContextType | undefined>(undefined);
 
 export const ShoppingCartProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-    // Load from sessionStorage on mount
-    const [items, setItems] = useState<any>(() => {
-        const saved = sessionStorage.getItem('cart-items');
-        return saved ? JSON.parse(saved) : {};
-    });
-
-    // Save to sessionStorage whenever items change
-    useEffect(() => {
-        sessionStorage.setItem('cart-items', JSON.stringify(items));
-    }, [items]);
-
-    // Calculate totals from items (derived state - no separate useState needed)
-    const total = Object.values(items).reduce((sum: number, item: any) => {
-        const price = parseFloat(item.Price || item.price || 0);
-        return sum + (price * item.quantity);
-    }, 0);
+    const [items, setItems] = useState<Record<string, CartItem>>({});
     
-    const tax = total * 0.0825; // 8.25% tax
-    const grandTotal = total + tax;
+    const calculateAdjustedPrice = (item: MenuItem, customizations?: ItemCustomization[]): number => {
+        let basePrice = parseFloat(item.Price);
+        
+        if (!customizations || customizations.length === 0) {
+            return basePrice;
+        }
+        
+        // Add price adjustments from customizations
+        const adjustmentTotal = customizations.reduce((total, custom) => {
+            // Only add price adjustments for substitutions and additions
+            if (custom.changeType === 'substituted' || custom.changeType === 'added') {
+                return total + (custom.priceAdjustment * Math.abs(custom.quantityDelta));
+            }
+            return total;
+        }, 0);
+        
+        return basePrice + adjustmentTotal;
+    };
+    
+    const generateCartItemId = (item: MenuItem, customizations?: ItemCustomization[]): string => {
+        // Create a unique ID based on item ID and customizations
+        if (!customizations || customizations.length === 0) {
+            return String(item.MenuItemID);
+        }
 
-    const addItem = (item: any) => { 
-        setItems((prev : any) => {
-            console.log('addItem called with:', item);
-            const itemId = String(item.MenuItemID || item.id);
-            if (itemId in prev) {
-                return {
-                    ...prev,
-                    [itemId]: { ...prev[itemId], quantity: prev[itemId].quantity + 1 }
+        console.log('Generating cart item ID for item:', item, 'with customizations:', customizations);
+
+        const customizationString = customizations
+            .map(c => `${c.ingredientId}:${c.changeType}:${c.quantityDelta}`)
+            .sort()
+            .join('|');
+        return `${item.MenuItemID}-${btoa(customizationString).substring(0, 10)}`;
+    };
+    
+    const addItem = (item: MenuItem, customizations?: ItemCustomization[]) => { 
+        const adjustedPrice = calculateAdjustedPrice(item, customizations);
+        
+        setItems((prev) => {
+            console.log('addItem called with:', item, 'customizations:', customizations);
+            const cartItemId = generateCartItemId(item, customizations);
+            
+            if (cartItemId in prev) {
+                const temp = { ...prev };
+                temp[cartItemId] = {
+                    ...temp[cartItemId],
+                    quantity: temp[cartItemId].quantity + 1
                 };
+                return temp;
             } else {
-                return { ...prev, [itemId]: { ...item, quantity: 1 } };
+                return { 
+                    ...prev, 
+                    [cartItemId]: { 
+                        ...item, 
+                        quantity: 1,
+                        customizations: customizations,
+                        cartItemId: cartItemId,
+                        adjustedPrice: adjustedPrice
+                    } 
+                };
             }
         });
-    };
-
+        
+        if (!adjustedPrice) return;
+        setTotal(total + adjustedPrice);
+        setTax((total + adjustedPrice) * 0.1); // Example: 10% tax
+        setGrandTotal(total + adjustedPrice + (total + adjustedPrice) * 0.1); 
+     };
     const removeItem = (itemId: string) => { 
-        setItems((prev: any) => {
+        const item = items[itemId];
+        if (!item || !item.adjustedPrice) {
+            return;
+        }
+        setItems((prev) => {
             if (!(itemId in prev)) return prev;
             const { [itemId]: removed, ...rest } = prev;
             return rest;
         });
+        const itemTotal = item.adjustedPrice * item.quantity;
+        setTotal(total - itemTotal);
+        setTax((total - itemTotal) * 0.1); // Example: 10% tax
+        setGrandTotal(total - itemTotal + (total - itemTotal) * 0.1);
+     }
+    const clearCart = () => {
+        setItems({});
+        setTotal(0);
+        setTax(0);
+        setGrandTotal(0);
     };
 
     const clearCart = () => {
@@ -63,23 +128,27 @@ export const ShoppingCartProvider: React.FC<{ children: React.ReactNode }> = ({ 
     };
 
     const adjustQuantity = (itemId: string, delta: number) => {
-        setItems((prev: any) => {
+        const item = items[itemId];
+        if (!item || !item.adjustedPrice) {
+            return;
+        }
+        setItems((prev) => {
             if (!(itemId in prev)) return prev;
-            
-            const newQuantity = prev[itemId].quantity + delta;
-            
-            // Remove item if quantity becomes 0 or less
-            if (newQuantity <= 0) {
-                const { [itemId]: removed, ...rest } = prev;
-                return rest;
-            }
-            
-            // Update quantity
-            return {
-                ...prev,
-                [itemId]: { ...prev[itemId], quantity: newQuantity }
+            const newItems = { ...prev };
+            newItems[itemId] = {
+                ...newItems[itemId],
+                quantity: newItems[itemId].quantity + delta
             };
+            if (newItems[itemId].quantity <= 0) {
+                delete newItems[itemId];
+            }
+            return newItems;
         });
+        const priceChange = delta * item.adjustedPrice;
+        const newTotal = total + priceChange;
+        setTotal(newTotal);
+        setTax(newTotal * 0.1); // Example: 10% tax
+        setGrandTotal(newTotal * 1.1);
     };
 
     return (

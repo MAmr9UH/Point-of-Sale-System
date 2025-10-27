@@ -89,6 +89,33 @@
     color: #666;
 }
 
+.order-item-customizations {
+    margin-top: 8px;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.order-customization {
+    font-size: 12px;
+    padding: 2px 0;
+}
+
+.custom-removed {
+    color: #ff3b30;
+    font-weight: 500;
+}
+
+.custom-substituted {
+    color: #007aff;
+    font-weight: 500;
+}
+
+.custom-added {
+    color: #34c759;
+    font-weight: 500;
+}
+
 .order-item-price {
     font-weight: 600;
 }

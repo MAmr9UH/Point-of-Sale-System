@@ -1,56 +1,44 @@
-import { db } from '../db/connection.js'; 
+import { createOrder } from '../model/Order.js';
 
 export const handleCheckout = async (req, res) => {
   const { url, method } = req;
 
   // Only handle POST requests to /api/checkout/createOrder
-  if (method === 'POST' && url === '/api/checkout/createOrder') {
+  if (method === 'POST' && url === '/api/checkout/userCreateOrder') {
     let body = '';
 
-    // Collect the request body data
+    // Collect data chunks
     req.on('data', chunk => {
       body += chunk.toString();
     });
 
-    req.on('end', () => {
+    // When all data is received
+    req.on('end', async () => {
       try {
-        const { userId, items, total, formData } = JSON.parse(body);
 
-        db.query(
-          `INSERT INTO order_ 
-          (CustomerID, StaffID, LocationName, OrderDate, WasPlacedOnline, 
-           PaymentMethod, UsedIncentivePoints, TotalAmount)
-          VALUES (?, ?, ?, NOW(), 1, ?, ?, ?)`,
-          [
-            userId,           // CustomerID
-            null,             // StaffID (null for online orders)
-            'Online Order',   // LocationName
-            'card',           // PaymentMethod
-            0,                // UsedIncentivePoints
-            total             // TotalAmount
-          ],
-          (err, result) => { 
-            if (err) {
-              console.error('Error creating order:', err);
-              res.statusCode = 500;
-              res.setHeader('Content-Type', 'application/json');
-              res.end(JSON.stringify({ success: false, error: 'Database error' }));
-              return;
-            }
+        const { userId, orderItems } = JSON.parse(body);
 
-            const orderId = result.insertId;
-
-            res.statusCode = 200;
-            res.setHeader('Content-Type', 'application/json');
-            res.end(JSON.stringify({ success: true, orderId }));
-          }
+        const order = await createOrder(
+          orderItems,
+          null,
+          userId,
+          true,
+          null,
+          "card",
+          0,
+          null
         );
 
-      } catch (err) {
-        console.error('Error parsing request:', err);
-        res.statusCode = 400;
+        console.log('Order created successfully:', order);
+
+        res.statusCode = 201;
         res.setHeader('Content-Type', 'application/json');
-        res.end(JSON.stringify({ success: false, error: 'Invalid request' }));
+        res.end(JSON.stringify({ success: true, order }));
+      } catch (err) {
+        console.error('Error creating order:', err);
+        res.statusCode = 500;
+        res.setHeader('Content-Type', 'application/json');
+        res.end(JSON.stringify({ success: false, error: 'Failed to create order', details: err.message }));
       }
     });
   } else {

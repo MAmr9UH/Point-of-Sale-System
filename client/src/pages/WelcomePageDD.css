@@ -1,57 +1,274 @@
-/* Main */
+/* Main container */
 .welcome-container {
   height: 100vh;
-  width : 100vw;
+  width: 100vw;
   display: flex;
   flex-direction: column;
-  justify-content: center;
   align-items: center;
-  background: lightgrey;
-  padding-top: 80px;
-  font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+  background-color: #f0f2f5;
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+  padding-top: 80px; /* Space for TopNav */
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  color: #333;
+}
+
+/* Keyframe Animations */
+@keyframes slideInUp {
+  from {
+    opacity: 0;
+    transform: translateY(30px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes spin {
+  0% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(360deg);
+  }
+}
+
+/* Animation Classes */
+.slide-in {
+  animation: slideInUp 0.6s ease-out;
+}
+
+.fade-in {
+  animation: fadeIn 0.8s ease-out;
+  opacity: 0;
+  animation-fill-mode: forwards;
+}
+
+.fade-in.delay-1 {
+  animation-delay: 0.2s;
+}
+
+.fade-in.delay-2 {
+  animation-delay: 0.4s;
+}
+
+.fade-in.delay-3 {
+  animation-delay: 0.6s;
+}
+
+/* Loading Animation */
+.loading-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 300px;
+  gap: 1.5rem;
+}
+
+.loading-spinner {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.spinner {
+  width: 60px;
+  height: 60px;
+  border: 4px solid #e5e7eb;
+  border-top: 4px solid #1e40af;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+.loading-text {
+  text-align: center;
+  color: #6b7280;
+  font-size: 1.1rem;
+  font-weight: 500;
+  margin: 0;
 }
 
 /* Info Card */
 .welcome-card {
-  background: white;
-  padding: 2rem;
-  border-radius: 16px;
-  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.2);
+  background: #ffffff;
+  padding: 2.5rem;
+  border-radius: 12px;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
   width: 90%;
-  max-width: 600px;
+  max-width: 650px;
   text-align: center;
+  display: flex;
+  flex-direction: column;
+  gap: 2rem;
+}
+
+.welcome-header {
+  border-bottom: 1px solid #e5e7eb;
+  padding-bottom: 1.5rem;
 }
 
 .welcome-title {
-  font-size: 2.5rem;
-  color: #3B82F6;
-  margin-bottom: 0.5rem;
+  font-size: 2.75rem;
+  font-weight: 700;
+  color: #1e40af; /* Deeper blue */
+  margin: 0;
 }
 
 .welcome-subtitle {
-  font-size: 1.2rem;
-  color: #555;
-  margin-bottom: 1.5rem;
+  font-size: 1.25rem;
+  color: #6b7280;
+  margin-top: 0.5rem;
+}
+
+.welcome-main {
+  display: flex;
+  flex-direction: column;
+  gap: 2rem;
 }
 
 .welcome-section {
-  margin-bottom: 1.5rem;
+  text-align: left;
+}
+
+.welcome-section-header {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin-bottom: 1rem;
+}
+
+.welcome-icon {
+  width: 24px;
+  height: 24px;
+  color: #3b82f6;
 }
 
 .welcome-section h2 {
-  margin-bottom: 0.5rem;
-  color: #3B82F6;
+  margin: 0;
+  font-size: 1.5rem;
+  font-weight: 600;
+  color: #111827;
 }
 
 .welcome-section p {
-  margin: 0.3rem 0;
-  color: #333;
+  margin: 0.4rem 0 0 2.25rem; /* Align with text, not icon */
+  color: #4b5563;
+  line-height: 1.6;
 }
 
 /* Footer */
 .welcome-footer {
-  color: black;
-  margin-top: 1.5rem;
+  color: #6b7280;
+  margin-top: 2rem;
   font-size: 0.9rem;
+  text-align: center;
+}
+
+/* Location Entry Styling */
+.location-entry {
+  margin: 0.75rem 0 0 2.25rem;
+  padding: 1rem;
+  background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+  border-left: 4px solid #3b82f6;
+  border-radius: 8px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+  transition: all 0.3s ease;
+  animation: fadeIn 0.6s ease-out;
+  animation-fill-mode: both;
+}
+
+.location-entry:nth-child(2) {
+  animation-delay: 0.1s;
+}
+
+.location-entry:nth-child(3) {
+  animation-delay: 0.2s;
+}
+
+.location-entry:nth-child(4) {
+  animation-delay: 0.3s;
+}
+
+.location-entry:hover {
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+  transform: translateX(4px);
+  border-left-color: #2563eb;
+}
+
+.location-entry p {
+  margin: 0.5rem 0;
+  color: #1f2937;
+  line-height: 1.5;
+}
+
+.location-entry p:first-child {
+  font-weight: 700;
+  font-size: 1.1rem;
+  color: #1e40af;
+  margin-bottom: 0.75rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.location-entry p:first-child::before {
+  content: "📍";
+  font-size: 1.2rem;
+}
+
+.location-entry p:not(:first-child) {
+  font-size: 0.95rem;
+  color: #4b5563;
+  padding-left: 1.75rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.location-entry p:not(:first-child)::before {
+  content: "📅";
+  font-size: 0.9rem;
+  opacity: 0.7;
+}
+
+/* Multiple location entries spacing */
+.location-entry + .location-entry {
+  margin-top: 1rem;
+}
+
+/* Specific styles for location name and days */
+.location-name {
+  font-weight: 700 !important;
+  font-size: 1.1rem !important;
+  color: #1e40af !important;
+  margin-bottom: 0.75rem !important;
+}
+
+.location-day {
+  font-size: 0.95rem !important;
+  color: #4b5563 !important;
+  padding-left: 0.5rem !important;
+}
+
+/* No locations message */
+.no-locations {
+  margin: 1rem 0 0 2.25rem !important;
+  color: #9ca3af !important;
+  font-style: italic;
+  padding: 1rem;
+  background: #f9fafb;
+  border-radius: 6px;
   text-align: center;
 }

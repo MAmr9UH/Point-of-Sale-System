@@ -8,3 +8,22 @@
   --gradient-start: #e2cbff;
   --gradient-end: #f2c7fe;
 }
+
+@keyframes fadeInSlideUp {
+  0% {
+    opacity: 0;
+    transform: translateY(30px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.order-success-container {
+  animation: fadeInSlideUp 0.6s ease-out;
+}
+
+.order-success-card {
+  animation: fadeInSlideUp 0.8s ease-out 0.2s backwards;
+}

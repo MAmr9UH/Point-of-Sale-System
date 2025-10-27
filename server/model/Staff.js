@@ -204,3 +204,19 @@ class Staff {
 }
 
 export default Staff;
+
+import { db } from '../db/connection.js';
+
+export const getCurrentWorkingStaff = async (locationName) => {
+    const query = `
+        SELECT S.*
+        FROM Staff AS S
+        JOIN Assigns AS A ON S.StaffID = A.StaffID
+        JOIN Active_Location AS AL ON A.ActiveLocationID = AL.ActiveLocationID
+        WHERE AL.LocationName = ? AND A.ScheduleStart <= NOW() AND (A.ScheduleEnd IS NULL OR A.ScheduleEnd >= NOW())
+        ORDER BY A.ScheduleStart DESC
+        LIMIT 1;
+    `;
+    const results = await db.query(query, [locationName]);
+    return results.length > 0 ? Staff.fromDB(results[0]) : null;
+}

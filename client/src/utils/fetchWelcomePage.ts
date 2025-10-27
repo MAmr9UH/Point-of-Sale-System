@@ -6,9 +6,10 @@ export const fetchWelcomePage = async () => {
             throw new Error('Network response was not ok');
         }
 
-        console.log(response)
-
         const data = await response.json();
+
+        console.log('Fetched welcome page data:', data);
+
         return data;
     } catch (error) {
         console.error('Error fetching welcome page data:', error);

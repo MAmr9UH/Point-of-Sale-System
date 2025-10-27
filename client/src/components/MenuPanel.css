@@ -46,7 +46,22 @@
     color: #555;
 }
 
-#menu-grid {
+.menu-category {
+    margin-bottom: 32px;
+}
+
+.category-title {
+    font-size: 18px;
+    font-weight: 600;
+    margin: 0 0 16px 0;
+    padding-bottom: 8px;
+    border-bottom: 2px solid #eee;
+    text-transform: capitalize;
+    color: #333;
+}
+
+#menu-grid,
+.menu-grid {
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(150px, 200px));
     gap: 16px;

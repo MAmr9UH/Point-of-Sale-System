@@ -1,0 +1,289 @@
+/* Customization Modal Overlay */
+.customization-modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: rgba(0, 0, 0, 0.6);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 2000;
+    animation: fadeIn 0.2s ease-in-out;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+
+/* Modal Container */
+.customization-modal {
+    background-color: white;
+    border-radius: 16px;
+    width: 90%;
+    max-width: 700px;
+    max-height: 90vh;
+    display: flex;
+    flex-direction: column;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+    animation: slideUp 0.3s ease-out;
+}
+
+@keyframes slideUp {
+    from {
+        transform: translateY(30px);
+        opacity: 0;
+    }
+    to {
+        transform: translateY(0);
+        opacity: 1;
+    }
+}
+
+/* Header */
+.customization-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 24px;
+    border-bottom: 1px solid #e0e0e0;
+}
+
+.customization-header h2 {
+    margin: 0;
+    font-size: 24px;
+    font-weight: 600;
+    color: #333;
+}
+
+.close-btn {
+    background: none;
+    border: none;
+    font-size: 32px;
+    color: #666;
+    cursor: pointer;
+    padding: 0;
+    width: 32px;
+    height: 32px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: color 0.2s;
+}
+
+.close-btn:hover {
+    color: #333;
+}
+
+/* Body */
+.customization-body {
+    flex: 1;
+    overflow-y: auto;
+    padding: 24px;
+}
+
+.item-preview {
+    text-align: center;
+    margin-bottom: 24px;
+}
+
+.item-preview img {
+    width: 100%;
+    max-width: 400px;
+    height: 200px;
+    object-fit: cover;
+    border-radius: 12px;
+    margin-bottom: 16px;
+}
+
+.item-description {
+    color: #666;
+    font-size: 14px;
+    margin: 8px 0;
+}
+
+.item-price {
+    font-size: 24px;
+    font-weight: 700;
+    color: #007aff;
+    margin: 8px 0;
+}
+
+/* Customization Options */
+.customization-options h3 {
+    font-size: 20px;
+    margin-bottom: 20px;
+    color: #333;
+}
+
+.no-customizations {
+    text-align: center;
+    padding: 40px;
+    color: #999;
+}
+
+.customization-category {
+    margin-bottom: 24px;
+    padding: 16px;
+    background-color: #f8f9fa;
+    border-radius: 8px;
+}
+
+.customization-category h4 {
+    margin: 0 0 16px 0;
+    font-size: 18px;
+    color: #333;
+    font-weight: 600;
+}
+
+/* Substitution Options (Radio buttons) */
+.substitution-options {
+    display: flex;
+    flex-direction: column;
+    color: black;
+    gap: 12px;
+}
+
+.radio-option {
+    display: flex;
+    align-items: center;
+    padding: 12px;
+    background-color: white;
+    border: 2px solid #e0e0e0;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.radio-option:hover {
+    border-color: #007aff;
+    background-color: #f0f8ff;
+}
+
+.radio-option input[type="radio"] {
+    margin-right: 12px;
+    width: 20px;
+    height: 20px;
+    cursor: pointer;
+}
+
+.radio-option input[type="radio"]:checked + span {
+    font-weight: 600;
+    color: #007aff;
+}
+
+/* Removable Options (Checkboxes) */
+.removable-options {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.ingredient-option {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 12px;
+    background-color: white;
+    border: 2px solid #e0e0e0;
+    border-radius: 8px;
+}
+
+.checkbox-option {
+    display: flex;
+    align-items: center;
+    cursor: pointer;
+    flex: 1;
+}
+
+.checkbox-option input[type="checkbox"] {
+    margin-right: 12px;
+    width: 20px;
+    height: 20px;
+    cursor: pointer;
+}
+
+.checkbox-option span {
+    font-size: 16px;
+    color: #333;
+}
+
+/* Quantity Controls */
+.quantity-controls {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.quantity-controls button {
+    width: 32px;
+    height: 32px;
+    border: 1px solid #d0d0d0;
+    background-color: white;
+    border-radius: 6px;
+    font-size: 18px;
+    font-weight: 600;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background-color 0.2s;
+}
+
+.quantity-controls button:hover:not(:disabled) {
+    background-color: #f0f0f0;
+}
+
+.quantity-controls button:disabled {
+    opacity: 0.3;
+    cursor: not-allowed;
+}
+
+.quantity-controls span {
+    min-width: 30px;
+    text-align: center;
+    font-weight: 600;
+    font-size: 16px;
+}
+
+/* Footer */
+.customization-footer {
+    display: flex;
+    gap: 12px;
+    padding: 20px 24px;
+    border-top: 1px solid #e0e0e0;
+    background-color: #f8f9fa;
+    border-radius: 0 0 16px 16px;
+}
+
+.cancel-btn,
+.add-to-cart-btn {
+    flex: 1;
+    padding: 14px;
+    border: none;
+    border-radius: 8px;
+    font-size: 16px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background-color 0.2s;
+}
+
+.cancel-btn {
+    background-color: #e0e0e0;
+    color: #333;
+}
+
+.cancel-btn:hover {
+    background-color: #d0d0d0;
+}
+
+.add-to-cart-btn {
+    background: linear-gradient(145deg, #007aff, #0056b3);
+    color: white;
+}
+
+.add-to-cart-btn:hover {
+    background: linear-gradient(145deg, #0056b3, #004494);
+}

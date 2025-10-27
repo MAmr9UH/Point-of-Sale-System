@@ -1,11 +1,10 @@
 import fs from 'fs'
 import path from 'path'
 
-
 function loadEnv() {
   try {
     // 1. Get the path to the .env file
-    const envPath = '../.env';
+    const envPath = process.cwd().endsWith("server") ? "./.env" : "../.env";
 
     // 2. Read the file's contents into a string
     const envFileContent = fs.readFileSync(envPath, { encoding: 'utf-8' });
