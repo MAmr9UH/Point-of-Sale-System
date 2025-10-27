@@ -1,9 +1,11 @@
 {
   "name": "server",
   "version": "1.0.0",
-  "description": "",
-  "main": "index.js",
+  "description": "Backend for POS system with login",
+  "main": "server.js",
+  "type": "module",
   "scripts": {
+<<<<<<< HEAD
     "test": "echo \"Error: no test specified\" && exit 1",
     "start": "node index.js" 
   },
@@ -13,5 +15,14 @@
   "type": "module",
   "dependencies": {
     "mysql2": "^3.15.3"
+=======
+    "start": "node server.js"
+  },
+  "dependencies": {
+    "express": "^5.1.0",
+    "cors": "^2.8.5",
+    "mysql2": "^3.15.3",
+    "bcryptjs": "^3.0.2"
+>>>>>>> a43fae6 (WIP: save local edits before pulling)
   }
 }

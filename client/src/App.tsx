@@ -15,7 +15,12 @@ import ReportsPage from "./pages/ReportsPage.tsx"
 function App() {
 
   return (
+<<<<<<< HEAD
     <>
+=======
+    <> 
+    
+>>>>>>> a43fae6 (WIP: save local edits before pulling)
       <ToasterProvider>
         <ShoppingCartProvider>
           <WelcomePageProvider>
@@ -38,5 +43,6 @@ function App() {
     </>
   )
 }
+
 
 export default App

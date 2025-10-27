@@ -10,9 +10,13 @@
     "preview": "vite preview"
   },
   "dependencies": {
+<<<<<<< HEAD
     "cors": "^2.8.5",
     "express": "^5.1.0",
     "mysql2": "^3.15.3",
+=======
+    "lucide-react": "^0.548.0",
+>>>>>>> a43fae6 (WIP: save local edits before pulling)
     "react": "^19.1.1",
     "react-dom": "^19.1.1",
     "react-router-dom": "^7.9.4"
