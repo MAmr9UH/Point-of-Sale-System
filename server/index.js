@@ -10,6 +10,7 @@ import { handleInventoryRoutes } from './routes/inventoryRoutes.js';
 import { handleUtilityRoutes } from './routes/utilityRoutes.js';
 import { handleMenuRoutes } from './routes/menuRoutes.js';
 import { handleEditPage } from './routes/editpage.js';
+import { handleNotificationRoutes } from './routes/notifications.js';
 
 import './db/connection.js';
 
@@ -62,8 +63,13 @@ const server = http.createServer((req, res) => {
         res.statusCode = 200;
         res.setHeader('Content-Type', 'text/html');
         res.end('<h1>Welcome to the Homepage!</h1><p>This is a plain Node.js server.</p>');
+    } 
+    else if (url.startsWith('/api/staff/notifications')) {
+        handleNotificationRoutes(req, res);
     } else if (url.startsWith('/api/editpage')) {
         handleEditPage(req, res);
+    } else if (url.startsWith('/api/menuItems')) {  // ADD THIS
+        handleMenuRoutes(req, res);
     } else if (url.startsWith('/api/menu/')) {
         handleMenu(req, res);
     } else if (url.startsWith('/api/welcome')) {
