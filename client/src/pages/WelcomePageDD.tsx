@@ -71,7 +71,7 @@ export default function WelcomePageDD() {
               <h2>About Us</h2>
             </div>
             <p>
-              We are CS students trying to survive Professor Uma class...
+              { pageData?.Tagline || "We are CS students trying to survive Professor Uma class..." }
             </p>
           </div>
         </main>

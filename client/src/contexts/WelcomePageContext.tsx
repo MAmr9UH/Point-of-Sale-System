@@ -12,6 +12,7 @@ interface WelcomePageData {
   BackgroundURL?: string;
   ActiveLocations?: ActiveLocation[];
   Description?: string;
+  Tagline?: string;
 }
 
 interface WelcomePageContextType {

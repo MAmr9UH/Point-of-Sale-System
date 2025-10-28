@@ -21,6 +21,7 @@ export const handleWelcome = async (req, res) => {
             PhoneNumber: results[0].PhoneNumber,
             Status: results[0].Status,
             BackgroundURL: results[0].BackgroundURL,
+            Tagline: results[0].Tagline,
             ActiveLocations: al
         }
 
