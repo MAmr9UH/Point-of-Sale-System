@@ -17,8 +17,8 @@ export const handleCheckout = async (req, res) => {
     req.on('end', async () => {
       try {
 
-        const { userId, orderItems } = JSON.parse(body);
-
+        const { userId, orderItems, formData } = JSON.parse(body);
+        
         const order = await createOrder(
           orderItems,
           null,
@@ -27,7 +27,8 @@ export const handleCheckout = async (req, res) => {
           null,
           "card",
           0,
-          null
+          null,
+          formData.pickupLocation
         );
 
         console.log('Order created successfully:', order);
