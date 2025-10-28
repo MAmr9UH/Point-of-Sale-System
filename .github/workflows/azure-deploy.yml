@@ -34,6 +34,7 @@ jobs:
         run: |
           mkdir -p deploy
           cp -r server/* deploy/
+          cp -r server/node_modules deploy/node_modules
           mkdir -p deploy/public
           cp -r client/dist/* deploy/public/
           
@@ -82,7 +83,13 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           name: node-app
+          path: ./deployment
       
+      - name: List deployment files
+        run: |
+          echo "Deployment package contents:"
+          ls -la ./deployment
+          
       - name: Login to Azure
         uses: azure/login@v2
         with:
@@ -96,4 +103,21 @@ jobs:
         with:
           app-name: 'team4truckpos'
           slot-name: 'Production'
-          package: .
+          package: ./deployment
+          
+      - name: Configure Azure Web App Settings
+        uses: azure/appservice-settings@v1
+        with:
+          app-name: 'team4truckpos'
+          slot-name: 'Production'
+          app-settings-json: |
+            [
+              {
+                "name": "SCM_DO_BUILD_DURING_DEPLOYMENT",
+                "value": "false"
+              },
+              {
+                "name": "WEBSITE_NODE_DEFAULT_VERSION",
+                "value": "22.x"
+              }
+            ]
