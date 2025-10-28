@@ -6,11 +6,17 @@ on:
       - main
   workflow_dispatch:
 
+# REQUIRED: Add this permissions block for OIDC login
+permissions:
+  id-token: write
+  contents: read
 
 env:
-  NODE_VERSION: '20.x'
-  AZURE_WEBAPP_NAME: 'team4truckpos'  # Replace with your Azure App Service name
-  
+  NODE_VERSION: '22.x'
+  AZURE_WEBAPP_NAME: 'team4truckpos'   # Replace with your Azure App Service name
+  # Add your resource group name here, or set it as a secret
+  AZURE_RESOURCE_GROUP: cosc3380
+
 jobs:
   build-and-deploy:
     runs-on: ubuntu-latest
@@ -18,6 +24,10 @@ jobs:
     steps:
     - name: Azure Login
       uses: Azure/login@v2.3.0
+      with:
+        client-id: ${{ secrets.AZURE_CLIENT_SECRET }}
+        tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+        subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
 
     - name: Checkout code
       uses: actions/checkout@v4
@@ -106,8 +116,8 @@ jobs:
     - name: Deploy to Azure Web App
       uses: azure/webapps-deploy@v2
       with:
-        app-name: ${{ env.AZURE_WEBAPP_NAME }}
-        publish-profile: ${{ secrets.AZURE_WEBAPP_PUBLISH_PROFILE }}
+        app-name: team4truckpos
+        # REMOVED: publish-profile - This step will now use the OIDC login
         package: ./deploy
 
     # Restart the app
@@ -116,4 +126,4 @@ jobs:
       with:
         azcliversion: latest
         inlineScript: |
-          az webapp restart --name ${{ env.AZURE_WEBAPP_NAME }} --resource-group ${{ secrets.AZURE_RESOURCE_GROUP }}
+          az webapp restart --name team4truckpos --resource-group ${{ env.AZURE_RESOURCE_GROUP }}
