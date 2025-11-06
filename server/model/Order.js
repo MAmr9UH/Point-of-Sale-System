@@ -223,7 +223,9 @@ export const createOrder = async (orderItems, phoneNumber = null, userId = null,
     }
     const todayLocation = (await getLocationToday());
 
-    if (todayLocation.filter(loc => loc.locationName === locationName).length === 0) {
+    console.log(todayLocation, locationName);
+
+    if (todayLocation.filter(loc => loc.locationName == locationName).length === 0) {
         throw new Error('The specified location is not active today');
     }
     

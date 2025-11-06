@@ -35,11 +35,14 @@ export const handleReports = async (req, res) => {
 
   const requireDates =
     !startDate || !endDate || Number.isNaN(Date.parse(startDate)) || Number.isNaN(Date.parse(endDate));
+    
+    try {
+      if (method === "GET" && pathname === "/api/reports/profit-per-location") {
+        if (requireDates) return sendJSON(res, 400, { error: "startDate and endDate are required (YYYY-MM-DD)" });
+        const rows = await profitPerLocation(startDate, endDate, desc);
+        console.log("Profit per location report generated:", rows);
 
-  try {
-    if (method === "GET" && pathname === "/api/reports/profit-per-location") {
-      if (requireDates) return sendJSON(res, 400, { error: "startDate and endDate are required (YYYY-MM-DD)" });
-      const rows = await profitPerLocation(startDate, endDate, desc);
+
       return sendJSON(res, 200, rows);
     }
 

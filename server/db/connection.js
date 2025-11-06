@@ -4,11 +4,11 @@ import { loadEnv } from '../loadEnv.js';
 loadEnv();
 
 export const db = await mysql.createConnection({
-    host: process.env.URL || 'localhost',
-    user: process.env.USER || 'root',
-    password: process.env.PASSWORD || 'admin',
-    port: process.env.PORT || '3306',
-    database: process.env.DATABASE || 'pos',
+    host: "team4-mysql-server.mysql.database.azure.com",
+    user: "pos3380",
+    password: "F@@dtruckpos",
+    port: "3306",
+    database: "pos",
     ssl: {
         rejectUnauthorized: false
     }
