@@ -18,9 +18,7 @@ export const handleCheckout = async (req, res) => {
       try {
 
         const { userId, orderItems, formData } = JSON.parse(body);
-
-        console.log(body)
-
+        
         const order = await createOrder(
           orderItems,
           null,
