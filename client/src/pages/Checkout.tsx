@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useShoppingCart } from './../contexts/ShoppingCart'
 import { useNavigate } from 'react-router-dom';
 import { createOrder } from '../utils/fetchOrder';
@@ -6,7 +6,7 @@ import { useWelcomePage } from '../contexts/WelcomePageContext';
 import { useToaster } from '../contexts/ToastContext'; 
 import { useAuth } from '../contexts/AuthContext';
 import type { Customer } from '../contexts/AuthContext';
-
+import { fetchPickupLocations } from '../utils/pickupLoc';
 
 const ShoppingCart: React.FC<React.SVGProps<SVGSVGElement>> = (props) => (
   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" xmlns="http://www.w3.org/2000/svg" {...props}>
@@ -26,13 +26,6 @@ const Trash: React.FC<React.SVGProps<SVGSVGElement>> = (props) => (
   </svg>
 );
 
-const X: React.FC<React.SVGProps<SVGSVGElement>> = (props) => (
-  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={3} strokeLinecap="round" strokeLinejoin="round" xmlns="http://www.w3.org/2000/svg" {...props}>
-    <line x1="18" y1="6" x2="6" y2="18" />
-    <line x1="6" y1="6" x2="18" y2="18" />
-  </svg>
-);
-
 const ArrowLeft: React.FC<React.SVGProps<SVGSVGElement>> = (props) => (
   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" xmlns="http://www.w3.org/2000/svg" {...props}>
     <line x1="19" y1="12" x2="5" y2="12" />
@@ -45,6 +38,7 @@ import './Checkout.css'
 // Define the shape of the Form Data
 interface FormData {
   pickupTime: string;
+  pickupLocation: string;
   notes: string;
   cardNumber: string;
   cardExpiry: string;
@@ -106,6 +100,7 @@ export default function FoodTruckCheckout() {
   console.log('First item:', Object.values(items)[0]);
   const [formData, setFormData] = useState<FormData>({
     pickupTime: '',
+    pickupLocation: '',
     notes: '',
     cardNumber: '',
     cardExpiry: '',
@@ -115,6 +110,20 @@ export default function FoodTruckCheckout() {
   });
   const [orderPlaced, setOrderPlaced] = useState(false);
   const [showError, setShowError] = useState('');
+  const [pickupLocations, setPickupLocations] = useState<any[]>([]);
+
+  // Fetch pickup locations on mount
+  useEffect(() => {
+    const loadLocations = async () => {
+      try {
+        const data = await fetchPickupLocations();
+        setPickupLocations(data.locations || []);
+      } catch (error) {
+        console.error('Failed to fetch pickup locations:', error);
+      }
+    };
+    loadLocations();
+  }, []);
 
   // --- Branding Constants ---
   const TRUCK_NAME = pageData?.FoodTruckName || 'FOOD TRUCK NAME';
@@ -151,7 +160,7 @@ export default function FoodTruckCheckout() {
   // total price calculation
 
   // collects inputs to form with formatting logic
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>): void => {
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>): void => {
     const { name, value } = e.target;
     let newValue = value;
 
@@ -385,6 +394,55 @@ export default function FoodTruckCheckout() {
                 marginTop: 0
               }}>Pickup Information</h2>
               <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+
+                {/* Pickup Location */}
+                <div>
+                  <label htmlFor="pickupLocation" style={{
+                    display: 'block',
+                    fontSize: '14px',
+                    fontWeight: 500,
+                    color: '#374151',
+                    marginBottom: '8px'
+                  }}>Pickup Location <span style={{ color: '#ef4444' }}>*</span></label>
+                  {pickupLocations.length === 0 ? (
+                    <div style={{
+                      width: '100%',
+                      padding: '12px 16px',
+                      border: '1px solid #fbbf24',
+                      borderRadius: '8px',
+                      fontSize: '14px',
+                      backgroundColor: '#fef3c7',
+                      color: '#92400e',
+                      boxSizing: 'border-box'
+                    }}>
+                      ⚠️ No pickup locations available today. The food truck is not operating. Please check back another day.
+                    </div>
+                  ) : (
+                    <select
+                      id="pickupLocation"
+                      name="pickupLocation"
+                      value={formData.pickupLocation}
+                      onChange={handleInputChange}
+                      style={{
+                        width: '100%',
+                        padding: '12px 16px',
+                        border: '1px solid #d1d5db',
+                        borderRadius: '8px',
+                        fontSize: '16px',
+                        boxSizing: 'border-box',
+                        backgroundColor: 'white',
+                        cursor: 'pointer'
+                      }}
+                    >
+                      <option value="">{pickupLocations.length === 0 ? 'No Locations Available' : 'Select a location'}</option>
+                      {pickupLocations && pickupLocations.map((location) => (
+                        <option key={location.LocationName} value={location.LocationName}>
+                          {location.LocationName} - {location.Address}
+                        </option>
+                      ))}
+                    </select>
+                  )}
+                </div>
 
                 {/* Pickup Time */}
                 <div>
@@ -838,28 +896,40 @@ export default function FoodTruckCheckout() {
 
                 <button
                   onClick={handlePlaceOrder}
+                  disabled={pickupLocations.length === 0}
                   style={{
                     width: '100%',
                     color: 'white',
-                    backgroundColor: COLOR1,
+                    backgroundColor: pickupLocations.length === 0 ? '#9ca3af' : COLOR1,
                     marginTop: '32px',
                     padding: '16px',
                     borderRadius: '12px',
                     fontWeight: 650,
                     fontSize: '20px',
                     border: 'none',
-                    cursor: 'pointer',
+                    cursor: pickupLocations.length === 0 ? 'not-allowed' : 'pointer',
                     boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1)',
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'center',
                     gap: '8px',
-                    transition: 'background-color 0.2s'
+                    transition: 'background-color 0.2s',
+                    opacity: pickupLocations.length === 0 ? 0.6 : 1
                   }}
-                  onMouseOver={(e) => e.currentTarget.style.backgroundColor = '#6b0fd4'}
-                  onMouseOut={(e) => e.currentTarget.style.backgroundColor = 'var(--color-primary)'}
+                  onMouseOver={(e) => {
+                    if (pickupLocations.length > 0) {
+                      e.currentTarget.style.backgroundColor = '#6b0fd4';
+                    }
+                  }}
+                  onMouseOut={(e) => {
+                    if (pickupLocations.length > 0) {
+                      e.currentTarget.style.backgroundColor = 'var(--color-primary)';
+                    }
+                  }}
                 >
-                  Pay & Place Order - ${grandTotal.toFixed(2)}
+                  {pickupLocations.length === 0 
+                    ? 'Not Available Today' 
+                    : `Pay & Place Order - $${grandTotal.toFixed(2)}`}
                 </button>
               </div>
             )}

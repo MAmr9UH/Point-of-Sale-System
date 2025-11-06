@@ -1,4 +1,3 @@
-import React, { useState } from 'react';
 import MenuPanel from '../components/MenuPanel';
 import SalePanel from '../components/SalePanel';
 import './Menu.css';

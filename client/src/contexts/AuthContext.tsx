@@ -111,7 +111,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const register = async (data: RegisterData) => {
         setIsLoading(true);
         try {
-            const responseData = await customerRegister(data.fname, data.lname, data.email, data.password, data.phoneNumber as string);
+            const responseData = await customerRegister(data.fname, data.lname, data.email, data.phoneNumber as string, data.password);
 
 
             // Auto-login after successful registration

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { fetchMenuEm } from '../utils/fetchMenu';
 import type { MenuItem } from '../types/MenuItem';
@@ -52,11 +52,202 @@ const CloseIcon: React.FC<React.SVGProps<SVGSVGElement>> = (props) => (
   </svg>
 );
 
+// Notification Dropdown Component
+const NotificationDropdown = ({ isOpen, onClose, bellRef }: any) => {
+  const [notifications, setNotifications] = useState<any[]>([]);
+  const [loading, setLoading] = useState(false);
+  const panelRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (isOpen) {
+      fetchNotifications();
+      markAllAsRead();
+    }
+  }, [isOpen]);
+
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (
+        panelRef.current && 
+        !panelRef.current.contains(event.target as Node) &&
+        bellRef.current &&
+        !bellRef.current.contains(event.target as Node)
+      ) {
+        onClose();
+      }
+    };
+
+    if (isOpen) {
+      document.addEventListener('mousedown', handleClickOutside);
+    }
+    
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [isOpen, onClose, bellRef]);
+
+  const fetchNotifications = async () => {
+    setLoading(true);
+    try {
+      const response = await fetch('/api/staff/notifications');
+      const data = await response.json();
+      setNotifications(data);
+    } catch (error) {
+      console.error('Error fetching notifications:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const markAllAsRead = async () => {
+    try {
+      await fetch('/api/staff/notifications/read-all', {
+        method: 'PUT'
+      });
+      
+      setNotifications(prev =>
+        prev.map(n => ({ ...n, Status: 'read' }))
+      );
+    } catch (error) {
+      console.error('Error marking all as read:', error);
+    }
+  };
+
+  const formatTimestamp = (timestamp: string) => {
+    const date = new Date(timestamp);
+    const now = new Date();
+    const diffMs = now.getTime() - date.getTime();
+    const diffMins = Math.floor(diffMs / 60000);
+    const diffHours = Math.floor(diffMs / 3600000);
+    const diffDays = Math.floor(diffMs / 86400000);
+
+    if (diffMins < 1) return 'Just now';
+    if (diffMins < 60) return `${diffMins}m ago`;
+    if (diffHours < 24) return `${diffHours}h ago`;
+    if (diffDays < 7) return `${diffDays}d ago`;
+    
+    return date.toLocaleDateString();
+  };
+
+  if (!isOpen) return null;
+
+  return (
+    <div 
+      ref={panelRef}
+      style={{
+        position: 'fixed',
+        right: '2rem',
+        top: '5rem',
+        width: '400px',
+        maxWidth: '90vw',
+        maxHeight: '500px',
+        background: '#2f2f2f',
+        borderRadius: '10px',
+        boxShadow: '0 10px 40px rgba(0,0,0,0.5)',
+        border: '1px solid #444',
+        zIndex: 1000,
+        overflow: 'hidden'
+      }}
+    >
+      {/* Header */}
+      <div style={{
+        padding: '1rem',
+        borderBottom: '1px solid #444',
+        background: '#1a1a1a'
+      }}>
+        <h3 style={{ margin: 0, fontSize: '1.1rem' }}>Notifications</h3>
+      </div>
+
+      {/* Notification List */}
+      <div style={{ maxHeight: '400px', overflowY: 'auto' }}>
+        {loading ? (
+          <div style={{ padding: '2rem', textAlign: 'center', color: '#888' }}>
+            <p>Loading notifications...</p>
+          </div>
+        ) : notifications.length === 0 ? (
+          <div style={{ padding: '2rem', textAlign: 'center', color: '#888' }}>
+            <div style={{ fontSize: '3rem', marginBottom: '0.5rem' }}>🔔</div>
+            <p style={{ margin: 0, fontWeight: 'bold' }}>No notifications</p>
+            <p style={{ margin: '0.5rem 0 0', fontSize: '0.85rem' }}>You're all caught up!</p>
+          </div>
+        ) : (
+          <div>
+            {notifications.map((notification) => (
+              <div
+                key={notification.NotificationID}
+                style={{
+                  padding: '1rem',
+                  borderBottom: '1px solid #444',
+                  background: notification.Status === 'unread' ? '#3a2f1f' : 'transparent'
+                }}
+              >
+                <div style={{ display: 'flex', gap: '0.75rem' }}>
+                  <div style={{ flex: 1 }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.25rem' }}>
+                      <span style={{ fontSize: '1.25rem' }}>⚠️</span>
+                      <span style={{ fontWeight: 'bold', fontSize: '0.9rem' }}>Low Stock Alert</span>
+                      {notification.Status === 'unread' && (
+                        <span style={{
+                          width: '8px',
+                          height: '8px',
+                          background: 'var(--color1)',
+                          borderRadius: '50%',
+                          display: 'inline-block'
+                        }}></span>
+                      )}
+                    </div>
+                    
+                    <p style={{ margin: '0.5rem 0', fontSize: '0.9rem', color: '#ddd' }}>
+                      {notification.Message}
+                    </p>
+                    
+                    <div style={{ fontSize: '0.75rem', color: '#888' }}>
+                      {formatTimestamp(notification.CreatedAt)}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+
+      {/* Footer */}
+      {notifications.length > 0 && (
+        <div style={{
+          padding: '0.75rem',
+          background: '#1a1a1a',
+          borderTop: '1px solid #444',
+          textAlign: 'center'
+        }}>
+          <button 
+            onClick={fetchNotifications}
+            style={{
+              background: 'none',
+              border: 'none',
+              color: 'var(--color1)',
+              cursor: 'pointer',
+              fontSize: '0.85rem'
+            }}
+          >
+            Refresh notifications
+          </button>
+        </div>
+      )}
+    </div>
+  );
+};
+
 const Employee_Manager: React.FC = () => {
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState<'menu' | 'utilities' | 'inventory'>('menu');
   
   const { addToast } = useToaster();
+
+  // Notification states
+  const [isNotificationOpen, setIsNotificationOpen] = useState(false);
+  const [unreadCount, setUnreadCount] = useState(0);
+  const bellRef = useRef<HTMLButtonElement>(null);
 
   // ---------------- MENU ITEMS LIST ----------------
   const [menuItems, setMenuItems] = useState<MenuItem[]>([]);
@@ -115,7 +306,25 @@ const Employee_Manager: React.FC = () => {
       .then(res => res.json())
       .then(data => setInventoryList(data))
       .catch(err => console.error('❌ Inventory fetch error:', err));
+
+    // Fetch initial unread count
+    fetchUnreadCount();
+    
+    // Poll for new notifications every 30 seconds
+    const interval = setInterval(fetchUnreadCount, 30000);
+    
+    return () => clearInterval(interval);
   }, [activeTab]);
+
+  const fetchUnreadCount = async () => {
+    try {
+      const response = await fetch('/api/staff/notifications/unread-count');
+      const data = await response.json();
+      setUnreadCount(data.count);
+    } catch (error) {
+      console.error('Error fetching unread count:', error);
+    }
+  };
 
   // ---------------- LOAD MENU ITEMS ----------------
   const loadMenuItems = async () => {
@@ -283,6 +492,67 @@ const Employee_Manager: React.FC = () => {
   // ---------------- COMPONENT UI ----------------
   return (
     <div className="employee-manager-container">
+      {/* Notification Bell - Fixed Top Right */}
+      <div style={{ position: 'fixed', top: '1.5rem', right: '2rem', zIndex: 1001 }}>
+        <button
+          ref={bellRef}
+          onClick={() => setIsNotificationOpen(!isNotificationOpen)}
+          style={{
+            position: 'relative',
+            background: '#2f2f2f',
+            border: '2px solid #444',
+            borderRadius: '50%',
+            width: '50px',
+            height: '50px',
+            cursor: 'pointer',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            transition: 'all 0.2s',
+            boxShadow: '0 4px 12px rgba(0,0,0,0.3)'
+          }}
+          onMouseEnter={(e) => {
+            e.currentTarget.style.background = '#3a3a3a';
+            e.currentTarget.style.borderColor = 'var(--color1)';
+          }}
+          onMouseLeave={(e) => {
+            e.currentTarget.style.background = '#2f2f2f';
+            e.currentTarget.style.borderColor = '#444';
+          }}
+        >
+          <svg width="24" height="24" fill="none" stroke="white" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
+          </svg>
+          
+          {unreadCount > 0 && (
+            <span style={{
+              position: 'absolute',
+              top: '-5px',
+              right: '-5px',
+              background: '#ff4444',
+              color: 'white',
+              borderRadius: '50%',
+              width: '24px',
+              height: '24px',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              fontSize: '0.75rem',
+              fontWeight: 'bold',
+              border: '2px solid #1a1a1a'
+            }}>
+              {unreadCount > 99 ? '99+' : unreadCount}
+            </span>
+          )}
+        </button>
+
+        <NotificationDropdown 
+          isOpen={isNotificationOpen} 
+          onClose={() => setIsNotificationOpen(false)}
+          bellRef={bellRef}
+        />
+      </div>
+
       {/* Sidebar Navigation */}
       <aside className="sidebar">
         <div className="sidebar-header">

@@ -44,8 +44,7 @@ class Customer {
 
         // PhoneNumber validation - optional, exactly 10 digits
         if (this.phoneNumber !== null && this.phoneNumber !== undefined && this.phoneNumber !== '') {
-            const phoneRegex = /^\d{10}$/;
-            if (!phoneRegex.test(this.phoneNumber)) {
+            if (this.phoneNumber.trim().length !== 10) {
                 errors.push('Phone number must be exactly 10 digits');
             }
         }
