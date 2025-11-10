@@ -1,0 +1,4 @@
+{
+  "appService.defaultWebAppToDeploy": "/subscriptions/a94db771-5ead-47a1-bed6-70e7618dc595/resourceGroups/cosc3380/providers/Microsoft.Web/sites/team4truckpos",
+  "appService.deploySubpath": "."
+}
