@@ -18,11 +18,19 @@ export interface IngredientCustomization {
 const CustomizationModal = ({ item, isOpen, onClose, onAddToCart }: CustomizationModalProps) => {
     const [customizations, setCustomizations] = useState<Map<number, IngredientCustomization>>(new Map());
     const [selectedSubstitutions, setSelectedSubstitutions] = useState<Map<string, number>>(new Map());
+    const [isClosing, setIsClosing] = useState(false);
+    const [isVisible, setIsVisible] = useState(false);
 
     useEffect(() => {
         if (isOpen && item) {
-            // Reset customizations when modal opens
+            // Reset states
+            setIsClosing(false);
             setCustomizations(new Map());
+            
+            // Trigger opening animation
+            requestAnimationFrame(() => {
+                setIsVisible(true);
+            });
             
             // Set default selections for substitutable categories
             const defaultSubstitutions = new Map<string, number>();
@@ -36,6 +44,8 @@ const CustomizationModal = ({ item, isOpen, onClose, onAddToCart }: Customizatio
             });
             
             setSelectedSubstitutions(defaultSubstitutions);
+        } else {
+            setIsVisible(false);
         }
     }, [isOpen, item]);
 
@@ -142,18 +152,43 @@ const CustomizationModal = ({ item, isOpen, onClose, onAddToCart }: Customizatio
 
     const handleAddToCart = () => {
         onAddToCart(item, Array.from(customizations.values()));
-        onClose();
+        setIsClosing(true);
+        setTimeout(() => {
+            onClose();
+        }, 300); // Match animation duration
+    };
+
+    const handleClose = () => {
+        setIsClosing(true);
+        setTimeout(() => {
+            onClose();
+        }, 300);
     };
 
     const categorizedIngredients = groupByCategory(item.Ingredients);
     const hasCustomizations = Object.keys(categorizedIngredients).length > 0;
 
     return (
-        <div className="customization-modal-overlay" onClick={onClose}>
-            <div className="customization-modal" onClick={(e) => e.stopPropagation()}>
+        <div 
+            className="customization-modal-overlay" 
+            onClick={handleClose}
+            style={{
+                opacity: isVisible && !isClosing ? 1 : 0,
+                transition: 'opacity 0.3s ease-out'
+            }}
+        >
+            <div 
+                className="customization-modal" 
+                onClick={(e) => e.stopPropagation()}
+                style={{
+                    transform: isVisible && !isClosing ? 'translateY(0) scale(1)' : 'translateY(20px) scale(0.95)',
+                    opacity: isVisible && !isClosing ? 1 : 0,
+                    transition: 'all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1)'
+                }}
+            >
                 <div className="customization-header">
                     <h2>{item.Name}</h2>
-                    <button className="close-btn" onClick={onClose}>&times;</button>
+                    <button className="close-btn" onClick={handleClose}>&times;</button>
                 </div>
                 
                 <div className="customization-body">
@@ -252,7 +287,7 @@ const CustomizationModal = ({ item, isOpen, onClose, onAddToCart }: Customizatio
                 </div>
                 
                 <div className="customization-footer">
-                    <button className="cancel-btn" onClick={onClose}>Cancel</button>
+                    <button className="cancel-btn" onClick={handleClose}>Cancel</button>
                     <button className="add-to-cart-btn" onClick={handleAddToCart}>
                         Add to Cart - ${item.Price}
                     </button>

@@ -8,11 +8,16 @@ import MenuUserPage from './pages/MenuUserPage.tsx';
 import ManagerDashboard from './pages/ManagerDashboard.tsx';
 import EditLandingPage from './pages/EditLandingPage.tsx';
 import ReportsPage from "./pages/ReportsPage.tsx"
+import LoadingSpinner from './components/LoadingSpinner.tsx';
 
 import { useAuth } from './contexts/AuthContext.tsx';
 
 const ProtectedRoute = ({ children }: any) => {
-  const { user } = useAuth();
+  const { user, isLoading } = useAuth();
+  
+  if (isLoading) {
+    return <LoadingSpinner message="Verifying authentication..." />;
+  }
   
   if (!user) {
     return <Navigate to="/login" replace />;
@@ -21,7 +26,11 @@ const ProtectedRoute = ({ children }: any) => {
 };
 
 const ManagerProtectedRoute = ({ children }: any) => {
-  const { user, userType } = useAuth();
+  const { user, userType, isLoading } = useAuth();
+
+  if (isLoading) {
+    return <LoadingSpinner message="Verifying credentials..." />;
+  }
 
   if (!user || userType !== 'manager') {
     return <Navigate to="/" replace />;
@@ -30,7 +39,11 @@ const ManagerProtectedRoute = ({ children }: any) => {
 };
 
 const LoginRoute = ( { registering = false } : { registering?: boolean } ) => {
-  const { user } = useAuth();
+  const { user, isLoading } = useAuth();
+  
+  if (isLoading) {
+    return <LoadingSpinner />;
+  }
   
   if (user) {
     return <Navigate to="/" replace />;

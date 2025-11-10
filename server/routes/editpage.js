@@ -133,8 +133,8 @@ async function handleFileUpload(req, res) {
         }));
     }
 }
-import { db } from '../db/connection.js';
-import { getCurrentActiveLocations } from '../model/ActiveLocation.js';
+
+import { editPage } from '../model/Truck.js';
 
 export async function handleEditPage(req, res) {
     const { url, method } = req;
@@ -152,12 +152,40 @@ export async function handleEditPage(req, res) {
 
     if (url === '/api/editpage/upload') {
         await handleFileUpload(req, res);
-    } else if (url === '/api/editpage/content' && method === 'GET') {
+    } else if (url === '/api/editpage/' && method === 'POST') {
         
+        let body = '';
+        req.on('data', chunk => {
+            body += chunk.toString();
+        });
+        req.on('end', async () => {
+            try {
+                const data = JSON.parse(body);
 
-    } else {
-        res.statusCode = 404;
-        res.setHeader('Content-Type', 'application/json');
-        res.end(JSON.stringify({ error: 'Not found' }));
+                // Map frontend field names to database column names
+                const mappedData = {
+                    FoodTruckName: data.title || null,
+                    BackgroundURL: data.backgroundImageUrl || null,
+                    Tagline: data.aboutText || null
+                };
+
+                await editPage(mappedData);
+                res.statusCode = 200;
+                res.setHeader('Content-Type', 'application/json');
+                res.end(JSON.stringify({ 
+                    success: true,
+                    message: 'Landing page updated successfully!'
+                }));
+            } catch (error) {
+                console.error('Error updating landing page:', error);
+                res.statusCode = 500;
+                res.setHeader('Content-Type', 'application/json');
+                res.end(JSON.stringify({ 
+                    success: false,
+                    message: error.message || 'Failed to update landing page'
+                }));
+                return;
+            }
+        });
     }
 }

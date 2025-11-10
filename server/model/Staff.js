@@ -234,3 +234,45 @@ export const findStaffByEmail = async (email) => {
     const [results] = await db.query(query, [email]);
     return results.length > 0 ? Staff.fromDB(results[0]) : null;
 }
+
+export const getAllEmployees = async () => {
+    const query = `SELECT * FROM Staff WHERE Role = 'employee' ORDER BY Lname, Fname;`;
+    const [results] = await db.query(query);
+    return results.map(row => Staff.fromDB(row));
+}
+
+export const getEmployeeShifts = async (employeeId) => {
+    console.log(employeeId)
+    const query = `
+        SELECT A.*, AL.LocationName
+        FROM Assigns AS A
+        JOIN Staff AS S ON A.StaffID = S.StaffID
+        JOIN Active_Location AS AL ON A.ActiveLocationID = AL.ActiveLocationID
+        WHERE S.StaffID = ?
+        ORDER BY A.ScheduleStart DESC;
+    `;
+    const [results] = await db.query(query, [employeeId]);
+
+
+
+    return results.map(row => ({
+        assignId: row.AssignID,
+        activeLocationId: row.ActiveLocationID,
+        staffId: row.StaffID,
+        scheduleStart: row.ScheduleStart,
+        scheduleEnd: row.ScheduleEnd,
+        locationName: row.LocationName,
+        shiftId: row.ShiftID,
+        createdAt: row.CreatedAt,
+        lastUpdatedAt: row.LastUpdatedAt
+    }));
+}
+
+export const assignStaffToShift = async (employeeId, locationId, shiftStart, shiftEnd) => {
+    const query = `
+        INSERT INTO Assigns (ActiveLocationID, StaffID, ScheduleStart, ScheduleEnd)
+        VALUES (?, ?, ?, ?);
+    `;
+    const [result] = await db.query(query, [locationId, employeeId, shiftStart, shiftEnd]);
+    return result.insertId;
+}

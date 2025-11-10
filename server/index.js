@@ -11,6 +11,10 @@ import { handleInventoryRoutes } from './routes/inventoryRoutes.js';
 import { handleUtilityRoutes } from './routes/utilityRoutes.js';
 import { handleEditPage } from './routes/editpage.js';
 import { handleNotificationRoutes } from './routes/notifications.js';
+import { handleIngredient } from './routes/ingredient.js';
+import { handleEmployee } from './routes/employee.js';
+import { handleShifts } from './routes/shifts.js';
+
 
 import './db/connection.js';
 
@@ -124,7 +128,13 @@ const server = http.createServer(async (req, res) => {
         handleUtilityRoutes(req, res);
     } else if (url.startsWith('/api/reports')) {
         handleReports(req, res);
-    } 
+    } else if (url.startsWith('/api/ingredients')) {
+        handleIngredient(req, res);
+    } else if (url.startsWith('/api/employees')) {
+        handleEmployee(req, res);
+    } else if (url.startsWith('/api/shifts')) {
+        handleShifts(req, res);
+    }
     // Serve React app
     else {
         const publicDir = path.join(__dirname, 'public');

@@ -18,7 +18,7 @@ const MenuPanel = () => {
     const { addToast } = useToaster();
 
     useEffect(() => {
-        fetchMenuUtils.fetchMenuEm().then(items => {
+        fetchMenuUtils.fetchMenuCustomer().then(items => {
             setMenuItems(items);
         });
     }, []);

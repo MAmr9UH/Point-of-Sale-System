@@ -1,77 +1,69 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import './EditLandingPage.css';
 import { TopNav } from '../components/TopNav';
-import { uploadFile } from '../utils/uploadFile';
+import { useWelcomePage } from '../contexts/WelcomePageContext';
+import { updateLandingPage } from '../utils/editLandingPage';
 
 export default function EditLandingPage() {
+  const { pageData, isLoading: isLoadingData } = useWelcomePage();
+  
   // State for editable content
-  const [title, setTitle] = useState('Food Truck POS');
-  const [subtitle, setSubtitle] = useState('🚚 Fresh • Fast • Friendly');
-  const [location, setLocation] = useState('Houston, Texas');
-  const [hours, setHours] = useState('Tue–Sun • 11:00 AM – 8:00 PM');
-  const [aboutText, setAboutText] = useState('We are CS students trying to survive Professor Uma class...');
-  const [footerText, setFooterText] = useState('TEAM 4');
-  const [backgroundImage, setBackgroundImage] = useState('');
-  const [isUploading, setIsUploading] = useState(false);
-  const [uploadError, setUploadError] = useState('');
+  const [title, setTitle] = useState('');
+  const [aboutText, setAboutText] = useState('');
+  const [backgroundImageUrl, setBackgroundImageUrl] = useState('');
+  const [isSaving, setIsSaving] = useState(false);
+  const [saveMessage, setSaveMessage] = useState('');
 
-  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-
-    // Validate file type
-    if (!file.type.startsWith('image/')) {
-      setUploadError('Please select an image file');
-      return;
+  // Hydrate form with welcome page data
+  useEffect(() => {
+    if (pageData) {
+      setTitle(pageData.FoodTruckName || '');
+      setAboutText(pageData.Tagline || ''); // Tagline is the About Us text
+      setBackgroundImageUrl(pageData.BackgroundURL || '');
     }
+  }, [pageData]);
 
-    // Validate file size (max 5MB)
-    if (file.size > 5 * 1024 * 1024) {
-      setUploadError('Image size must be less than 5MB');
-      return;
-    }
-
-    setIsUploading(true);
-    setUploadError('');
-
-    try {
-      const imageUrl = await uploadFile(file);
-      setBackgroundImage(imageUrl);
-      console.log('Image uploaded successfully:', imageUrl);
-    } catch (error) {
-      console.error('Upload error:', error);
-      setUploadError('Failed to upload image. Please try again.');
-    } finally {
-      setIsUploading(false);
-    }
-  };
-
-
-  const handleSave = () => {
-    const data = {
+  const handleSave = async () => {
+    setIsSaving(true);
+    setSaveMessage('');
+    
+    const result = await updateLandingPage({
       title,
-      subtitle,
-      location,
-      hours,
       aboutText,
-      footerText,
-      backgroundImage
-    };
-    console.log('Saving welcome page data:', data);
-    // TODO: Add API call to save data to backend
-    alert('Welcome page settings saved! (Note: Backend integration pending)');
+      backgroundImageUrl
+    });
+    
+    if (result.success) {
+      setSaveMessage('✓ ' + result.message);
+      setTimeout(() => setSaveMessage(''), 3000);
+    } else {
+      setSaveMessage('✗ ' + result.message);
+    }
+    
+    setIsSaving(false);
   };
 
   const handleReset = () => {
-    setTitle('Food Truck POS');
-    setSubtitle('🚚 Fresh • Fast • Friendly');
-    setLocation('Houston, Texas');
-    setHours('Tue–Sun • 11:00 AM – 8:00 PM');
-    setAboutText('We are CS students trying to survive Professor Uma class...');
-    setFooterText('TEAM 4');
-    setBackgroundImage('');
-    setUploadError('');
+    if (pageData) {
+      setTitle(pageData.FoodTruckName || '');
+      setAboutText(pageData.Tagline || ''); // Tagline is the About Us text
+      setBackgroundImageUrl(pageData.BackgroundURL || '');
+      setSaveMessage('');
+    }
   };
+
+  if (isLoadingData) {
+    return (
+      <div className="edit-landing-container">
+        <TopNav />
+        <div className="edit-landing-content">
+          <div className="loading-message">
+            <p>Loading welcome page data...</p>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="edit-landing-container">
@@ -89,53 +81,44 @@ export default function EditLandingPage() {
             <div className="editor-header">
               <h2>✏️ Editor</h2>
               <div className="editor-actions">
-                <button className="btn-reset" onClick={handleReset}>
+                <button className="btn-reset" onClick={handleReset} disabled={isSaving}>
                   Reset
                 </button>
-                <button className="btn-save" onClick={handleSave}>
-                  Save Changes
+                <button className="btn-save" onClick={handleSave} disabled={isSaving}>
+                  {isSaving ? 'Saving...' : 'Save Changes'}
                 </button>
               </div>
             </div>
 
             <div className="editor-form">
-              {/* Background Image Section */}
+              {/* Background Image URL Section */}
               <div className="form-section">
                 <h3>Background Image</h3>
                 <div className="form-group">
-                  <label htmlFor="backgroundImage">Upload Background Image</label>
-                  <div className="image-upload-container">
-                    <input
-                      id="backgroundImage"
-                      type="file"
-                      accept="image/*"
-                      onChange={handleImageUpload}
-                      className="file-input"
-                    />
-                    {isUploading && <p className="upload-status">Uploading...</p>}
-                    {uploadError && <p className="upload-error">{uploadError}</p>}
-                    {backgroundImage && (
-                      <div className="image-preview-box">
-                        <img src={backgroundImage} alt="Background preview" />
-                        <button 
-                          className="btn-remove-image"
-                          onClick={() => setBackgroundImage('')}
-                          type="button"
-                        >
-                          Remove Image
-                        </button>
-                      </div>
-                    )}
-                  </div>
-                  <p className="field-hint">Recommended: 1920x1080px or larger. Max size: 5MB</p>
+                  <label htmlFor="backgroundImageUrl">Background Image URL</label>
+                  <input
+                    id="backgroundImageUrl"
+                    type="url"
+                    value={backgroundImageUrl}
+                    onChange={(e) => setBackgroundImageUrl(e.target.value)}
+                    placeholder="https://example.com/image.jpg"
+                  />
+                  <p className="field-hint">Enter a direct URL to an image. Recommended: 1920x1080px or larger.</p>
+                  {backgroundImageUrl && (
+                    <div className="image-preview-box">
+                      <img src={backgroundImageUrl} alt="Background preview" onError={(e) => {
+                        e.currentTarget.style.display = 'none';
+                      }} />
+                    </div>
+                  )}
                 </div>
               </div>
 
               {/* Title Section */}
               <div className="form-section">
-                <h3>Header</h3>
+                <h3>Main Title</h3>
                 <div className="form-group">
-                  <label htmlFor="title">Main Title</label>
+                  <label htmlFor="title">Food Truck Name</label>
                   <input
                     id="title"
                     type="text"
@@ -143,41 +126,7 @@ export default function EditLandingPage() {
                     onChange={(e) => setTitle(e.target.value)}
                     placeholder="Food Truck POS"
                   />
-                </div>
-                <div className="form-group">
-                  <label htmlFor="subtitle">Subtitle</label>
-                  <input
-                    id="subtitle"
-                    type="text"
-                    value={subtitle}
-                    onChange={(e) => setSubtitle(e.target.value)}
-                    placeholder="🚚 Fresh • Fast • Friendly"
-                  />
-                </div>
-              </div>
-
-              {/* Location Section */}
-              <div className="form-section">
-                <h3>Location & Hours</h3>
-                <div className="form-group">
-                  <label htmlFor="location">Location</label>
-                  <input
-                    id="location"
-                    type="text"
-                    value={location}
-                    onChange={(e) => setLocation(e.target.value)}
-                    placeholder="Houston, Texas"
-                  />
-                </div>
-                <div className="form-group">
-                  <label htmlFor="hours">Operating Hours</label>
-                  <input
-                    id="hours"
-                    type="text"
-                    value={hours}
-                    onChange={(e) => setHours(e.target.value)}
-                    placeholder="Tue–Sun • 11:00 AM – 8:00 PM"
-                  />
+                  <p className="field-hint">This is the main title displayed on your welcome page.</p>
                 </div>
               </div>
 
@@ -191,25 +140,18 @@ export default function EditLandingPage() {
                     value={aboutText}
                     onChange={(e) => setAboutText(e.target.value)}
                     placeholder="Tell visitors about your food truck..."
-                    rows={4}
+                    rows={6}
                   />
+                  <p className="field-hint">Describe your food truck, cuisine, or story.</p>
                 </div>
               </div>
 
-              {/* Footer Section */}
-              <div className="form-section">
-                <h3>Footer</h3>
-                <div className="form-group">
-                  <label htmlFor="footer">Footer Text</label>
-                  <input
-                    id="footer"
-                    type="text"
-                    value={footerText}
-                    onChange={(e) => setFooterText(e.target.value)}
-                    placeholder="TEAM 4"
-                  />
+              {/* Save Message */}
+              {saveMessage && (
+                <div className={`save-message ${saveMessage.includes('✓') ? 'success' : 'error'}`}>
+                  {saveMessage}
                 </div>
-              </div>
+              )}
             </div>
           </div>
 
@@ -221,45 +163,54 @@ export default function EditLandingPage() {
             
             <div className="preview-content">
               <div 
-                className="welcome-preview-container"
-                style={backgroundImage ? {
-                  backgroundImage: `url(${backgroundImage})`,
+                className="welcome-container"
+                style={backgroundImageUrl ? {
+                  backgroundImage: `url(${backgroundImageUrl})`,
                   backgroundSize: 'cover',
                   backgroundPosition: 'center',
                   backgroundRepeat: 'no-repeat'
                 } : {}}
               >
-                <div className="welcome-preview-card">
-                  <header className="welcome-preview-header">
-                    <h1 className="welcome-preview-title">{title}</h1>
-                    <p className="welcome-preview-subtitle">{subtitle}</p>
-                  </header>
+                <div className="welcome-header-outside">
+                  <h1 className="welcome-title-outside">{title || 'Food Truck Name'}</h1>
+                </div>
 
-                  <main className="welcome-preview-main">
-                    <div className="welcome-preview-section">
-                      <div className="welcome-preview-section-header">
-                        <svg className="welcome-preview-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor">
+                <div className="welcome-card">
+                  <main className="welcome-main">
+                    <div className="welcome-section">
+                      <div className="welcome-section-header">
+                        <svg className="welcome-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor">
                           <path d="M12 0C7.31 0 3.5 3.81 3.5 8.5c0 5.25 8.5 15.5 8.5 15.5s8.5-10.25 8.5-15.5C20.5 3.81 16.69 0 12 0zm0 11.5a3 3 0 110-6 3 3 0 010 6z" />
                         </svg>
                         <h2>Location & Hours</h2>
                       </div>
-                      <p>{location}</p>
-                      <p>{hours}</p>
+                      {pageData?.ActiveLocations && pageData.ActiveLocations.length > 0 ? (
+                        pageData.ActiveLocations.map((loc, index) => (
+                          <div key={index} className="location-entry">
+                            <p className="location-name">{loc.LocationName}</p>
+                            {loc.DaysOfWeek && loc.DaysOfWeek.length > 0 && (
+                              <p className="location-day">{loc.DaysOfWeek.join(', ')} - 11:00 AM - 6:00 PM</p>
+                            )}
+                          </div>
+                        ))
+                      ) : (
+                        <p className="no-locations">No active locations available.</p>
+                      )}
                     </div>
 
-                    <div className="welcome-preview-section">
-                      <div className="welcome-preview-section-header">
-                        <svg className="welcome-preview-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor">
+                    <div className="welcome-section">
+                      <div className="welcome-section-header">
+                        <svg className="welcome-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor">
                           <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8zm-1-13h2v6h-2zm0 8h2v2h-2z" />
                         </svg>
                         <h2>About Us</h2>
                       </div>
-                      <p>{aboutText}</p>
+                      <p>{aboutText || 'Tell visitors about your food truck...'}</p>
                     </div>
                   </main>
                 </div>
-                <footer className="welcome-preview-footer">
-                  © {new Date().getFullYear()} {footerText}
+                <footer className="welcome-footer">
+                  © {new Date().getFullYear()} TEAM 4
                 </footer>
               </div>
             </div>

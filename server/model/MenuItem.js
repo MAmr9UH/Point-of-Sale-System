@@ -150,13 +150,13 @@ class MenuItem {
 
 import { db } from '../db/connection.js';
 
-export const getAllMenuItems = async () => {
+export const getAllMenuItems = async (availableOnly = true) => {
     const query = `
         SELECT *, MI.name as MIName, MI.MenuItemID as MIID, I.name as IName
         FROM pos.Menu_Item as MI LEFT JOIN pos.Used_For as UF on MI.MenuItemID = UF.MenuItemID
         LEFT JOIN pos.Ingredient as I ON UF.IngredientID = I.IngredientID
-        WHERE Availability = TRUE;
-    `;
+        ${availableOnly ? "WHERE MI.Availability = TRUE" : ""}
+        `;
     const [results] = await db.query(query);
     const items = results;
     let final = {};
@@ -244,6 +244,7 @@ export const updateMenuItem = async (menuItemId, updateData) => {
     if (!menuItemId) {
         throw new Error('MenuItemID is required for update');
     }
+    console.log(updateData);
 
     const [ res ] = await db.query('SELECT * FROM Menu_Item WHERE MenuItemID = ?', [menuItemId]);
     const oldmenuItem = res.length > 0 ? MenuItem.fromDB(res[0]) : null;
@@ -254,13 +255,13 @@ export const updateMenuItem = async (menuItemId, updateData) => {
 
     let updatedMenuItem = { ...oldmenuItem };
 
-    updatedMenuItem.MIID = menuItemId;
-    updatedMenuItem.availability = updateData.available;
-    updatedMenuItem.category = updateData.category;
-    updatedMenuItem.description = updateData.description;
-    updatedMenuItem.name = updateData.name;
-    updatedMenuItem.price = updateData.price;
 
+    updatedMenuItem.MIID = menuItemId;
+    updatedMenuItem.availability = updateData.Availability == 1 ? true : false;
+    updatedMenuItem.category = updateData.Category;
+    updatedMenuItem.description = updateData.Description;
+    updatedMenuItem.name = updateData.Name;
+    updatedMenuItem.price = updateData.Price;
     const menuItemInstance = new MenuItem(updatedMenuItem);
 
     console.log('New Menu Item:', updatedMenuItem);
@@ -285,6 +286,18 @@ export const updateMenuItem = async (menuItemId, updateData) => {
         menuItemId
     ]);
 
+    return results;
+}
+
+export const deleteMenuItem = async (menuItemId) => {
+    if (!menuItemId) {
+        throw new Error('MenuItemID is required for deletion');
+    }
+    const query = `
+        DELETE FROM Menu_Item
+        WHERE MenuItemID = ?;
+    `;
+    const [results] = await db.query(query, [menuItemId]);
     return results;
 }
 

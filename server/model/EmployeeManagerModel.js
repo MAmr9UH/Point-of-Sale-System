@@ -55,34 +55,36 @@ export async function fetchMenuItems() {
  * @returns {Promise<Object>} Newly created menu item data.
  */
 export async function createMenuItem(payload) {
-  const { name, description, price, category, available } = payload;
+  const { Name, Description, Price, Category, Availability } = payload;
+
+  console.log(payload)
 
   const categoryMap = {
-    food: 'entre',
-    entree: 'entre',
+    food: 'entree',
+    entree: 'entree',
     drink: 'beverage',
     beverage: 'beverage',
     dessert: 'dessert',
   };
 
   const normalizedCategory =
-    (category && categoryMap[category.toLowerCase()]) || category || 'entre';
+    (Category && categoryMap[Category.toLowerCase()]) || Category || 'entree';
 
   const [result] = await db.execute(
     `
       INSERT INTO Menu_Item (Name, Description, Price, Category, Availability)
       VALUES (?, ?, ?, ?, ?)
     `,
-    [name, description, price, normalizedCategory, available ? 1 : 0]
+    [Name, Description, Price, normalizedCategory, Availability ? 1 : 0]
   );
 
   return {
     id: result.insertId,
-    name,
-    description,
-    price,
+    name: Name,
+    description: Description,
+    price: Price,
     category: normalizedCategory,
-    availability: Boolean(available),
+    availability: Boolean(Availability),
   };
 }
 

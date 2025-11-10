@@ -1,5 +1,5 @@
 
-import { getAllMenuItems, updateMenuItem } from "../model/MenuItem.js";
+import { getAllMenuItems, updateMenuItem, deleteMenuItem } from "../model/MenuItem.js";
 
 import { createMenuItem } from "../model/EmployeeManagerModel.js";
 
@@ -9,7 +9,12 @@ export const handleMenu = async (req, res) => {
     if (method === 'GET' && url === '/api/menu/items') {
         res.statusCode = 200;
         res.setHeader('Content-Type', 'application/json');
-        const menuItems = await getAllMenuItems();
+        const menuItems = await getAllMenuItems(false);
+        res.end(JSON.stringify(menuItems));
+    } else if (method === 'GET' && url === '/api/menu/items/available') {
+        res.statusCode = 200;
+        res.setHeader('Content-Type', 'application/json');
+        const menuItems = await getAllMenuItems(true);
         res.end(JSON.stringify(menuItems));
     } else if (method === 'POST' && url === '/api/menu/updateItem/') {
         let body = '';
@@ -21,9 +26,9 @@ export const handleMenu = async (req, res) => {
         req.on('end', async () => {
             try {
                 const payload = JSON.parse(body);
-
-                if (payload.id) {
-                    const updatedItem = await updateMenuItem(payload.id, payload);
+                
+                if (payload.MenuItemID) {
+                    const updatedItem = await updateMenuItem(payload.MenuItemID, payload);
                     res.statusCode = 200;
                     res.setHeader('Content-Type', 'application/json');
                     res.end(JSON.stringify({ message: "Menu item updated successfully", item: updatedItem }));
@@ -41,6 +46,21 @@ export const handleMenu = async (req, res) => {
         });
 
         return;
+    } else if (method === 'DELETE' && url.startsWith('/api/menu/')) {
+        const id = url.split('/').pop();
+
+        try {
+            await deleteMenuItem(id);
+            res.statusCode = 200;
+            res.setHeader('Content-Type', 'application/json');
+            res.end(JSON.stringify({ message: `Menu item with ID ${id} deleted successfully` }));
+        } catch (error) {
+            res.statusCode = 500;
+            res.setHeader('Content-Type', 'application/json');
+            res.end(JSON.stringify({ error: "Failed to delete menu item", details: error.message }));
+            return;
+        }
+
     } else if (method === 'GET' && url === '/api/menu/viewOrders') {
         res.statusCode = 200;
         res.setHeader('Content-Type', 'application/json');

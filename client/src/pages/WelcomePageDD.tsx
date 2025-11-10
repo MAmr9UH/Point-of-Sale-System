@@ -36,11 +36,12 @@ export default function WelcomePageDD() {
   return (
     <div className="welcome-container" style={{ backgroundImage: `url(${pageData?.BackgroundURL})` }}>
        <TopNav />
+       
+      <header className="welcome-header-outside fade-in">
+        <h1 className="welcome-title-outside">{pageData?.FoodTruckName || "Default Name"}</h1>
+      </header>
+       
       <div className="welcome-card slide-in">
-        <header className="welcome-header fade-in">
-          <h1 className="welcome-title">{pageData?.FoodTruckName || "Default Name"}</h1>
-        </header>
-
         <main className="welcome-main">
           <div className="welcome-section fade-in delay-1">
             <div className="welcome-section-header">

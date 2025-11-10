@@ -13,6 +13,21 @@ export const fetchMenuEm = async () => {
     }
 };
 
+export const fetchMenuCustomer = async () => {
+    try {
+        const response = await fetch('/api/menu/items/available');
+        if (!response.ok) {
+            throw new Error('Network response was not ok');
+        }
+        const data = await response.json();
+        console.log('Fetched menu items:', data);
+        return data;
+    } catch (error) {
+        console.error('Error fetching menu items:', error);
+        throw error;
+    }
+};
+
 export const updateMenuItem = async (itemData: any) => {    
     try {
         const response = await fetch(`/api/menu/updateItem/`, {

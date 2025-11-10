@@ -2,8 +2,12 @@ import { createContext, useContext, useState, useEffect } from 'react';
 import type { ReactNode } from 'react';
 import { fetchWelcomePage } from '../utils/fetchWelcomePage';
 
-interface ActiveLocation {
+export interface ActiveLocation {
+  ActiveLocationID?: number;
   LocationName: string;
+  Address: string;
+  BeginOperationOn: string;
+  EndOperationOn?: string;
   DaysOfWeek: string[];
 }
 
@@ -34,6 +38,9 @@ export function WelcomePageProvider({ children }: { children: ReactNode }) {
       setIsLoading(true);
       setError(null);
       const data = await fetchWelcomePage();
+
+      console.log(pageData)
+
       setPageData(data);
     } catch (err) {
       setError(err instanceof Error ? err : new Error('Failed to fetch welcome page data'));

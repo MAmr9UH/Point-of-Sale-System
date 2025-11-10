@@ -5,13 +5,17 @@
   display: flex;
   flex-direction: column;
   align-items: center;
+  justify-content: center;
   background-color: #f0f2f5;
   background-size: cover;
   background-position: center;
   background-repeat: no-repeat;
-  padding-top: 80px; /* Space for TopNav */
+  padding: 80px 0 0 0;
   font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
   color: #333;
+  overflow: hidden;
+  position: relative;
+  box-sizing: border-box;
 }
 
 /* Keyframe Animations */
@@ -103,27 +107,52 @@
 /* Info Card */
 .welcome-card {
   background: #ffffff;
-  padding: 2.5rem;
+  padding: 1rem;
   border-radius: 12px;
   box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
   width: 90%;
-  max-width: 650px;
+  max-width: 600px;
+  max-height: calc(100vh - 280px);
+  overflow-y: auto;
   text-align: center;
   display: flex;
   flex-direction: column;
-  gap: 2rem;
+  gap: 1rem;
+  box-sizing: border-box;
 }
 
-.welcome-header {
-  border-bottom: 1px solid #e5e7eb;
-  padding-bottom: 1.5rem;
+/* Title Outside Card */
+.welcome-header-outside {
+  text-align: center;
+  margin-bottom: 0.75rem;
+  z-index: 10;
+  flex-shrink: 0;
 }
 
-.welcome-title {
-  font-size: 2.75rem;
-  font-weight: 700;
-  color: #1e40af; /* Deeper blue */
+.welcome-title-outside {
+  font-size: 3rem;
+  font-weight: 900;
+  background: linear-gradient(135deg, #1e40af 0%, #3b82f6 50%, #60a5fa 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
   margin: 0;
+  text-shadow: 0 4px 20px rgba(30, 64, 175, 0.3);
+  animation: fadeInDown 0.8s ease-out;
+  letter-spacing: -1px;
+  filter: drop-shadow(0 0 30px rgba(59, 130, 246, 0.5));
+  line-height: 1.1;
+}
+
+@keyframes fadeInDown {
+  from {
+    opacity: 0;
+    transform: translateY(-30px) scale(0.9);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
 }
 
 .welcome-subtitle {
@@ -135,7 +164,7 @@
 .welcome-main {
   display: flex;
   flex-direction: column;
-  gap: 2rem;
+  gap: 1rem;
 }
 
 .welcome-section {
@@ -145,44 +174,49 @@
 .welcome-section-header {
   display: flex;
   align-items: center;
-  gap: 0.75rem;
-  margin-bottom: 1rem;
+  gap: 0.5rem;
+  margin-bottom: 0.5rem;
 }
 
 .welcome-icon {
-  width: 24px;
-  height: 24px;
+  width: 18px;
+  height: 18px;
   color: #3b82f6;
+  flex-shrink: 0;
 }
 
 .welcome-section h2 {
   margin: 0;
-  font-size: 1.5rem;
+  font-size: 1.1rem;
   font-weight: 600;
   color: #111827;
 }
 
 .welcome-section p {
-  margin: 0.4rem 0 0 2.25rem; /* Align with text, not icon */
+  margin: 0.25rem 0 0 1.75rem;
   color: #4b5563;
-  line-height: 1.6;
+  line-height: 1.4;
+  font-size: 0.875rem;
 }
 
 /* Footer */
 .welcome-footer {
   color: #6b7280;
-  margin-top: 2rem;
-  font-size: 0.9rem;
+  margin-top: 0.5rem;
+  font-size: 0.85rem;
   text-align: center;
+  position: absolute;
+  bottom: 0.5rem;
+  flex-shrink: 0;
 }
 
 /* Location Entry Styling */
 .location-entry {
-  margin: 0.75rem 0 0 2.25rem;
-  padding: 1rem;
+  margin: 0.4rem 0 0 1.75rem;
+  padding: 0.6rem;
   background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
-  border-left: 4px solid #3b82f6;
-  border-radius: 8px;
+  border-left: 3px solid #3b82f6;
+  border-radius: 6px;
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
   transition: all 0.3s ease;
   animation: fadeIn 0.6s ease-out;
@@ -208,38 +242,38 @@
 }
 
 .location-entry p {
-  margin: 0.5rem 0;
+  margin: 0.2rem 0;
   color: #1f2937;
-  line-height: 1.5;
+  line-height: 1.3;
 }
 
 .location-entry p:first-child {
   font-weight: 700;
-  font-size: 1.1rem;
+  font-size: 0.875rem;
   color: #1e40af;
-  margin-bottom: 0.75rem;
+  margin-bottom: 0.3rem;
   display: flex;
   align-items: center;
-  gap: 0.5rem;
+  gap: 0.4rem;
 }
 
 .location-entry p:first-child::before {
   content: "📍";
-  font-size: 1.2rem;
+  font-size: 0.875rem;
 }
 
 .location-entry p:not(:first-child) {
-  font-size: 0.95rem;
+  font-size: 0.8rem;
   color: #4b5563;
-  padding-left: 1.75rem;
+  padding-left: 1.3rem;
   display: flex;
   align-items: center;
-  gap: 0.5rem;
+  gap: 0.4rem;
 }
 
 .location-entry p:not(:first-child)::before {
   content: "📅";
-  font-size: 0.9rem;
+  font-size: 0.8rem;
   opacity: 0.7;
 }
 

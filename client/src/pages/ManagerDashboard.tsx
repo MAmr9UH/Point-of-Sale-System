@@ -1,9 +1,18 @@
 import { useNavigate } from 'react-router-dom';
+import { useState, useEffect } from 'react';
 import './ManagerDashboard.css';
 import { TopNav } from '../components/TopNav';
 
 export default function ManagerDashboard() {
     const navigate = useNavigate();
+    const [isLoaded, setIsLoaded] = useState(false);
+
+    useEffect(() => {
+        // Trigger animations after mount
+        requestAnimationFrame(() => {
+            setIsLoaded(true);
+        });
+    }, []);
 
     const dashboardCards = [
         {
@@ -19,7 +28,7 @@ export default function ManagerDashboard() {
         },
         {
             title: 'POS Menu',
-            description: 'Point of sale system for taking orders',
+            description: 'Open the point-of-sale menu interface for direct order taking',
             icon: (
                 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor">
                     <path d="M17 2H7c-1.1 0-2 .9-2 2v2c0 1.1.9 2 2 2h10c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm0 4H7V4h10v2zm3 16H4c-1.1 0-2-.9-2-2v-1h20v1c0 1.1-.9 2-2 2zm-1.47-11.81A2.008 2.008 0 0016.7 9H7.3c-.79 0-1.51.47-1.83 1.19L2 18h20l-3.47-7.81zM9.5 16h-1c-.28 0-.5-.22-.5-.5s.22-.5.5-.5h1c.28 0 .5.22.5.5s-.22.5-.5.5zm0-2h-1c-.28 0-.5-.22-.5-.5s.22-.5.5-.5h1c.28 0 .5.22.5.5s-.22.5-.5.5zm0-2h-1c-.28 0-.5-.22-.5-.5s.22-.5.5-.5h1c.28 0 .5.22.5.5s-.22.5-.5.5zm6.5 4h-1c-.28 0-.5-.22-.5-.5s.22-.5.5-.5h1c.28 0 .5.22.5.5s-.22.5-.5.5zm0-2h-1c-.28 0-.5-.22-.5-.5s.22-.5.5-.5h1c.28 0 .5.22.5.5s-.22.5-.5.5zm0-2h-1c-.28 0-.5-.22-.5-.5s.22-.5.5-.5h1c.28 0 .5.22.5.5s-.22.5-.5.5z" />
@@ -30,7 +39,7 @@ export default function ManagerDashboard() {
         },
         {
             title: 'Customer Menu',
-            description: 'Browse menu and place orders',
+            description: 'View the menu as customers see it',
             icon: (
                 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor">
                     <path d="M8.1 13.34l2.83-2.83L3.91 3.5a4.008 4.008 0 000 5.66l4.19 4.18zm6.78-1.81c1.53.71 3.68.21 5.27-1.38 1.91-1.91 2.28-4.65.81-6.12-1.46-1.46-4.2-1.1-6.12.81-1.59 1.59-2.09 3.74-1.38 5.27L3.7 19.87l1.41 1.41L12 14.41l6.88 6.88 1.41-1.41L13.41 13l1.47-1.47z" />
@@ -78,24 +87,30 @@ export default function ManagerDashboard() {
     ];
 
     return (
-        <div className="manager-dashboard-container">
+        <div className={`manager-dashboard-container ${isLoaded ? 'loaded' : ''}`}>
             <TopNav />
 
             <div className="manager-dashboard-content">
                 <header className="manager-dashboard-header">
-                    <h1 className="manager-dashboard-title">Manager Dashboard</h1>
+                    <h1 className="manager-dashboard-title">
+                        <span className="gradient-text">Manager Dashboard</span>
+                    </h1>
                     <p className="manager-dashboard-subtitle">
-                        🎯 Central hub for managing your food truck operations
+                        <span className="subtitle-icon">🎯</span>
+                        Central hub for managing your food truck operations
                     </p>
                 </header>
 
                 <div className="manager-dashboard-grid">
-                    {dashboardCards.map((card) => (
+                    {dashboardCards.map((card, index) => (
                         <div
                             key={card.path}
                             className="manager-dashboard-card"
                             onClick={() => navigate(card.path)}
-                            style={{ '--card-color': card.color } as React.CSSProperties}
+                            style={{ 
+                                '--card-color': card.color,
+                                '--card-index': index
+                            } as React.CSSProperties}
                         >
                             <div className="manager-card-icon" style={{ color: card.color }}>
                                 {card.icon}
