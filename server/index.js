@@ -18,6 +18,7 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 import { handleReports } from "./routes/reportsData.js"
+import { handleBusyStatus } from './routes/busyStatus.js';
 
 
 const hostname = '0.0.0.0';
@@ -83,11 +84,31 @@ const server = http.createServer((req, res) => {
     } else if (url.startsWith('/api/utilities')) {
         handleUtilityRoutes(req, res);
     } else if (url.startsWith('/api/reports')) {
-        handleReports(req, res); 
-    } else {
-        res.statusCode = 404;
-        res.setHeader('Content-Type', 'text/html');
-        res.end('<h1>404 - Page Not Found</h1><p>The requested URL was not found on this server.</p>');
+        handleReports(req, res);
+    } else if (url.startsWith('/api/busy-status')){
+        handleBusyStatus(req,res);
+    } 
+    // Serve React app
+    else {
+        const publicDir = path.join(__dirname, 'public');
+        let filepath;
+        
+        // Check if file exists in public directory
+        if (url !== '/') {
+            filepath = path.join(publicDir, url);
+            const served = await serveStaticFromPublic(filepath, res);
+            if (served) return;
+        }
+        
+        // For all other routes (including root), serve index.html for React Router
+        filepath = path.join(publicDir, 'index.html');
+        const served = await serveStaticFromPublic(filepath, res);
+        
+        if (!served) {
+            res.statusCode = 404;
+            res.setHeader('Content-Type', 'text/html');
+            res.end('<h1>404 - Application Not Found</h1><p>The React app build files are missing. Please run "npm run build" in the client directory.</p>');
+        }
     }
 });
 

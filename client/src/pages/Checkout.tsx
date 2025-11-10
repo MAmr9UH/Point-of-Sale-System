@@ -194,7 +194,23 @@ export default function FoodTruckCheckout() {
     setFormData({ ...formData, [name]: newValue });
   };
 
-  const handlePlaceOrder = async (): Promise<void> => {
+   const handlePlaceOrder = async (): Promise<void> => {
+    // Check busy status before submitting order
+  try {
+    const response = await fetch('/api/busy-status');
+    const data = await response.json();
+   
+    if (data.success && data.isBusy) {
+      // Show warning popup
+      addToast(
+        `⚠️ We're busy! We have ${data.pendingCount} pending orders. Your order may take longer than usual.`,
+        "warning"
+      );
+    }
+  } catch (error) {
+    console.error('Error checking busy status:', error);
+    // Continue anyway if check fails
+  }
     // Validate form first
     if (
       formData.cardNumber.replace(/\s/g, '').length === 16 &&
@@ -218,17 +234,22 @@ export default function FoodTruckCheckout() {
           quantity: item.quantity
         }));
 
+
         const payload = {
           userId: 1, // replace with real user id if available
 <<<<<<< HEAD
+<<<<<<< HEAD
           items: itemsArray,
 =======
+=======
+>>>>>>> b19fde8 (added pending order check)
           orderItems: itemsArray,
 >>>>>>> origin/main
           total: grandTotal,
           formData
         };
 
+<<<<<<< HEAD
 <<<<<<< HEAD
         const res = await fetch('/api/checkout/createOrder', {
           method: 'POST',
@@ -249,7 +270,11 @@ export default function FoodTruckCheckout() {
         console.error(err);
         setShowError('Unable to connect to server.');
 =======
+=======
+
+>>>>>>> b19fde8 (added pending order check)
         console.log(payload);
+
 
         try {
           const data = await createOrder(payload);
@@ -261,17 +286,18 @@ export default function FoodTruckCheckout() {
           addToast(err.message || 'Something went wrong. Try again.', "error");
         }
 
+
       } catch (err: any) {
         console.error(err);
         addToast('Unable to connect to server.', "error");
 >>>>>>> origin/main
       }
 
+
     } else {
       addToast('Please check all required (*) fields and card details are complete.', "error");
     }
   };
-
 
   // Success Confirmation Screen
   if (orderPlaced) {
