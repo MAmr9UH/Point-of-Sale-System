@@ -1,23 +1,23 @@
+// Import the built-in 'http' module
 import http from 'http';
 import { promises as fs } from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
-import { handleWelcome } from './routes/welcome.js';
-import { handleAuth } from './routes/auth.js';
-import { handleMenu } from './routes/menuData.js';
-import { handleCheckout } from './routes/checkout.js';
-import { handleInventoryRoutes } from './routes/inventoryRoutes.js';
-import { handleUtilityRoutes } from './routes/utilityRoutes.js';
-import { handleEditPage } from './routes/editpage.js';
-import { handleNotificationRoutes } from './routes/notifications.js';
+import { handleWelcome } from '../server/routes/welcome.js';
+import { handleAuth } from '../server/routes/auth.js';
+import { handleMenu } from '../server/routes/menuData.js';
+import { handleCheckout } from '../server/routes/checkout.js';
+import { handleInventoryRoutes } from '../server/routes/inventoryRoutes.js';
+import { handleUtilityRoutes } from '../server/routes/utilityRoutes.js';
+import { handleEditPage } from '../server/routes/editpage.js';
+import { handleNotificationRoutes } from '../server/routes/notifications.js';
 
-import './db/connection.js';
+import '../server/db/connection.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-import { handleReports } from "./routes/reportsData.js"
-import { handleBusyStatus } from './routes/busyStatus.js';
+import { handleReports } from "../server/routes/reportsData.js"
 
 
 const hostname = '0.0.0.0';
@@ -86,7 +86,7 @@ async function serveStaticFile(req, res) {
 }
 
 
-const server = http.createServer(async (req, res) => {
+export default async (req, res) => {
     const { url, method } = req;
     console.log(`${method} request for ${url}`);
     
@@ -104,18 +104,12 @@ const server = http.createServer(async (req, res) => {
     if (url.startsWith('/uploads/')) {
         serveStaticFile(req, res);
         return;
-    }
-    if (method === 'GET' && url === '/api') {
-        res.statusCode = 200;
-        res.setHeader('Content-Type', 'text/html');
-        res.end('<h1>Welcome to the Homepage!</h1><p>This is a plain Node.js server.</p>');
     } 
+    // API routes
     else if (url.startsWith('/api/staff/notifications')) {
         handleNotificationRoutes(req, res);
     } else if (url.startsWith('/api/editpage')) {
         handleEditPage(req, res);
-    } else if (url.startsWith('/api/menuItems')) {  // ADD THIS
-        handleMenuRoutes(req, res);
     } else if (url.startsWith('/api/menu/')) {
         handleMenu(req, res);
     } else if (url.startsWith('/api/welcome')) {
@@ -130,8 +124,6 @@ const server = http.createServer(async (req, res) => {
         handleUtilityRoutes(req, res);
     } else if (url.startsWith('/api/reports')) {
         handleReports(req, res);
-    } else if (url.startsWith('/api/busy-status')){
-        handleBusyStatus(req,res);
     } 
     // Serve React app
     else {
@@ -155,9 +147,5 @@ const server = http.createServer(async (req, res) => {
             res.end('<h1>404 - Application Not Found</h1><p>The React app build files are missing. Please run "npm run build" in the client directory.</p>');
         }
     }
-});
+};
 
-server.listen(port, hostname, () => {
-    console.log(`Server running at http://${hostname}:${port}/`);
-    console.log('Press Ctrl+C to stop the server.');
-});

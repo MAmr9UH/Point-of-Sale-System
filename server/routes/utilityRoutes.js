@@ -1,7 +1,7 @@
 import {
   fetchUtilityPayments,
   createUtilityPayment
-} from '../models/EmployeeManagerModel.js';
+} from '../model/EmployeeManagerModel.js';
 
 // routes/utilityRoutes.js
 export function handleUtilityRoutes(req, res) {

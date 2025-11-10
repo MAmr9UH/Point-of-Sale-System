@@ -216,16 +216,22 @@ import { getMenuItemByIds } from './MenuItem.js';
 import { getCurrentWorkingStaff } from './Staff.js';
 import OrderItem from './OrderItem.js';
 
-export const createOrder = async (orderItems, phoneNumber = null, userId = null, isOnline, staffID = null, paymentMethod = "card", usedIncentivePoints = 0, totalAmount = null) => {
+export const createOrder = async (orderItems, phoneNumber = null, userId = null, isOnline, staffID = null, paymentMethod = "card", usedIncentivePoints = 0, totalAmount = null, locationName) => {
     
     if (!orderItems || !Array.isArray(orderItems) || !orderItems) {
         throw new Error('Invalid order data or order items');
     }
-    const todayLocation = (await getLocationToday())[0];
+    const todayLocation = (await getLocationToday());
+
+    console.log(todayLocation, locationName);
+
+    if (todayLocation.filter(loc => loc.locationName == locationName).length === 0) {
+        throw new Error('The specified location is not active today');
+    }
     
 
     let orderData = {
-        locationName: todayLocation ? todayLocation.locationName : null,
+        locationName: locationName,
         orderDate: new Date(),
         wasPlacedOnline: isOnline,
         paymentMethod: paymentMethod,
@@ -247,7 +253,7 @@ export const createOrder = async (orderItems, phoneNumber = null, userId = null,
     if (!isOnline) {
         orderData.staffID = staffID;
     } else {
-        const staffMember = await getCurrentWorkingStaff(todayLocation.locationName);
+        const staffMember = await getCurrentWorkingStaff(locationName);
 
         if (staffMember) {
             orderData.staffID = staffMember.staffID;

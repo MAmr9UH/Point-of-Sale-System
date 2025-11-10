@@ -1,3 +1,5 @@
+import { sha256hash } from '../utils/sha256.js';
+
 class Customer {
     constructor(data = {}) {
         this.customerID = data.customerID || null;
@@ -42,8 +44,7 @@ class Customer {
 
         // PhoneNumber validation - optional, exactly 10 digits
         if (this.phoneNumber !== null && this.phoneNumber !== undefined && this.phoneNumber !== '') {
-            const phoneRegex = /^\d{10}$/;
-            if (!phoneRegex.test(this.phoneNumber)) {
+            if (this.phoneNumber.trim().length !== 10) {
                 errors.push('Phone number must be exactly 10 digits');
             }
         }
@@ -348,6 +349,11 @@ class Customer {
             missingFields
         };
     }
+
+    async validatePassword(password) {
+        let hashedPassword = await sha256hash(password);
+        return hashedPassword === this.passwordHash;
+    }
 }
 
 export default Customer;
@@ -364,4 +370,36 @@ export const findCustomerById = async (customerID) => {
     const query = 'SELECT * FROM Customer WHERE CustomerID = ?';
     const [rows] = await db.execute(query, [customerID]);
     return rows.length > 0 ? Customer.fromDB(rows[0]) : null;
+}
+
+export const findCustomerByEmail = async (email) => {
+    const query = 'SELECT * FROM Customer WHERE Email = ?';
+    const [rows] = await db.execute(query, [email]);
+    return rows.length > 0 ? Customer.fromDB(rows[0]) : null;
+}
+
+export const createNewCustomer = async (customerData) => {
+    customerData.passwordHash = await sha256hash(customerData.password);
+
+    const customer = new Customer(customerData);
+    const validation = customer.validate();
+    if (!validation.isValid) {
+        throw new Error(`Validation failed: ${validation.errors.join(', ')}`);
+    }
+
+    const dbObj = customer.toDB(false);
+
+    console.log(dbObj);
+
+    const query = 'INSERT INTO Customer (Email, PasswordHash, PhoneNumber, Fname, Lname, CreatedAt, LastUpdatedAt) VALUES (?, ?, ?, ?, ?, NOW(), NOW())';
+    const [result] = await db.execute(query, [
+        dbObj.Email,
+        dbObj.PasswordHash,
+        dbObj.PhoneNumber || null,
+        dbObj.Fname || null,
+        dbObj.Lname || null,
+    ]);
+
+    customer.customerID = result.insertId;
+    return customer;
 }

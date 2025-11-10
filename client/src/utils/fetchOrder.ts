@@ -1,5 +1,7 @@
 export const createOrder = async (orderData: any) => {
     try {
+        console.log('Creating order with data:', orderData);
+
         const response = await fetch('/api/checkout/userCreateOrder', {
             method: 'POST',
             headers: {

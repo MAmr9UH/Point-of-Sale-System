@@ -5,6 +5,8 @@ class ActiveLocation {
         this.beginOperationOn = data.beginOperationOn || null;
         this.endOperationOn = data.endOperationOn || null;
         this.daysOfWeek = data.daysOfWeek || [];
+
+        this.address = data.address || null; // If joined with Location table
     }
 
     /**
@@ -73,7 +75,8 @@ class ActiveLocation {
             LocationName: this.locationName,
             BeginOperationOn: this.beginOperationOn,
             EndOperationOn: this.endOperationOn,
-            DaysOfWeek: this.daysOfWeek
+            DaysOfWeek: this.daysOfWeek,
+            Address: this.address
         };
     }
 
@@ -131,7 +134,8 @@ class ActiveLocation {
             locationName: row.LocationName,
             beginOperationOn: row.BeginOperationOn,
             endOperationOn: row.EndOperationOn,
-            daysOfWeek: daysOfWeek
+            daysOfWeek: daysOfWeek,
+            address: row.Address || null
         });
     }
 
@@ -226,7 +230,8 @@ class ActiveLocation {
         const today = new Date();
         const dayMap = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
         const todayAbbr = dayMap[today.getDay()];
-        
+
+
         return this.isCurrentlyActive() && this.operatesOnDay(todayAbbr);
     }
 
@@ -406,7 +411,7 @@ import { db } from '../db/connection.js';
 export const getCurrentActiveLocations = async () => {
 
     const query = `
-        SELECT l.*, al.*
+        SELECT l.Address, al.*
         FROM Location l
         JOIN Active_Location al ON l.Name = al.LocationName
         WHERE al.EndOperationOn IS NULL

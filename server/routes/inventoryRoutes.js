@@ -2,7 +2,7 @@ import {
   fetchInventoryOrders,
   createInventoryOrder,
   fetchIngredients
-} from '../models/EmployeeManagerModel.js';
+} from '../model/EmployeeManagerModel.js';
 
 // server/routes/inventoryRoutes.js
 

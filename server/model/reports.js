@@ -17,14 +17,16 @@ const profitPerLocation = async (startDate, endDate, desc = false) => {
 const mostPopularItems = async (startDate, endDate, desc = false) => {
     const order = desc ? 'DESC' : 'ASC';
     const query = `
-        SELECT MI.Name, COUNT(OI.MenuItemID) AS OrderCount
+        SELECT MI.Name, COUNT(OI.MenuItemID) AS OrderCount, COUNT(*) * MI.Price AS TotalRevenue
         FROM pos.Order as O, pos.Menu_Item as MI, pos.Order_Item as OI
         WHERE O.OrderID = OI.OrderID AND OI.MenuItemID = MI.MenuItemID AND O.OrderDate BETWEEN ? AND ?
-        GROUP BY MI.Name
+        GROUP BY OI.MenuItemID
         ORDER BY OrderCount ${order};
     `;
 
     const [results] = await db.query(query, [startDate, endDate]);
+    console.log(results)
+
     return results;
 }
 

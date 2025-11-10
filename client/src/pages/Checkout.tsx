@@ -1,12 +1,12 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useShoppingCart } from './../contexts/ShoppingCart'
-<<<<<<< HEAD
-=======
 import { useNavigate } from 'react-router-dom';
 import { createOrder } from '../utils/fetchOrder';
 import { useWelcomePage } from '../contexts/WelcomePageContext';
 import { useToaster } from '../contexts/ToastContext'; 
->>>>>>> origin/main
+import { useAuth } from '../contexts/AuthContext';
+import type { Customer } from '../contexts/AuthContext';
+import { fetchPickupLocations } from '../utils/pickupLoc';
 
 const ShoppingCart: React.FC<React.SVGProps<SVGSVGElement>> = (props) => (
   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" xmlns="http://www.w3.org/2000/svg" {...props}>
@@ -26,13 +26,6 @@ const Trash: React.FC<React.SVGProps<SVGSVGElement>> = (props) => (
   </svg>
 );
 
-const X: React.FC<React.SVGProps<SVGSVGElement>> = (props) => (
-  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={3} strokeLinecap="round" strokeLinejoin="round" xmlns="http://www.w3.org/2000/svg" {...props}>
-    <line x1="18" y1="6" x2="6" y2="18" />
-    <line x1="6" y1="6" x2="18" y2="18" />
-  </svg>
-);
-
 const ArrowLeft: React.FC<React.SVGProps<SVGSVGElement>> = (props) => (
   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" xmlns="http://www.w3.org/2000/svg" {...props}>
     <line x1="19" y1="12" x2="5" y2="12" />
@@ -40,14 +33,12 @@ const ArrowLeft: React.FC<React.SVGProps<SVGSVGElement>> = (props) => (
   </svg>
 );
 
-<<<<<<< HEAD
-=======
 import './Checkout.css'
 
->>>>>>> origin/main
 // Define the shape of the Form Data
 interface FormData {
   pickupTime: string;
+  pickupLocation: string;
   notes: string;
   cardNumber: string;
   cardExpiry: string;
@@ -98,20 +89,18 @@ const ErrorNotification: React.FC<{ message: string; onClose: () => void }> = ({
 
 export default function FoodTruckCheckout() {
   //const customer = 
-<<<<<<< HEAD
-  const { items, total : cartTotal, tax, grandTotal, adjustQuantity, clearCart, removeItem } = useShoppingCart();
-   console.log('Items in cart:', items);
-=======
   const navigate = useNavigate();
   const { items, total: cartTotal, tax, grandTotal, adjustQuantity, clearCart, removeItem } = useShoppingCart();
   const { pageData } = useWelcomePage();
   const { addToast } = useToaster();
 
+  const { user } = useAuth();
+
   console.log('Items in cart:', items);
->>>>>>> origin/main
   console.log('First item:', Object.values(items)[0]);
   const [formData, setFormData] = useState<FormData>({
     pickupTime: '',
+    pickupLocation: '',
     notes: '',
     cardNumber: '',
     cardExpiry: '',
@@ -121,6 +110,20 @@ export default function FoodTruckCheckout() {
   });
   const [orderPlaced, setOrderPlaced] = useState(false);
   const [showError, setShowError] = useState('');
+  const [pickupLocations, setPickupLocations] = useState<any[]>([]);
+
+  // Fetch pickup locations on mount
+  useEffect(() => {
+    const loadLocations = async () => {
+      try {
+        const data = await fetchPickupLocations();
+        setPickupLocations(data.locations || []);
+      } catch (error) {
+        console.error('Failed to fetch pickup locations:', error);
+      }
+    };
+    loadLocations();
+  }, []);
 
   // --- Branding Constants ---
   const TRUCK_NAME = pageData?.FoodTruckName || 'FOOD TRUCK NAME';
@@ -145,21 +148,6 @@ export default function FoodTruckCheckout() {
     boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)'
   };
 
-  const logoStyle: React.CSSProperties = {
-    display: 'flex',
-    justifyContent: 'center',
-    alignItems: 'center',
-    height: '45px',
-    width: '45px',
-    marginRight: '15px',
-    borderRadius: '50%',
-    backgroundColor: COLOR1,
-    color: '#fff',
-    fontWeight: 'bold',
-    fontSize: '1.2em',
-    flexShrink: 0,
-    boxShadow: '0 4px 6px rgba(0, 0, 0, 0.1)',
-  };
 
   const nameStyle: React.CSSProperties = {
     fontSize: '1.6em',
@@ -172,7 +160,7 @@ export default function FoodTruckCheckout() {
   // total price calculation
 
   // collects inputs to form with formatting logic
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>): void => {
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>): void => {
     const { name, value } = e.target;
     let newValue = value;
 
@@ -220,59 +208,22 @@ export default function FoodTruckCheckout() {
     ) {
       try {
         // Prepare cart items
-<<<<<<< HEAD
-       const itemsArray = Object.values(items).map(item => ({
-          id: item.MenuItemID || item.id,           
-          name: item.Name || item.name,             
-          price: item.Price || item.price,          
-=======
         const itemsArray = Object.values(items).map(item => ({
           id: item.MenuItemID,
           price: item.Price,
           customizations: item.customizations,
->>>>>>> origin/main
           quantity: item.quantity
         }));
 
 
         const payload = {
           userId: 1, // replace with real user id if available
-<<<<<<< HEAD
-<<<<<<< HEAD
-          items: itemsArray,
-=======
-=======
->>>>>>> b19fde8 (added pending order check)
           orderItems: itemsArray,
->>>>>>> origin/main
           total: grandTotal,
           formData
         };
 
-<<<<<<< HEAD
-<<<<<<< HEAD
-        const res = await fetch('/api/checkout/createOrder', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(payload)
-        });
 
-        const data = await res.json();
-
-        if (res.ok && data.success) {
-          setOrderPlaced(true);
-          setShowError('');
-          clearCart();
-        } else {
-          setShowError(data.error || 'Something went wrong. Try again.');
-        }
-      } catch (err) {
-        console.error(err);
-        setShowError('Unable to connect to server.');
-=======
-=======
-
->>>>>>> b19fde8 (added pending order check)
         console.log(payload);
 
 
@@ -290,7 +241,6 @@ export default function FoodTruckCheckout() {
       } catch (err: any) {
         console.error(err);
         addToast('Unable to connect to server.', "error");
->>>>>>> origin/main
       }
 
 
@@ -298,6 +248,7 @@ export default function FoodTruckCheckout() {
       addToast('Please check all required (*) fields and card details are complete.', "error");
     }
   };
+
 
   // Success Confirmation Screen
   if (orderPlaced) {
@@ -348,31 +299,9 @@ export default function FoodTruckCheckout() {
             color: '#4b5563',
             marginBottom: '24px',
             fontWeight: 500
-<<<<<<< HEAD
-          }}>Your food will be ready for **pickup in approximately 15 minutes**.</p>
-          <div style={{
-            width: '100%',
-            padding: '16px',
-            borderLeft: `4px solid #f97316`,
-            backgroundColor: COLOR3,
-            marginBottom: '24px',
-            textAlign: 'left'
-          }}>
-            <p style={{ fontSize: '14px', color: '#374151' }}>A confirmation will be sent to:</p>
-            <p style={{
-              fontWeight: 600,
-              color: '#1f2937',
-              overflow: 'hidden',
-              textOverflow: 'ellipsis',
-              whiteSpace: 'nowrap'
-            }}>{formData.email || formData.phone || 'Contact information not provided'}</p>
-          </div>
-          <button 
-=======
           }}>Your food will be ready for pickup</p>
           
           <button
->>>>>>> origin/main
             onClick={() => { setOrderPlaced(false); clearCart(); }}
             style={{
               width: '100%',
@@ -419,11 +348,6 @@ export default function FoodTruckCheckout() {
       {showError && <ErrorNotification message={showError} onClose={() => setShowError('')} />}
 
       {/* Main Content Area */}
-<<<<<<< HEAD
-      <div style={{ padding: '16px' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '32px' }}>
-          <h1 style={{ fontSize: '30px', fontWeight: 'bold', color: '#1f2937', margin: 0 }}><ShoppingCart style={{width: '24px', height: '24px'}} />   Checkout</h1>
-=======
       <div style={{ padding: '16px', maxWidth: '800px', margin: '0 auto' }}>
         {/* Back Button - Fixed Top Left */}
         <button
@@ -466,7 +390,6 @@ export default function FoodTruckCheckout() {
         
         <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '12px' }}>
           <h1 style={{ fontSize: '30px', fontWeight: 'bold', color: '#1f2937', margin: 0 }}><ShoppingCart style={{ width: '24px', height: '24px' }} />   Checkout</h1>
->>>>>>> origin/main
         </div>
 
         <div style={{
@@ -492,6 +415,55 @@ export default function FoodTruckCheckout() {
                 marginTop: 0
               }}>Pickup Information</h2>
               <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+
+                {/* Pickup Location */}
+                <div>
+                  <label htmlFor="pickupLocation" style={{
+                    display: 'block',
+                    fontSize: '14px',
+                    fontWeight: 500,
+                    color: '#374151',
+                    marginBottom: '8px'
+                  }}>Pickup Location <span style={{ color: '#ef4444' }}>*</span></label>
+                  {pickupLocations.length === 0 ? (
+                    <div style={{
+                      width: '100%',
+                      padding: '12px 16px',
+                      border: '1px solid #fbbf24',
+                      borderRadius: '8px',
+                      fontSize: '14px',
+                      backgroundColor: '#fef3c7',
+                      color: '#92400e',
+                      boxSizing: 'border-box'
+                    }}>
+                      ⚠️ No pickup locations available today. The food truck is not operating. Please check back another day.
+                    </div>
+                  ) : (
+                    <select
+                      id="pickupLocation"
+                      name="pickupLocation"
+                      value={formData.pickupLocation}
+                      onChange={handleInputChange}
+                      style={{
+                        width: '100%',
+                        padding: '12px 16px',
+                        border: '1px solid #d1d5db',
+                        borderRadius: '8px',
+                        fontSize: '16px',
+                        boxSizing: 'border-box',
+                        backgroundColor: 'white',
+                        cursor: 'pointer'
+                      }}
+                    >
+                      <option value="">{pickupLocations.length === 0 ? 'No Locations Available' : 'Select a location'}</option>
+                      {pickupLocations && pickupLocations.map((location) => (
+                        <option key={location.LocationName} value={location.LocationName}>
+                          {location.LocationName} - {location.Address}
+                        </option>
+                      ))}
+                    </select>
+                  )}
+                </div>
 
                 {/* Pickup Time */}
                 <div>
@@ -720,11 +692,7 @@ export default function FoodTruckCheckout() {
               ) : (
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
                   {Object.values(items).map((item) => (
-<<<<<<< HEAD
-                    <div key={String(item.MenuItemID ||item.id)} style={{
-=======
                     <div key={item.cartItemId} style={{
->>>>>>> origin/main
                       display: 'flex',
                       alignItems: 'center',
                       gap: '16px',
@@ -733,15 +701,6 @@ export default function FoodTruckCheckout() {
                     }}>
                       <img src={item.ImageURL} alt={item.Name} style={{ maxWidth: '80px', maxHeight: '80px', objectFit: 'cover', borderRadius: '8px' }} />
                       <div style={{ flex: 1 }}>
-<<<<<<< HEAD
-                        <h3 style={{ fontWeight: 600, color: '#1f2937', margin: 0, marginBottom: '4px' }}>{item.Name ||item.name}</h3>
-                        <p style={{ 
-                          fontWeight: 500, 
-                          fontSize: '14px', 
-                          color: COLOR2,
-                          margin: 0
-                        }}>${parseFloat(item.Price || item.price || 0).toFixed(2)} / ea</p>
-=======
                         <h3 style={{ fontWeight: 600, color: '#1f2937', margin: 0, marginBottom: '4px' }}>{item.Name}</h3>
                         <p style={{
                           fontWeight: 500,
@@ -800,17 +759,11 @@ export default function FoodTruckCheckout() {
                             ))}
                           </div>
                         )}
->>>>>>> origin/main
                       </div>
 
                       <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexShrink: 0 }}>
-<<<<<<< HEAD
-                        <button 
-                          onClick={() => adjustQuantity(String(item.MenuItemID || item.id), -1)}
-=======
                         <button
                           onClick={() => adjustQuantity(item.cartItemId, -1)}
->>>>>>> origin/main
                           style={{
                             width: '32px',
                             height: '32px',
@@ -837,17 +790,12 @@ export default function FoodTruckCheckout() {
                           fontWeight: 'bold',
                           color: '#1f2937'
                         }}>{item.quantity}</span>
-<<<<<<< HEAD
-                        <button 
-                          onClick={() => adjustQuantity(String(item.MenuItemID || item.id), 1)}
-=======
                         <button
                           onClick={() => {
                             console.log("clicked");
 
                             adjustQuantity(item.cartItemId, 1)
                           }}
->>>>>>> origin/main
                           style={{
                             width: '32px',
                             height: '32px',
@@ -877,19 +825,11 @@ export default function FoodTruckCheckout() {
                         textAlign: 'right',
                         flexShrink: 0
                       }}>
-<<<<<<< HEAD
-                       ${(parseFloat(item.Price || item.price || 0) * item.quantity).toFixed(2)}
-                      </div>
-                      
-                      <button 
-                        onClick={() => removeItem(String(item.MenuItemID || item.id))}
-=======
                         ${((item.adjustedPrice || parseFloat(item.Price)) * item.quantity).toFixed(2)}
                       </div>
 
                       <button
                         onClick={() => removeItem(item.cartItemId)}
->>>>>>> origin/main
                         style={{
                           color: '#ef4444',
                           background: 'transparent',
@@ -908,15 +848,9 @@ export default function FoodTruckCheckout() {
                           e.currentTarget.style.color = '#ef4444';
                           e.currentTarget.style.backgroundColor = 'transparent';
                         }}
-<<<<<<< HEAD
-                        aria-label={`Remove ${item.Name ||item.name}`}
-                      >
-                      <Trash style={{ width: '20px', height: '20px' }} />
-=======
                         aria-label={`Remove ${item.Name}`}
                       >
                         <Trash style={{ width: '20px', height: '20px' }} />
->>>>>>> origin/main
                       </button>
                     </div>
                   ))}
@@ -976,32 +910,6 @@ export default function FoodTruckCheckout() {
                     fontWeight: 650,
                     color: '#1f2937'
                   }}>
-                    <span>Total</span>
-                    <span>${cartTotal.toFixed(2)}</span>
-                  </div>
-                </div>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-                  <div style={{
-                    display: 'flex',
-                    justifyContent: 'space-between',
-                    paddingTop: '12px',
-                    fontSize: '24px',
-                    fontWeight: 800,
-                    color: '#1f2937'
-                  }}>
-                    <span>Tax (8%)</span>
-                    <span>${tax.toFixed(2)}</span>
-                  </div>
-                </div>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-                  <div style={{
-                    display: 'flex',
-                    justifyContent: 'space-between',
-                    paddingTop: '12px',
-                    fontSize: '24px',
-                    fontWeight: 800,
-                    color: '#1f2937'
-                  }}>
                     <span>Grand Total</span>
                     <span>${grandTotal.toFixed(2)}</span>
                   </div>
@@ -1009,28 +917,40 @@ export default function FoodTruckCheckout() {
 
                 <button
                   onClick={handlePlaceOrder}
+                  disabled={pickupLocations.length === 0}
                   style={{
                     width: '100%',
                     color: 'white',
-                    backgroundColor: COLOR1,
+                    backgroundColor: pickupLocations.length === 0 ? '#9ca3af' : COLOR1,
                     marginTop: '32px',
                     padding: '16px',
                     borderRadius: '12px',
                     fontWeight: 650,
                     fontSize: '20px',
                     border: 'none',
-                    cursor: 'pointer',
+                    cursor: pickupLocations.length === 0 ? 'not-allowed' : 'pointer',
                     boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1)',
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'center',
                     gap: '8px',
-                    transition: 'background-color 0.2s'
+                    transition: 'background-color 0.2s',
+                    opacity: pickupLocations.length === 0 ? 0.6 : 1
                   }}
-                  onMouseOver={(e) => e.currentTarget.style.backgroundColor = '#6b0fd4'}
-                  onMouseOut={(e) => e.currentTarget.style.backgroundColor = 'var(--color-primary)'}
+                  onMouseOver={(e) => {
+                    if (pickupLocations.length > 0) {
+                      e.currentTarget.style.backgroundColor = '#6b0fd4';
+                    }
+                  }}
+                  onMouseOut={(e) => {
+                    if (pickupLocations.length > 0) {
+                      e.currentTarget.style.backgroundColor = 'var(--color-primary)';
+                    }
+                  }}
                 >
-                  Pay & Place Order - ${grandTotal.toFixed(2)}
+                  {pickupLocations.length === 0 
+                    ? 'Not Available Today' 
+                    : `Pay & Place Order - $${grandTotal.toFixed(2)}`}
                 </button>
               </div>
             )}

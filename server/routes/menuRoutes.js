@@ -1,7 +1,7 @@
 import {
   fetchMenuItems,
   createMenuItem
-} from '../models/EmployeeManagerModel.js';
+} from '../model/EmployeeManagerModel.js';
 
 // routes/menuRoutes.js
 export function handleMenuRoutes(req, res) {

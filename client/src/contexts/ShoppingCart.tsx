@@ -27,7 +27,6 @@ interface ShoppingCartContextType {
     tax: number;
     grandTotal: number;
 }
-
 const ShoppingCartContext = createContext<ShoppingCartContextType | undefined>(undefined);
 
 export const ShoppingCartProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
@@ -107,8 +106,9 @@ export const ShoppingCartProvider: React.FC<{ children: React.ReactNode }> = ({ 
         }
         setItems((prev) => {
             if (!(itemId in prev)) return prev;
-            const { [itemId]: removed, ...rest } = prev;
-            return rest;
+            const newItems = { ...prev };
+            delete newItems[itemId];
+            return newItems;
         });
         const itemTotal = item.adjustedPrice * item.quantity;
         setTotal(total - itemTotal);
@@ -121,12 +121,6 @@ export const ShoppingCartProvider: React.FC<{ children: React.ReactNode }> = ({ 
         setTax(0);
         setGrandTotal(0);
     };
-
-    const clearCart = () => {
-        setItems({});
-        sessionStorage.removeItem('cart-items');
-    };
-
     const adjustQuantity = (itemId: string, delta: number) => {
         const item = items[itemId];
         if (!item || !item.adjustedPrice) {
@@ -150,6 +144,10 @@ export const ShoppingCartProvider: React.FC<{ children: React.ReactNode }> = ({ 
         setTax(newTotal * 0.1); // Example: 10% tax
         setGrandTotal(newTotal * 1.1);
     };
+
+    const [total, setTotal] = useState(0);
+    const [tax, setTax] = useState(0);
+    const [grandTotal, setGrandTotal] = useState(0);
 
     return (
         <ShoppingCartContext.Provider value={{ items, addItem, removeItem, clearCart, adjustQuantity, total, tax, grandTotal }}>

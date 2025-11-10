@@ -1,4 +1,3 @@
-// routes/notificationRoutes.js
 import { getAllNotifications, getUnreadCount, markAllAsRead } from '../model/Notifications.js';
 
 export const handleNotificationRoutes = async (req, res) => {

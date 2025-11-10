@@ -30,14 +30,19 @@
   font-size: 0.95rem;
   line-height: 1;
 }
-.btn-primary {
+.btn-primary-nav {
   background: #3B82F6;
   color: #fff;
 }
-.btn-primary:hover { background: #3B82F6; }
+.btn-primary-nav:hover { background: #3B82F6; }
 .btn-ghost {
   background: #f3f4f6;
   color: #111827;
   border-color: #e5e7eb;
 }
 .btn-ghost:hover { background: #e5e7eb; }
+
+.nav-user-name {
+  font-weight: 500;
+  color: #111827;
+}

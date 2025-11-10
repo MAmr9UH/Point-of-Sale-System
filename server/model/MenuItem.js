@@ -49,7 +49,7 @@ class MenuItem {
         }
 
         // Category validation - must be one of the allowed values
-        const validCategories = ['appetizer', 'entre', 'dessert', 'beverage'];
+        const validCategories = ['appetizer', 'entree', 'dessert', 'beverage'];
         if (this.category && !validCategories.includes(this.category)) {
             errors.push(`Category must be one of: ${validCategories.join(', ')}`);
         }
@@ -239,5 +239,55 @@ export const getMenuItemByIds = async (menuItemIds) => {
 
     return final;
 }
+
+export const updateMenuItem = async (menuItemId, updateData) => {
+    if (!menuItemId) {
+        throw new Error('MenuItemID is required for update');
+    }
+
+    const [ res ] = await db.query('SELECT * FROM Menu_Item WHERE MenuItemID = ?', [menuItemId]);
+    const oldmenuItem = res.length > 0 ? MenuItem.fromDB(res[0]) : null;
+
+    if (!oldmenuItem) {
+        throw new Error(`Menu item with ID ${menuItemId} not found`);
+    }
+
+    let updatedMenuItem = { ...oldmenuItem };
+
+    updatedMenuItem.MIID = menuItemId;
+    updatedMenuItem.availability = updateData.available;
+    updatedMenuItem.category = updateData.category;
+    updatedMenuItem.description = updateData.description;
+    updatedMenuItem.name = updateData.name;
+    updatedMenuItem.price = updateData.price;
+
+    const menuItemInstance = new MenuItem(updatedMenuItem);
+
+    console.log('New Menu Item:', updatedMenuItem);
+
+    if (!menuItemInstance.validate().isValid) {
+        throw new Error(`Validation failed: ${menuItemInstance.validate().errors.join(', ')}`);
+    }
+
+    const query = `
+
+        UPDATE Menu_Item
+        SET Name = ?, Description = ?, Price = ?, Category = ?, Availability = ?
+        WHERE MenuItemID = ?;
+    `;
+
+    const [results] = await db.query(query, [
+        updatedMenuItem.name,
+        updatedMenuItem.description,
+        updatedMenuItem.price,
+        updatedMenuItem.category,
+        updatedMenuItem.availability,
+        menuItemId
+    ]);
+
+    return results;
+}
+
+
 
 export default MenuItem;

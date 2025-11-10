@@ -4,25 +4,18 @@ import CustomizationModal from './CustomizationModal';
 import type { IngredientCustomization } from './CustomizationModal';
 import './MenuPanel.css';
 import * as fetchMenuUtils from '../utils/fetchMenu';
-<<<<<<< HEAD
-import type { MenuItem as MenuItemType } from '../types/MenuItem';
-=======
 import type { MenuItem as MenuItemType, MenuItemCategory } from '../types/MenuItem';
 import { useShoppingCart } from '../contexts/ShoppingCart';
 import type { ItemCustomization } from '../contexts/ShoppingCart';
 import { useToaster } from '../contexts/ToastContext';
->>>>>>> origin/main
 
 const MenuPanel = () => {
     
     const [menuItems, setMenuItems] = useState<MenuItemType[]>([]);
-<<<<<<< HEAD
-=======
     const [selectedItem, setSelectedItem] = useState<MenuItemType | null>(null);
     const [isCustomizationOpen, setIsCustomizationOpen] = useState(false);
     const { addItem } = useShoppingCart();
     const { addToast } = useToaster();
->>>>>>> origin/main
 
     useEffect(() => {
         fetchMenuUtils.fetchMenuEm().then(items => {
@@ -80,11 +73,6 @@ const MenuPanel = () => {
     const categories = categoryOrder.filter(cat => groupedItems[cat] && groupedItems[cat].length > 0);
 
     return (
-<<<<<<< HEAD
-        <div id="menu-panel">
-            <div id="menu-grid">
-                {menuItems.map(item => <MenuItem key={item.MenuItemID} item={item} />)}
-=======
         <>
             <div id="menu-panel">
                 {categories.map(category => (
@@ -101,7 +89,6 @@ const MenuPanel = () => {
                         </div>
                     </div>
                 ))}
->>>>>>> origin/main
             </div>
             
             <CustomizationModal

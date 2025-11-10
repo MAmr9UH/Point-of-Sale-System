@@ -1,3 +1,5 @@
+import { sha256hash } from '../utils/sha256.js';
+
 class Staff {
     constructor(data = {}) {
         this.staffID = data.staffID || null;
@@ -201,6 +203,12 @@ class Staff {
     isManager() {
         return this.role === 'manager' || this.role === 'admin';
     }
+
+
+    async validatePassword(password) {
+        const hashedInput = await sha256hash(password);
+        return this.passwordHash === hashedInput;
+    }
 }
 
 export default Staff;
@@ -218,5 +226,11 @@ export const getCurrentWorkingStaff = async (locationName) => {
         LIMIT 1;
     `;
     const results = await db.query(query, [locationName]);
+    return results.length > 0 ? Staff.fromDB(results[0]) : null;
+}
+
+export const findStaffByEmail = async (email) => {
+    const query = `SELECT * FROM Staff WHERE Email = ? LIMIT 1;`;
+    const [results] = await db.query(query, [email]);
     return results.length > 0 ? Staff.fromDB(results[0]) : null;
 }
