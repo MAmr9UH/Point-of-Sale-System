@@ -6,6 +6,7 @@ import { fileURLToPath } from 'url';
 import { handleWelcome } from './routes/welcome.js';
 import { handleAuth } from './routes/auth.js';
 import { handleMenu } from './routes/menuData.js';
+import { handleMenuCustomizationRoutes } from './routes/menuCustomizationRoutes.js';
 import { handleCheckout } from './routes/checkout.js';
 import { handleInventoryRoutes } from './routes/inventoryRoutes.js';
 import { handleUtilityRoutes } from './routes/utilityRoutes.js';
@@ -15,6 +16,7 @@ import { handleIngredient } from './routes/ingredient.js';
 import { handleEmployee } from './routes/employee.js';
 import { handleShifts } from './routes/shifts.js';
 import { handleCustomer } from './routes/customer.js';
+import { handleLocationRoutes } from './routes/locationRoutes.js';
 
 
 import './db/connection.js';
@@ -91,7 +93,7 @@ async function serveStaticFile(req, res) {
 }
 
 
-const server = http.createServer(async (req, res) => {
+export const app = async (req, res) => {
     const { url, method } = req;
     console.log(`${method} request for ${url}`);
     
@@ -115,6 +117,8 @@ const server = http.createServer(async (req, res) => {
         handleNotificationRoutes(req, res);
     } else if (url.startsWith('/api/editpage')) {
         handleEditPage(req, res);
+    } else if (url.startsWith('/api/menu/customizations')) {
+        handleMenuCustomizationRoutes(req, res);
     } else if (url.startsWith('/api/menu/')) {
         handleMenu(req, res);
     } else if (url.startsWith('/api/welcome')) {
@@ -137,6 +141,8 @@ const server = http.createServer(async (req, res) => {
         handleCustomer(req, res);
     } else if (url.startsWith('/api/shifts')) {
         handleShifts(req, res);
+    } else if (url.startsWith('/api/locations')) {
+        handleLocationRoutes(req, res);
     }
     // Serve React app
     else {
@@ -160,7 +166,9 @@ const server = http.createServer(async (req, res) => {
             res.end('<h1>404 - Application Not Found</h1><p>The React app build files are missing. Please run "npm run build" in the client directory.</p>');
         }
     }
-});
+}
+
+const server = http.createServer(app);
 
 // Start the server and have it listen on the specified port and hostname.
 // The callback function is executed once the server starts listening.

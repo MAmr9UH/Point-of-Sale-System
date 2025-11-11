@@ -1,7 +1,11 @@
 import fs from 'fs'
-import path from 'path'
 
 function loadEnv() {
+  if (process.env.NODE_ENV === 'production') {
+    // In production, we assume environment variables are set properly.
+    return;
+  }
+
   try {
     // 1. Get the path to the .env file
     const envPath = process.cwd().endsWith("server") ? "./.env" : "../.env";

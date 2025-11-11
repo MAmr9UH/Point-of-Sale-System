@@ -181,7 +181,7 @@ export const getAllMenuItems = async (availableOnly = true) => {
                 Name: item.IName,
                 CustomizableCategory: item.CustomizableCategory || "Other",
                 QuantityRequired: item.QuantityRequired,
-                MaximumQuantity: item.MaxiumQuantity,
+                MaximumQuantity: item.MaximumQuantity,
                 IsRemovable: item.IsRemovable,
                 IsRequired: item.IsRequired,
                 CanSubstitute: item.CanSubstitute
@@ -229,7 +229,7 @@ export const getMenuItemByIds = async (menuItemIds) => {
                 Name: item.IName,
                 CustomizableCategory: item.CustomizableCategory || "Other",
                 QuantityRequired: item.QuantityRequired,
-                MaximumQuantity: item.MaxiumQuantity,
+                MaximumQuantity: item.MaximumQuantity,
                 IsRemovable: item.IsRemovable,
                 IsRequired: item.IsRequired,
                 CanSubstitute: item.CanSubstitute
