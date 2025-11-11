@@ -1,7 +1,9 @@
 import {
   fetchInventoryOrders,
   createInventoryOrder,
-  fetchIngredients
+  fetchIngredients,
+  updateInventoryOrder,
+  deleteInventoryOrder,
 } from '../model/EmployeeManagerModel.js';
 
 // server/routes/inventoryRoutes.js
@@ -9,22 +11,6 @@ import {
 // --- Function to handle all /api/inventory routes ---
 export function handleInventoryRoutes(req, res) {
   const { url, method } = req;
-
-  if (method === 'GET' && url === '/api/ingredients') {
-    fetchIngredients()
-      .then(ingredients => {
-        res.statusCode = 200;
-        res.setHeader('Content-Type', 'application/json');
-        res.end(JSON.stringify(ingredients));
-      })
-      .catch(err => {
-        console.error('❌ Error fetching ingredients:', err);
-        res.statusCode = 500;
-        res.setHeader('Content-Type', 'application/json');
-        res.end(JSON.stringify({ error: 'Failed to fetch ingredients' }));
-      });
-    return true;
-  }
 
   // ✅ GET all inventory orders from database
   if (method === 'GET' && url === '/api/inventory') {
@@ -78,5 +64,55 @@ export function handleInventoryRoutes(req, res) {
     return true;
   }
 
-  return false; // not handled
+  if (url.startsWith('/api/inventory/') && (method === 'PUT' || method === 'DELETE')) {
+    const id = url.split('/').pop();
+    if (method === 'PUT') {
+      let body = '';
+      req.on('data', chunk => {
+        body += chunk;
+      }
+      );
+      req.on('end', () => {
+        try {
+          const payload = JSON.parse(body);
+          updateInventoryOrder(id, payload)
+            .then(updatedOrder => {
+              console.log('✅ Inventory order updated:', updatedOrder);
+              res.statusCode = 200;
+              res.setHeader('Content-Type', 'application/json');
+              res.end(JSON.stringify({ message: 'Inventory order updated successfully', updatedOrder }));
+            })
+            .catch(err => {
+              console.error('❌ Error updating inventory order:', err);
+              res.statusCode = 500;
+              res.setHeader('Content-Type', 'application/json');
+              res.end(JSON.stringify({ error: 'Failed to update inventory order' }));
+            });
+        } catch (err) {
+          console.error('❌ Error handling /api/inventory/:id PUT:', err);
+          res.statusCode = 400;
+          res.setHeader('Content-Type', 'application/json');
+          res.end(JSON.stringify({ error: 'Invalid JSON data' }));
+        }
+      });
+      return true;
+    } else if (method === 'DELETE') {
+      deleteInventoryOrder(id)
+        .then(() => {
+          console.log('🗑️ Inventory order deleted:', id);
+          res.statusCode = 200;
+          res.setHeader('Content-Type', 'application/json');
+          res.end(JSON.stringify({ message: 'Inventory order deleted successfully' }));
+        })
+        .catch(err => {
+          console.error('❌ Error deleting inventory order:', err);
+          res.statusCode = 500;
+          res.setHeader('Content-Type', 'application/json');
+          res.end(JSON.stringify({ error: 'Failed to delete inventory order' }));
+        });
+      return true;
+    }
+
+    return false; // not handled
+  }
 }

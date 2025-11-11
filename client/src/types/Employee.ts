@@ -1,10 +1,11 @@
 export interface Employee {
   StaffID?: number;
-  FirstName: string;
-  LastName: string;
+  Fname: string;
+  Lname: string;
   Email: string;
   PhoneNumber: string;
-  Role: 'manager' | 'cashier' | 'cook';
+  Role: 'cashier' | 'cook';
+  PayRate?: number;
   HireDate?: string;
   CreatedAt?: string;
   LastUpdatedAt?: string;

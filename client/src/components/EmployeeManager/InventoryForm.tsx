@@ -1,14 +1,14 @@
-import React from 'react';
+import React, { useState } from 'react';
+
+import type { Ingredient } from "./InventoryTab.tsx";
 
 interface InventoryFormProps {
-  supplierName: string;
-  setSupplierName: (value: string) => void;
   status: string;
   setStatus: (value: string) => void;
-  locationName: string;
-  setLocationName: (value: string) => void;
   selectedIngredient: string;
   setSelectedIngredient: (value: string) => void;
+  selectedIngredientId: number | null;
+  setSelectedIngredientId: (value: number | null) => void;
   showIngredients: boolean;
   setShowIngredients: (value: boolean) => void;
   receivedDate: string;
@@ -17,19 +17,17 @@ interface InventoryFormProps {
   setCostPerUnit: (value: string) => void;
   quantity: string;
   setQuantity: (value: string) => void;
-  ingredients: { name: string; cost: number }[];
+  ingredients: Ingredient[];
   onSave: () => void;
 }
 
 export const InventoryForm: React.FC<InventoryFormProps> = ({
-  supplierName,
-  setSupplierName,
   status,
   setStatus,
-  locationName,
-  setLocationName,
   selectedIngredient,
   setSelectedIngredient,
+  selectedIngredientId: _selectedIngredientId,
+  setSelectedIngredientId,
   showIngredients,
   setShowIngredients,
   receivedDate,
@@ -41,19 +39,15 @@ export const InventoryForm: React.FC<InventoryFormProps> = ({
   ingredients,
   onSave
 }) => {
+  const [ingredientSearch, setIngredientSearch] = useState('');
+
+  const filteredIngredients = ingredients.filter(item =>
+    item.Name.toLowerCase().includes(ingredientSearch.toLowerCase())
+  );
+
   return (
     <>
       <h2>Add Inventory Order</h2>
-
-      <div className="form-group">
-        <label>Supplier Name:</label>
-        <input
-          type="text"
-          value={supplierName}
-          onChange={e => setSupplierName(e.target.value)}
-          placeholder="Enter supplier name"
-        />
-      </div>
 
       <div className="form-group">
         <label>Status:</label>
@@ -66,18 +60,8 @@ export const InventoryForm: React.FC<InventoryFormProps> = ({
       </div>
 
       <div className="form-group">
-        <label>Location Name:</label>
-        <input
-          type="text"
-          value={locationName}
-          onChange={e => setLocationName(e.target.value)}
-          placeholder="Enter location name"
-        />
-      </div>
-
-      <div className="form-group">
         <label>Ingredient Item:</label>
-        <div style={{ position: 'relative' }}>
+        <div style={{ position: 'relative', color: 'black' }}>
           <input
             type="text"
             placeholder="Select Ingredient"
@@ -88,19 +72,37 @@ export const InventoryForm: React.FC<InventoryFormProps> = ({
           />
           {showIngredients && (
             <div className="dropdown-menu">
-              {ingredients.map((item, i) => (
-                <div
-                  key={i}
-                  className="dropdown-item"
-                  onClick={() => {
-                    setSelectedIngredient(item.name);
-                    setShowIngredients(false);
-                  }}
-                >
-                  <span className="dropdown-item-name">{item.name}</span>
-                  <span className="dropdown-item-cost">+${item.cost.toFixed(2)}</span>
+              <div style={{ padding: '8px', borderBottom: '1px solid #ddd', position: 'sticky', top: 0, background: 'white' }}>
+                <input
+                  type="text"
+                  placeholder="Search ingredients..."
+                  value={ingredientSearch}
+                  onChange={(e) => setIngredientSearch(e.target.value)}
+                  onClick={(e) => e.stopPropagation()}
+                  style={{ width: '100%', padding: '6px', border: '1px solid #ddd', borderRadius: '4px' }}
+                />
+              </div>
+              {filteredIngredients.length > 0 ? (
+                filteredIngredients.map((item, i) => (
+                  <div
+                    key={i}
+                    className="dropdown-item"
+                    onClick={() => {
+                      setSelectedIngredient(item.Name);
+                      setSelectedIngredientId(item.IngredientID);
+                      setShowIngredients(false);
+                      setIngredientSearch('');
+                    }}
+                  >
+                    <span className="dropdown-item-name">{item.Name}</span>
+                    <span className="dropdown-item-cost">+${Number(item.CostPerUnit).toFixed(2)}</span>
+                  </div>
+                ))
+              ) : (
+                <div style={{ padding: '12px', textAlign: 'center', color: '#666' }}>
+                  No ingredients found
                 </div>
-              ))}
+              )}
             </div>
           )}
         </div>

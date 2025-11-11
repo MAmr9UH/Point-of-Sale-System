@@ -2,10 +2,21 @@ import React, { useState, useEffect } from 'react';
 import { EmployeeForm } from './EmployeeForm.tsx';
 import { EmployeeList } from './EmployeeList.tsx';
 import { ShiftAssignment } from './ShiftAssignment.tsx';
+import { ConfirmDialog } from './ConfirmDialog.tsx';
 import { PlusIcon } from './Icons';
+import { useToaster } from '../../contexts/ToastContext';
 import type { Employee } from '../../types/Employee';
 
+interface Customer {
+  CustomerID: number;
+  Fname: string | null;
+  Lname: string | null;
+  Email: string;
+  PhoneNumber: string | null;
+}
+
 export const EmployeeManagementTab: React.FC = () => {
+  const { addToast } = useToaster();
   const [employees, setEmployees] = useState<Employee[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [showForm, setShowForm] = useState(false);
@@ -13,13 +24,16 @@ export const EmployeeManagementTab: React.FC = () => {
   const [editingEmployee, setEditingEmployee] = useState<Employee | null>(null);
   const [selectedEmployee, setSelectedEmployee] = useState<Employee | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
+  const [confirmDialog, setConfirmDialog] = useState<{
+    show: boolean;
+    title: string;
+    message: string;
+    onConfirm: () => void;
+  } | null>(null);
 
   // Form state
-  const [firstName, setFirstName] = useState('');
-  const [lastName, setLastName] = useState('');
-  const [email, setEmail] = useState('');
-  const [phoneNumber, setPhoneNumber] = useState('');
-  const [role, setRole] = useState<'manager' | 'cashier' | 'cook'>('cashier');
+  const [payRate, setPayRate] = useState('');
+  const [selectedCustomer, setSelectedCustomer] = useState<Customer | null>(null);
 
   useEffect(() => {
     loadEmployees();
@@ -33,13 +47,14 @@ export const EmployeeManagementTab: React.FC = () => {
       setEmployees(data);
     } catch (error) {
       console.error('Error loading employees:', error);
+      addToast('Failed to load employees. Please try again.', 'error', 5000);
     } finally {
       setIsLoading(false);
     }
   };
 
   const filteredEmployees = employees.filter(employee =>
-    `${employee.FirstName} ${employee.LastName}`.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    `${employee.Fname} ${employee.Lname}`.toLowerCase().includes(searchTerm.toLowerCase()) ||
     employee.Email.toLowerCase().includes(searchTerm.toLowerCase()) ||
     employee.Role.toLowerCase().includes(searchTerm.toLowerCase())
   );
@@ -47,11 +62,7 @@ export const EmployeeManagementTab: React.FC = () => {
   const openForm = (employee?: Employee) => {
     if (employee) {
       setEditingEmployee(employee);
-      setFirstName(employee.FirstName);
-      setLastName(employee.LastName);
-      setEmail(employee.Email);
-      setPhoneNumber(employee.PhoneNumber);
-      setRole(employee.Role);
+      setPayRate(employee.PayRate?.toString() || '');
     } else {
       resetForm();
     }
@@ -60,11 +71,8 @@ export const EmployeeManagementTab: React.FC = () => {
 
   const resetForm = () => {
     setEditingEmployee(null);
-    setFirstName('');
-    setLastName('');
-    setEmail('');
-    setPhoneNumber('');
-    setRole('cashier');
+    setPayRate('');
+    setSelectedCustomer(null);
   };
 
   const closeForm = () => {
@@ -74,13 +82,14 @@ export const EmployeeManagementTab: React.FC = () => {
 
   const handleSave = async () => {
     try {
-      const payload: Partial<Employee> = {
-        FirstName: firstName,
-        LastName: lastName,
-        Email: email,
-        PhoneNumber: phoneNumber,
-        Role: role,
+      const payload: any = {
+        PayRate: parseFloat(payRate),
       };
+
+      // Only include customerId when adding a new employee
+      if (!editingEmployee && selectedCustomer) {
+        payload.customerId = selectedCustomer.CustomerID;
+      }
 
       const method = editingEmployee ? 'PUT' : 'POST';
       const url = editingEmployee 
@@ -93,33 +102,63 @@ export const EmployeeManagementTab: React.FC = () => {
         body: JSON.stringify(payload),
       });
 
-      if (!response.ok) throw new Error('Failed to save employee');
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.message || errorData.error || 'Failed to save employee');
+      }
 
-      alert(editingEmployee ? 'Employee updated!' : 'Employee created!');
+      addToast(
+        editingEmployee ? 'Employee updated successfully!' : 'Employee created successfully!',
+        'success',
+        3000
+      );
       closeForm();
       await loadEmployees();
     } catch (error) {
       console.error('Error saving employee:', error);
-      alert('Failed to save employee');
+      addToast(
+        error instanceof Error ? error.message : 'Failed to save employee. Please try again.',
+        'error',
+        5000
+      );
     }
   };
 
   const handleDelete = async (id: number) => {
-    if (!confirm('Are you sure you want to delete this employee?')) return;
+    const employeeToDelete = employees.find(emp => emp.StaffID === id);
+    const employeeName = employeeToDelete 
+      ? `${employeeToDelete.Fname} ${employeeToDelete.Lname}`
+      : 'this employee';
 
-    try {
-      const response = await fetch(`/api/employees/${id}`, {
-        method: 'DELETE',
-      });
+    setConfirmDialog({
+      show: true,
+      title: 'Delete Employee',
+      message: `Are you sure you want to delete ${employeeName}? This action cannot be undone.`,
+      onConfirm: async () => {
+        try {
+          const response = await fetch(`/api/employees/${id}`, {
+            method: 'DELETE',
+          });
 
-      if (!response.ok) throw new Error('Failed to delete employee');
+          if (!response.ok) {
+            const errorData = await response.json().catch(() => ({}));
+            throw new Error(errorData.message || 'Failed to delete employee');
+          }
 
-      alert('Employee deleted!');
-      await loadEmployees();
-    } catch (error) {
-      console.error('Error deleting employee:', error);
-      alert('Failed to delete employee');
-    }
+          addToast('Employee deleted successfully!', 'success', 3000);
+          await loadEmployees();
+        } catch (error) {
+          console.error('Error deleting employee:', error);
+          addToast(
+            error instanceof Error ? error.message : 'Failed to delete employee. Please try again.',
+            'error',
+            5000
+          );
+        } finally {
+          setConfirmDialog(null);
+        }
+      },
+    });
   };
 
   const openShiftAssignment = (employee: Employee) => {
@@ -179,16 +218,10 @@ export const EmployeeManagementTab: React.FC = () => {
       {showForm && (
         <EmployeeForm
           editingEmployee={editingEmployee}
-          firstName={firstName}
-          setFirstName={setFirstName}
-          lastName={lastName}
-          setLastName={setLastName}
-          email={email}
-          setEmail={setEmail}
-          phoneNumber={phoneNumber}
-          setPhoneNumber={setPhoneNumber}
-          role={role}
-          setRole={setRole}
+          payRate={payRate}
+          setPayRate={setPayRate}
+          selectedCustomer={selectedCustomer}
+          setSelectedCustomer={setSelectedCustomer}
           onSave={handleSave}
           onClose={closeForm}
         />
@@ -198,6 +231,18 @@ export const EmployeeManagementTab: React.FC = () => {
         <ShiftAssignment
           employee={selectedEmployee}
           onClose={closeShiftForm}
+        />
+      )}
+
+      {confirmDialog?.show && (
+        <ConfirmDialog
+          title={confirmDialog.title}
+          message={confirmDialog.message}
+          onConfirm={confirmDialog.onConfirm}
+          onCancel={() => setConfirmDialog(null)}
+          confirmText="Delete"
+          cancelText="Cancel"
+          isDangerous={true}
         />
       )}
     </div>

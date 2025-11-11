@@ -1,4 +1,8 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
+
+interface Location {
+  Name: number;
+}
 
 interface UtilityFormProps {
   utilityType: string;
@@ -23,6 +27,26 @@ export const UtilityForm: React.FC<UtilityFormProps> = ({
   setUtilityDate,
   onSave
 }) => {
+  const [locations, setLocations] = useState<Location[]>([]);
+  const [isLoadingLocations, setIsLoadingLocations] = useState(false);
+
+  useEffect(() => {
+    loadLocations();
+  }, []);
+
+  const loadLocations = async () => {
+    setIsLoadingLocations(true);
+    try {
+      const response = await fetch('/api/utilities/locations');
+      const data = await response.json();
+      setLocations(data);
+    } catch (error) {
+      console.error('Error loading locations:', error);
+    } finally {
+      setIsLoadingLocations(false);
+    }
+  };
+
   return (
     <>
       <h2>Add Utility Payment</h2>
@@ -42,12 +66,18 @@ export const UtilityForm: React.FC<UtilityFormProps> = ({
 
       <div className="form-group">
         <label>Location:</label>
-        <input
-          type="text"
-          value={utilityLocation}
+        <select 
+          value={utilityLocation} 
           onChange={e => setUtilityLocation(e.target.value)}
-          placeholder="Enter location name"
-        />
+          disabled={isLoadingLocations}
+        >
+          <option value="">{isLoadingLocations ? 'Loading locations...' : 'Select Location'}</option>
+          {locations.map((location) => (
+            <option key={location.Name} value={location.Name}>
+              {location.Name}
+            </option>
+          ))}
+        </select>
       </div>
 
       <div className="form-group">

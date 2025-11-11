@@ -31,10 +31,10 @@ export const EmployeeList: React.FC<EmployeeListProps> = ({
   const formatDate = (dateString?: string) => {
     if (!dateString) return 'N/A';
     const date = new Date(dateString);
-    return date.toLocaleDateString('en-US', { 
-      year: 'numeric', 
-      month: 'short', 
-      day: 'numeric' 
+    return date.toLocaleDateString('en-US', {
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric'
     });
   };
 
@@ -58,25 +58,25 @@ export const EmployeeList: React.FC<EmployeeListProps> = ({
           <div className="employee-header">
             <div>
               <h3 className="employee-name">
-                {employee.FirstName} {employee.LastName}
+                {employee.Fname} {employee.Lname}
               </h3>
               <span className={`role-badge ${getRoleBadgeClass(employee.Role)}`}>
                 {employee.Role.charAt(0).toUpperCase() + employee.Role.slice(1)}
               </span>
             </div>
           </div>
-          
+
           <div className="employee-details">
             <div className="employee-detail">
               <span className="detail-label">📧 Email:</span>
               <span className="detail-value">{employee.Email}</span>
             </div>
-            
+
             <div className="employee-detail">
               <span className="detail-label">📞 Phone:</span>
               <span className="detail-value">{employee.PhoneNumber}</span>
             </div>
-            
+
             {employee.HireDate && (
               <div className="employee-detail">
                 <span className="detail-label">📅 Hire Date:</span>
@@ -96,7 +96,7 @@ export const EmployeeList: React.FC<EmployeeListProps> = ({
             <button
               className="btn-edit"
               onClick={() => onEdit(employee)}
-              title="Edit employee"
+              title="Edit"
             >
               Edit
             </button>

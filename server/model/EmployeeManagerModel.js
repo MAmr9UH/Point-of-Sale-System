@@ -156,6 +156,65 @@ export async function createUtilityPayment(payload) {
 }
 
 /**
+ * Updates an existing utility payment.
+ * @param {number} paymentId - The ID of the utility payment to update
+ * @param {Object} payload - The updated payment data
+ * @returns {Promise<Object>}
+ */
+export async function updateUtilityPayment(paymentId, payload) {
+  const type = (payload.type || 'other').toLowerCase();
+  const utilityTypeOptions = new Set([
+    'water',
+    'electricity',
+    'gas',
+    'internet',
+    'phone',
+    'other',
+  ]);
+  const utilityType = utilityTypeOptions.has(type) ? type : 'other';
+  const amount = Number(payload.amount ?? 0);
+  const date = payload.date
+    ? new Date(payload.date).toISOString().slice(0, 19).replace('T', ' ')
+    : new Date().toISOString().slice(0, 19).replace('T', ' ');
+  const locationName = payload.locationName || null;
+
+  const [result] = await db.execute(
+    `
+      UPDATE Utility_Payment 
+      SET LocationName = ?, PaymentDate = ?, Amount = ?, UtilityType = ?
+      WHERE PaymentID = ?
+    `,
+    [locationName, date, amount, utilityType, paymentId]
+  );
+
+  if (result.affectedRows === 0) {
+    throw new Error('Utility payment not found');
+  }
+
+  return {
+    id: paymentId,
+    type: utilityType,
+    amount,
+    date,
+    locationName,
+  };
+}
+
+/**
+ * Deletes a utility payment.
+ * @param {number} paymentId - The ID of the utility payment to delete
+ * @returns {Promise<boolean>}
+ */
+export async function deleteUtilityPayment(paymentId) {
+  const [result] = await db.execute(
+    'DELETE FROM Utility_Payment WHERE PaymentID = ?',
+    [paymentId]
+  );
+
+  return result.affectedRows > 0;
+}
+
+/**
  * Fetches inventory orders for display on the management tab.
  * @returns {Promise<Array>}
  */
@@ -182,6 +241,7 @@ export async function fetchInventoryOrders() {
       (row.ingredientId ? `Ingredient #${row.ingredientId}` : 'Unknown'),
     costPerUnit: row.costPerUnit ?? 0,
     quantity: row.quantity ?? 0,
+    ingredientId: row.ingredientId,
     receivedDate: row.receivedDate,
   }));
 }
@@ -235,4 +295,45 @@ export async function createInventoryOrder(payload) {
     quantity: Number(quantity ?? 0),
     receivedDate: receivedDate || null,
   };
+}
+
+export async function updateInventoryOrder(id, payload) {
+  const { status, costPerUnit, quantity, receivedDate, ingredientId } = payload;
+  const normalizedStatus = ['pending', 'received', 'cancelled'].includes(status ?? '')
+    ? status
+    : 'pending';
+  const shipmentDate = receivedDate
+    ? new Date(receivedDate).toISOString().slice(0, 19).replace('T', ' ')
+    : null;
+
+
+  const [result] = await db.execute(
+    `
+      UPDATE Inventory_Shipment
+      SET Status = ?, Cost = ?, QuantityReceived = ?, ShipmentDate = ?, IngredientID = ?
+      WHERE ShipmentID = ?
+    `,
+    [normalizedStatus, Number(costPerUnit ?? 0), Number(quantity ?? 0), shipmentDate, ingredientId, id]
+  );
+
+  if (result.affectedRows === 0) {
+    throw new Error('Inventory order not found');
+  }
+
+  return {
+    id,
+    status: normalizedStatus,
+    costPerUnit: Number(costPerUnit ?? 0),
+    quantity: Number(quantity ?? 0),
+    receivedDate: receivedDate || null,
+  };
+}
+
+export async function deleteInventoryOrder(id) {
+  const [result] = await db.execute(
+    'DELETE FROM Inventory_Shipment WHERE ShipmentID = ?',
+    [id]
+  );
+
+  return result.affectedRows > 0;
 }

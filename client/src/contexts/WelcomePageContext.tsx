@@ -67,6 +67,7 @@ export function WelcomePageProvider({ children }: { children: ReactNode }) {
 
 export function useWelcomePage() {
   const context = useContext(WelcomePageContext);
+  console.log(context?.pageData);
   if (context === undefined) {
     throw new Error('useWelcomePage must be used within a WelcomePageProvider');
   }

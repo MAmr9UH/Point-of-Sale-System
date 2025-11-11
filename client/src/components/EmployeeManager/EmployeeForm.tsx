@@ -1,35 +1,32 @@
 import React, { useState, useEffect } from 'react';
 import { CloseIcon } from './Icons';
+import { CustomerSearch } from './CustomerSearch';
 import type { Employee } from '../../types/Employee';
+
+interface Customer {
+  CustomerID: number;
+  Fname: string | null;
+  Lname: string | null;
+  Email: string;
+  PhoneNumber: string | null;
+}
 
 interface EmployeeFormProps {
   editingEmployee: Employee | null;
-  firstName: string;
-  setFirstName: (value: string) => void;
-  lastName: string;
-  setLastName: (value: string) => void;
-  email: string;
-  setEmail: (value: string) => void;
-  phoneNumber: string;
-  setPhoneNumber: (value: string) => void;
-  role: 'manager' | 'cashier' | 'cook';
-  setRole: (value: 'manager' | 'cashier' | 'cook') => void;
+  payRate: string;
+  setPayRate: (value: string) => void;
+  selectedCustomer: Customer | null;
+  setSelectedCustomer: (customer: Customer | null) => void;
   onSave: () => void;
   onClose: () => void;
 }
 
 export const EmployeeForm: React.FC<EmployeeFormProps> = ({
   editingEmployee,
-  firstName,
-  setFirstName,
-  lastName,
-  setLastName,
-  email,
-  setEmail,
-  phoneNumber,
-  setPhoneNumber,
-  role,
-  setRole,
+  payRate,
+  setPayRate,
+  selectedCustomer,
+  setSelectedCustomer,
   onSave,
   onClose,
 }) => {
@@ -49,12 +46,9 @@ export const EmployeeForm: React.FC<EmployeeFormProps> = ({
     }, 300);
   };
 
-  const isFormValid = 
-    firstName.trim() !== '' && 
-    lastName.trim() !== '' &&
-    email.trim() !== '' &&
-    phoneNumber.trim() !== '' &&
-    /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+  const isFormValid = editingEmployee 
+    ? (payRate.trim() !== '' && !isNaN(parseFloat(payRate)) && parseFloat(payRate) > 0)
+    : (selectedCustomer !== null && payRate.trim() !== '' && !isNaN(parseFloat(payRate)) && parseFloat(payRate) > 0);
 
   return (
     <div
@@ -82,63 +76,30 @@ export const EmployeeForm: React.FC<EmployeeFormProps> = ({
         </div>
 
         <div className="modal-body">
-          <div className="form-row">
+          {!editingEmployee && (
             <div className="form-group">
-              <label>First Name:</label>
-              <input
-                type="text"
-                value={firstName}
-                onChange={(e) => setFirstName(e.target.value)}
-                placeholder="Enter first name"
-                maxLength={50}
-                required
+              <label>Select Customer: <span style={{ color: '#ef4444' }}>*</span></label>
+              <CustomerSearch 
+                onSelect={setSelectedCustomer}
+                selectedCustomer={selectedCustomer}
               />
+              <p style={{ fontSize: '13px', color: '#6b7280', marginTop: '6px' }}>
+                Search for an existing customer by name, email, or phone number to create their employee account.
+              </p>
             </div>
-
-            <div className="form-group">
-              <label>Last Name:</label>
-              <input
-                type="text"
-                value={lastName}
-                onChange={(e) => setLastName(e.target.value)}
-                placeholder="Enter last name"
-                maxLength={50}
-                required
-              />
-            </div>
-          </div>
+          )}
 
           <div className="form-group">
-            <label>Email:</label>
+            <label>Pay Rate ($/hour):</label>
             <input
-              type="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              placeholder="employee@example.com"
-              maxLength={100}
+              type="number"
+              value={payRate}
+              onChange={(e) => setPayRate(e.target.value)}
+              placeholder="Enter hourly pay rate"
+              min="0"
+              step="0.01"
               required
             />
-          </div>
-
-          <div className="form-group">
-            <label>Phone Number:</label>
-            <input
-              type="tel"
-              value={phoneNumber}
-              onChange={(e) => setPhoneNumber(e.target.value)}
-              placeholder="(123) 456-7890"
-              maxLength={15}
-              required
-            />
-          </div>
-
-          <div className="form-group">
-            <label>Role:</label>
-            <select value={role} onChange={(e) => setRole(e.target.value as 'manager' | 'cashier' | 'cook')}>
-              <option value="cashier">Cashier</option>
-              <option value="cook">Cook</option>
-              <option value="manager">Manager</option>
-            </select>
           </div>
 
           <button

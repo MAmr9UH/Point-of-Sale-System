@@ -1,29 +1,60 @@
 import React, { useState, useEffect } from 'react';
 import { InventoryForm } from './InventoryForm';
 import { InventoryList } from './InventoryList';
+import { ConfirmDialog } from './ConfirmDialog';
+import { useToaster } from '../../contexts/ToastContext';
 
-const INGREDIENTS = [
-  { name: 'Example French Toast', cost: 1.0 },
-  { name: 'Example item1', cost: 1.0 },
-  { name: 'Example Avocado', cost: 1.0 },
-  { name: 'Example Fruit', cost: 1.0 },
-  { name: 'Example meat', cost: 1.0 },
-];
+export interface Ingredient {
+  IngredientID: number;
+  Name: string;
+  CostPerUnit: number;
+}
+
+export interface InventoryOrder {
+  id?: number;
+  status: string;
+  ingredientId?: number | null;
+  ingredientItem: string;
+  costPerUnit: string;
+  quantity: string;
+  receivedDate: string;
+}
 
 export const InventoryTab: React.FC = () => {
-  const [supplierName, setSupplierName] = useState('');
+  const { addToast } = useToaster();
   const [status, setStatus] = useState('');
-  const [locationName, setLocationName] = useState('');
   const [selectedIngredient, setSelectedIngredient] = useState('');
+  const [selectedIngredientId, setSelectedIngredientId] = useState<number | null>(null);
   const [showIngredients, setShowIngredients] = useState(false);
   const [receivedDate, setReceivedDate] = useState('');
   const [costPerUnit, setCostPerUnit] = useState('');
   const [quantity, setQuantity] = useState('');
-  const [inventoryList, setInventoryList] = useState<any[]>([]);
+  const [inventoryList, setInventoryList] = useState<InventoryOrder[]>([]);
+  const [ingredients, setIngredients] = useState<{ IngredientID: number; Name: string; CostPerUnit: number }[]>([]);
+  const [editingOrder, setEditingOrder] = useState<InventoryOrder | null>(null);
+  const [selectedStatuses, setSelectedStatuses] = useState<string[]>(['pending', 'received', 'delayed']);
+  const [confirmDialog, setConfirmDialog] = useState<{
+    show: boolean;
+    title: string;
+    message: string;
+    onConfirm: () => void;
+  } | null>(null);
 
   useEffect(() => {
     loadInventory();
+    loadIngredients();
   }, []);
+
+  const loadIngredients = async () => {
+    try {
+      const response = await fetch('/api/ingredients');
+      const data: Ingredient[] = await response.json();
+      // Map costPerUnit to cost for compatibility with the form
+      setIngredients(data.map(ing => ({ IngredientID: ing.IngredientID, Name: ing.Name, CostPerUnit: ing.CostPerUnit })));
+    } catch (error) {
+      console.error('Error loading ingredients:', error);
+    }
+  };
 
   const loadInventory = async () => {
     try {
@@ -38,40 +69,119 @@ export const InventoryTab: React.FC = () => {
   const handleSaveInventoryOrder = async () => {
     try {
       const payload = {
-        supplierName,
         status,
-        locationName,
+        ingredientId: selectedIngredientId,
         ingredientItem: selectedIngredient || 'Example Ingredient',
         receivedDate,
         costPerUnit: parseFloat(costPerUnit),
         quantity: parseInt(quantity),
       };
 
-      const res = await fetch('/api/inventory', {
-        method: 'POST',
+      const method = editingOrder ? 'PUT' : 'POST';
+      const url = editingOrder 
+        ? `/api/inventory/${editingOrder.id}` 
+        : '/api/inventory';
+
+      const res = await fetch(url, {
+        method,
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload),
       });
 
-      if (!res.ok) throw new Error(`Server error: ${res.status}`);
-      const data = await res.json();
-      console.log('✅ Inventory order saved:', data);
-      alert('Inventory order saved successfully!');
+      if (!res.ok) {
+        const errorData = await res.json().catch(() => ({}));
+        throw new Error(errorData.error || `Server error: ${res.status}`);
+      }
 
-      setSupplierName('');
+      addToast(
+        editingOrder ? 'Inventory order updated successfully!' : 'Inventory order saved successfully!',
+        'success',
+        3000
+      );
+
       setStatus('');
-      setLocationName('');
       setSelectedIngredient('');
+      setSelectedIngredientId(null);
       setReceivedDate('');
       setCostPerUnit('');
       setQuantity('');
+      setEditingOrder(null);
 
       await loadInventory();
     } catch (err) {
       console.error('❌ Error saving inventory order:', err);
-      alert('Failed to save inventory order. Check console.');
+      addToast(
+        err instanceof Error ? err.message : 'Failed to save inventory order. Please try again.',
+        'error',
+        5000
+      );
     }
   };
+
+  const handleEditInventoryOrder = (order: InventoryOrder) => {
+    setStatus(order.status);
+    setSelectedIngredient(order.ingredientItem);
+    setSelectedIngredientId(order.ingredientId || null);
+    setReceivedDate(order.receivedDate);
+    setCostPerUnit(order.costPerUnit.toString());
+    setQuantity(order.quantity.toString());
+    setEditingOrder(order);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  const handleDeleteInventoryOrder = (order: InventoryOrder) => {
+    setConfirmDialog({
+      show: true,
+      title: 'Delete Inventory Order',
+      message: `Are you sure you want to delete the order for "${order.ingredientItem}"? This action cannot be undone.`,
+      onConfirm: async () => {
+        try {
+          const res = await fetch(`/api/inventory/${order.id}`, {
+            method: 'DELETE',
+          });
+
+          if (!res.ok) {
+            const errorData = await res.json().catch(() => ({}));
+            throw new Error(errorData.error || 'Failed to delete inventory order');
+          }
+
+          addToast('Inventory order deleted successfully!', 'success', 3000);
+          setConfirmDialog(null);
+          await loadInventory();
+        } catch (err) {
+          console.error('❌ Error deleting inventory order:', err);
+          addToast(
+            err instanceof Error ? err.message : 'Failed to delete inventory order. Please try again.',
+            'error',
+            5000
+          );
+          setConfirmDialog(null);
+        }
+      },
+    });
+  };
+
+  // Toggle status selection
+  const toggleStatus = (status: string) => {
+    setSelectedStatuses(prev => {
+      if (prev.includes(status)) {
+        return prev.filter(s => s !== status);
+      } else {
+        return [...prev, status];
+      }
+    });
+  };
+
+  // Filter inventory by selected statuses
+  const filteredInventory = selectedStatuses.length === 0 
+    ? inventoryList 
+    : inventoryList.filter(order => selectedStatuses.includes(order.status));
+
+  // Calculate total cost
+  const totalCost = filteredInventory.reduce((sum, order) => {
+    const cost = parseFloat(order.costPerUnit) * parseInt(order.quantity);
+    return sum + (isNaN(cost) ? 0 : cost);
+  }, 0);
 
   return (
     <div className="form-container">
@@ -81,15 +191,51 @@ export const InventoryTab: React.FC = () => {
       </div>
 
       <div className="content-card">
+        {editingOrder && (
+          <div style={{
+            background: '#dbeafe',
+            border: '1px solid #3b82f6',
+            borderRadius: '8px',
+            padding: '12px 16px',
+            marginBottom: '20px',
+            display: 'flex',
+            justifyContent: 'space-between',
+            alignItems: 'center'
+          }}>
+            <span style={{ color: '#1e40af', fontWeight: 500 }}>
+              ✏️ Editing: {editingOrder.ingredientItem}
+            </span>
+            <button
+              onClick={() => {
+                setEditingOrder(null);
+                setStatus('');
+                setSelectedIngredient('');
+                setSelectedIngredientId(null);
+                setReceivedDate('');
+                setCostPerUnit('');
+                setQuantity('');
+              }}
+              style={{
+                background: 'transparent',
+                border: 'none',
+                color: '#1e40af',
+                cursor: 'pointer',
+                fontSize: '14px',
+                fontWeight: 500
+              }}
+            >
+              Cancel
+            </button>
+          </div>
+        )}
+        
         <InventoryForm
-          supplierName={supplierName}
-          setSupplierName={setSupplierName}
           status={status}
           setStatus={setStatus}
-          locationName={locationName}
-          setLocationName={setLocationName}
           selectedIngredient={selectedIngredient}
           setSelectedIngredient={setSelectedIngredient}
+          selectedIngredientId={selectedIngredientId}
+          setSelectedIngredientId={setSelectedIngredientId}
           showIngredients={showIngredients}
           setShowIngredients={setShowIngredients}
           receivedDate={receivedDate}
@@ -98,12 +244,190 @@ export const InventoryTab: React.FC = () => {
           setCostPerUnit={setCostPerUnit}
           quantity={quantity}
           setQuantity={setQuantity}
-          ingredients={INGREDIENTS}
+          ingredients={ingredients}
           onSave={handleSaveInventoryOrder}
         />
 
-        <InventoryList inventory={inventoryList} />
+        <hr className="section-divider" />
+        
+        {inventoryList.length > 0 && (
+          <>
+            <div style={{ 
+              display: 'flex', 
+              justifyContent: 'space-between', 
+              alignItems: 'center', 
+              marginBottom: '16px',
+              gap: '20px',
+              flexWrap: 'wrap'
+            }}>
+              <h2 style={{ margin: 0 }}>Saved Inventory Orders</h2>
+
+              <div style={{
+                background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+                padding: '16px 24px',
+                borderRadius: '12px',
+                boxShadow: '0 4px 6px rgba(0, 0, 0, 0.1)',
+                minWidth: '200px'
+              }}>
+                <div style={{ 
+                  fontSize: '12px', 
+                  color: 'rgba(255, 255, 255, 0.9)',
+                  fontWeight: 500,
+                  marginBottom: '4px',
+                  textTransform: 'uppercase',
+                  letterSpacing: '0.5px'
+                }}>
+                  Total Cost
+                  {selectedStatuses.length > 0 && selectedStatuses.length < 3 && 
+                    ` (${selectedStatuses.join(', ')})`
+                  }
+                </div>
+                <div style={{ 
+                  fontSize: '28px', 
+                  fontWeight: 700,
+                  color: 'white'
+                }}>
+                  ${totalCost.toFixed(2)}
+                </div>
+              </div>
+            </div>
+
+            <div style={{ 
+              display: 'flex', 
+              alignItems: 'center', 
+              gap: '12px',
+              marginBottom: '20px',
+              padding: '12px 16px',
+              backgroundColor: '#f9fafb',
+              borderRadius: '8px',
+              border: '1px solid #e5e7eb',
+              flexWrap: 'wrap'
+            }}>
+              <span style={{ 
+                fontSize: '14px', 
+                fontWeight: 600,
+                color: '#374151'
+              }}>
+                Filter by Status:
+              </span>
+              
+              <div style={{ 
+                display: 'flex', 
+                gap: '8px',
+                flexWrap: 'wrap'
+              }}>
+                <button
+                  onClick={() => toggleStatus('pending')}
+                  style={{
+                    padding: '8px 16px',
+                    border: selectedStatuses.includes('pending') ? '2px solid #f59e0b' : '1px solid #d1d5db',
+                    borderRadius: '6px',
+                    fontSize: '14px',
+                    fontWeight: 500,
+                    backgroundColor: selectedStatuses.includes('pending') ? '#f59e0b' : 'white',
+                    color: selectedStatuses.includes('pending') ? 'white' : '#374151',
+                    cursor: 'pointer',
+                    transition: 'all 0.2s',
+                    outline: 'none'
+                  }}
+                  onMouseEnter={(e) => {
+                    if (!selectedStatuses.includes('pending')) {
+                      e.currentTarget.style.backgroundColor = '#f3f4f6';
+                    }
+                  }}
+                  onMouseLeave={(e) => {
+                    if (!selectedStatuses.includes('pending')) {
+                      e.currentTarget.style.backgroundColor = 'white';
+                    }
+                  }}
+                >
+                  ⏳ Pending
+                </button>
+
+                <button
+                  onClick={() => toggleStatus('received')}
+                  style={{
+                    padding: '8px 16px',
+                    border: selectedStatuses.includes('received') ? '2px solid #10b981' : '1px solid #d1d5db',
+                    borderRadius: '6px',
+                    fontSize: '14px',
+                    fontWeight: 500,
+                    backgroundColor: selectedStatuses.includes('received') ? '#10b981' : 'white',
+                    color: selectedStatuses.includes('received') ? 'white' : '#374151',
+                    cursor: 'pointer',
+                    transition: 'all 0.2s',
+                    outline: 'none'
+                  }}
+                  onMouseEnter={(e) => {
+                    if (!selectedStatuses.includes('received')) {
+                      e.currentTarget.style.backgroundColor = '#f3f4f6';
+                    }
+                  }}
+                  onMouseLeave={(e) => {
+                    if (!selectedStatuses.includes('received')) {
+                      e.currentTarget.style.backgroundColor = 'white';
+                    }
+                  }}
+                >
+                  ✅ Received
+                </button>
+
+                <button
+                  onClick={() => toggleStatus('delayed')}
+                  style={{
+                    padding: '8px 16px',
+                    border: selectedStatuses.includes('delayed') ? '2px solid #ef4444' : '1px solid #d1d5db',
+                    borderRadius: '6px',
+                    fontSize: '14px',
+                    fontWeight: 500,
+                    backgroundColor: selectedStatuses.includes('delayed') ? '#ef4444' : 'white',
+                    color: selectedStatuses.includes('delayed') ? 'white' : '#374151',
+                    cursor: 'pointer',
+                    transition: 'all 0.2s',
+                    outline: 'none'
+                  }}
+                  onMouseEnter={(e) => {
+                    if (!selectedStatuses.includes('delayed')) {
+                      e.currentTarget.style.backgroundColor = '#f3f4f6';
+                    }
+                  }}
+                  onMouseLeave={(e) => {
+                    if (!selectedStatuses.includes('delayed')) {
+                      e.currentTarget.style.backgroundColor = 'white';
+                    }
+                  }}
+                >
+                  ⚠️ Delayed
+                </button>
+              </div>
+
+              <span style={{
+                fontSize: '13px',
+                color: '#6b7280',
+                marginLeft: 'auto'
+              }}>
+                Showing {filteredInventory.length} of {inventoryList.length} orders
+              </span>
+            </div>
+          </>
+        )}
+
+        <InventoryList 
+          inventory={filteredInventory} 
+          onEdit={handleEditInventoryOrder}
+          onDelete={handleDeleteInventoryOrder}
+        />
       </div>
+
+      {confirmDialog?.show && (
+        <ConfirmDialog
+          title={confirmDialog.title}
+          message={confirmDialog.message}
+          onConfirm={confirmDialog.onConfirm}
+          onCancel={() => setConfirmDialog(null)}
+          isDangerous={true}
+        />
+      )}
     </div>
   );
 };

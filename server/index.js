@@ -14,6 +14,7 @@ import { handleNotificationRoutes } from './routes/notifications.js';
 import { handleIngredient } from './routes/ingredient.js';
 import { handleEmployee } from './routes/employee.js';
 import { handleShifts } from './routes/shifts.js';
+import { handleCustomer } from './routes/customer.js';
 
 
 import './db/connection.js';
@@ -132,6 +133,8 @@ const server = http.createServer(async (req, res) => {
         handleIngredient(req, res);
     } else if (url.startsWith('/api/employees')) {
         handleEmployee(req, res);
+    } else if (url.startsWith('/api/customers')) {
+        handleCustomer(req, res);
     } else if (url.startsWith('/api/shifts')) {
         handleShifts(req, res);
     }

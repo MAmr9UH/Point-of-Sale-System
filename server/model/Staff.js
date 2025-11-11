@@ -276,3 +276,55 @@ export const assignStaffToShift = async (employeeId, locationId, shiftStart, shi
     const [result] = await db.query(query, [locationId, employeeId, shiftStart, shiftEnd]);
     return result.insertId;
 }
+
+export const removeEmployee = async (employeeId) => {
+    const query = `DELETE FROM Staff WHERE StaffID = ?;`;
+    const [result] = await db.query(query, [employeeId]);
+    return result.affectedRows > 0;
+}
+
+export const createEmployeeFromCustomer = async (customerId, payRate) => {
+    // First get the customer data
+    const customerQuery = 'SELECT * FROM Customer WHERE CustomerID = ?';
+    const [customerRows] = await db.execute(customerQuery, [customerId]);
+    
+    if (customerRows.length === 0) {
+        throw new Error('Customer not found');
+    }
+    
+    const customer = customerRows[0];
+    
+    // Create staff member with customer's information
+    // Role defaults to 'employee' - cook/cashier distinction is only for shift assignments
+    const staffQuery = `
+        INSERT INTO Staff (Role, Email, PasswordHash, PhoneNumber, Fname, Lname, PayRate, CreatedAt, LastUpdatedAt)
+        VALUES (?, ?, ?, ?, ?, ?, ?, NOW(), NOW())
+    `;
+    
+    const [result] = await db.execute(staffQuery, [
+        'employee', // Default role for all new employees
+        customer.Email,
+        customer.PasswordHash, // Use existing password hash
+        customer.PhoneNumber,
+        customer.Fname,
+        customer.Lname,
+        payRate
+    ]);
+    
+    // Return the newly created staff member
+    const newStaffQuery = 'SELECT * FROM Staff WHERE StaffID = ?';
+    const [staffRows] = await db.execute(newStaffQuery, [result.insertId]);
+    
+    return staffRows.length > 0 ? Staff.fromDB(staffRows[0]) : null;
+}
+
+export const updateEmployeePayRate = async (employeeId, newPayRate) => {
+    const query = `
+        UPDATE Staff
+        SET PayRate = ?, LastUpdatedAt = NOW()
+        WHERE StaffID = ?;
+    `;
+    const [ res ] = await db.execute(query, [newPayRate, employeeId]);
+
+    return res.affectedRows > 0;
+}

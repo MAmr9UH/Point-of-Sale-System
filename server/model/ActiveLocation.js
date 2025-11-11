@@ -426,3 +426,13 @@ export const getLocationToday = async () => {
 
     return activelocations.filter(loc => loc.operatesToday());
 }
+
+export const getAllLocations = async () => {
+    const query = `
+        SELECT l.*
+        FROM Location l
+    `;
+    const [results] = await db.query(query);
+
+    return results;
+};

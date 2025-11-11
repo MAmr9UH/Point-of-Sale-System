@@ -5,7 +5,7 @@ import { useWelcomePage } from '../contexts/WelcomePageContext';
 import { updateLandingPage } from '../utils/editLandingPage';
 
 export default function EditLandingPage() {
-  const { pageData, isLoading: isLoadingData } = useWelcomePage();
+  const { pageData, isLoading: isLoadingData, refetchData } = useWelcomePage();
   
   // State for editable content
   const [title, setTitle] = useState('');
@@ -35,6 +35,10 @@ export default function EditLandingPage() {
     
     if (result.success) {
       setSaveMessage('✓ ' + result.message);
+      
+      // Refetch the welcome page data to rehydrate the context
+      await refetchData();
+      
       setTimeout(() => setSaveMessage(''), 3000);
     } else {
       setSaveMessage('✗ ' + result.message);
@@ -64,6 +68,12 @@ export default function EditLandingPage() {
       </div>
     );
   }
+
+  // Debug logging
+  console.log('EditLandingPage render - backgroundImageUrl:', backgroundImageUrl);
+  console.log('EditLandingPage render - backgroundImageUrl.length:', backgroundImageUrl.length);
+  console.log('EditLandingPage render - pageData?.BackgroundURL:', pageData?.BackgroundURL);
+  console.log('EditLandingPage render - computed style will be:', backgroundImageUrl ? `url("${backgroundImageUrl}")` : 'none');
 
   return (
     <div className="edit-landing-container">
@@ -100,7 +110,11 @@ export default function EditLandingPage() {
                     id="backgroundImageUrl"
                     type="url"
                     value={backgroundImageUrl}
-                    onChange={(e) => setBackgroundImageUrl(e.target.value)}
+                    onChange={(e) => {
+                      const newValue = e.target.value;
+                      console.log('Input onChange - new value:', newValue);
+                      setBackgroundImageUrl(newValue);
+                    }}
                     placeholder="https://example.com/image.jpg"
                   />
                   <p className="field-hint">Enter a direct URL to an image. Recommended: 1920x1080px or larger.</p>
@@ -164,12 +178,13 @@ export default function EditLandingPage() {
             <div className="preview-content">
               <div 
                 className="welcome-container"
-                style={backgroundImageUrl ? {
-                  backgroundImage: `url(${backgroundImageUrl})`,
+                style={{
+                  backgroundImage: backgroundImageUrl ? `url("${backgroundImageUrl}")` : 'none',
                   backgroundSize: 'cover',
                   backgroundPosition: 'center',
-                  backgroundRepeat: 'no-repeat'
-                } : {}}
+                  backgroundRepeat: 'no-repeat',
+                  backgroundColor: backgroundImageUrl ? 'transparent' : '#f3f4f6'
+                }}
               >
                 <div className="welcome-header-outside">
                   <h1 className="welcome-title-outside">{title || 'Food Truck Name'}</h1>

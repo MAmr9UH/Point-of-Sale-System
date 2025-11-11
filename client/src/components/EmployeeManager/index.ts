@@ -28,6 +28,8 @@ export { EmployeeManagementTab } from './EmployeeManagementTab';
 export { EmployeeForm } from './EmployeeForm';
 export { EmployeeList } from './EmployeeList';
 export { ShiftAssignment } from './ShiftAssignment';
+export { CustomerSearch } from './CustomerSearch';
+export { ConfirmDialog } from './ConfirmDialog';
 
 // Icons
 export * from './Icons';

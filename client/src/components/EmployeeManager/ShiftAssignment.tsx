@@ -2,6 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { CloseIcon } from './Icons';
 import type { Employee, Shift } from '../../types/Employee';
 import { useWelcomePage } from '../../contexts/WelcomePageContext';
+import { useToaster } from '../../contexts/ToastContext';
+import { ConfirmDialog } from './ConfirmDialog';
 
 interface ShiftAssignmentProps {
   employee: Employee;
@@ -10,10 +12,17 @@ interface ShiftAssignmentProps {
 
 export const ShiftAssignment: React.FC<ShiftAssignmentProps> = ({ employee, onClose }) => {
   const { pageData } = useWelcomePage();
+  const { addToast } = useToaster();
   const [shifts, setShifts] = useState<Shift[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [isClosing, setIsClosing] = useState(false);
   const [isVisible, setIsVisible] = useState(false);
+  const [confirmDialog, setConfirmDialog] = useState<{
+    show: boolean;
+    title: string;
+    message: string;
+    onConfirm: () => void;
+  } | null>(null);
 
   // Form state
   const [dayOfWeek, setDayOfWeek] = useState('');
@@ -36,6 +45,7 @@ export const ShiftAssignment: React.FC<ShiftAssignmentProps> = ({ employee, onCl
       setShifts(data);
     } catch (error) {
       console.error('Error loading shifts:', error);
+      addToast('Failed to load shifts. Please try again.', 'error', 5000);
     } finally {
       setIsLoading(false);
     }
@@ -49,8 +59,8 @@ export const ShiftAssignment: React.FC<ShiftAssignmentProps> = ({ employee, onCl
   };
 
   const handleAddShift = async () => {
-    if (!dayOfWeek || !startTime || !endTime) {
-      alert('Please fill in all shift details');
+    if (!dayOfWeek || !startTime || !endTime || !locationId) {
+      addToast('Please fill in all shift details', 'error', 3000);
       return;
     }
 
@@ -87,45 +97,66 @@ export const ShiftAssignment: React.FC<ShiftAssignmentProps> = ({ employee, onCl
         body: JSON.stringify(payload),
       });
 
-      if (!response.ok) throw new Error('Failed to add shift');
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.message || 'Failed to add shift');
+      }
 
-      alert('Shift added successfully!');
+      addToast('Shift added successfully!', 'success', 3000);
       setDayOfWeek('');
       setStartTime('');
       setEndTime('');
+      setLocationId('');
       await loadShifts();
     } catch (error) {
       console.error('Error adding shift:', error);
-      alert('Failed to add shift');
+      addToast(
+        error instanceof Error ? error.message : 'Failed to add shift. Please try again.',
+        'error',
+        5000
+      );
     }
   };
 
-  const handleDeleteShift = async (assignId: number) => {
-    if (!confirm('Are you sure you want to delete this shift?')) return;
+  const handleDeleteShift = async (assignId: number, shift: Shift) => {
+    const shiftDate = formatDateTime(shift.scheduleStart);
+    const shiftTime = `${formatTime(shift.scheduleStart)} - ${formatTime(shift.scheduleEnd)}`;
+    
+    setConfirmDialog({
+      show: true,
+      title: 'Delete Shift',
+      message: `Are you sure you want to delete the shift on ${shiftDate} (${shiftTime})? This action cannot be undone.`,
+      onConfirm: async () => {
+        try {
+          const response = await fetch(`/api/shifts/${assignId}`, {
+            method: 'DELETE',
+          });
 
-    try {
-      const response = await fetch(`/api/shifts/${assignId}`, {
-        method: 'DELETE',
-      });
+          if (!response.ok) {
+            const errorData = await response.json().catch(() => ({}));
+            throw new Error(errorData.message || 'Failed to delete shift');
+          }
 
-      if (!response.ok) throw new Error('Failed to delete shift');
-
-      alert('Shift deleted!');
-      await loadShifts();
-    } catch (error) {
-      console.error('Error deleting shift:', error);
-      alert('Failed to delete shift');
-    }
+          addToast('Shift deleted successfully!', 'success', 3000);
+          await loadShifts();
+        } catch (error) {
+          console.error('Error deleting shift:', error);
+          addToast(
+            error instanceof Error ? error.message : 'Failed to delete shift. Please try again.',
+            'error',
+            5000
+          );
+        } finally {
+          setConfirmDialog(null);
+        }
+      },
+    });
   };
 
   const formatDateTime = (isoString: string) => {
     const date = new Date(isoString);
     const dayOfWeek = date.toLocaleDateString('en-US', { weekday: 'long' });
-    const dateStr = date.toLocaleDateString('en-US', { 
-      month: 'short', 
-      day: 'numeric' 
-    });
-    return `${dayOfWeek}, ${dateStr}`;
+    return dayOfWeek;
   };
 
   const formatTime = (isoString: string) => {
@@ -158,7 +189,7 @@ export const ShiftAssignment: React.FC<ShiftAssignmentProps> = ({ employee, onCl
         }}
       >
         <div className="modal-header">
-          <h2>Shift Assignment - {employee.FirstName} {employee.LastName}</h2>
+          <h2>Shift Assignment - {employee.Fname} {employee.Lname}</h2>
           <button className="modal-close" onClick={handleClose}>
             <CloseIcon style={{ width: '24px', height: '24px' }} />
           </button>
@@ -249,7 +280,7 @@ export const ShiftAssignment: React.FC<ShiftAssignmentProps> = ({ employee, onCl
                     </div>
                     <button
                       className="btn-delete-shift"
-                      onClick={() => shift.assignId && handleDeleteShift(shift.assignId)}
+                      onClick={() => shift.assignId && handleDeleteShift(shift.assignId, shift)}
                     >
                       Delete
                     </button>
@@ -259,6 +290,18 @@ export const ShiftAssignment: React.FC<ShiftAssignmentProps> = ({ employee, onCl
             )}
           </div>
         </div>
+
+        {confirmDialog?.show && (
+          <ConfirmDialog
+            title={confirmDialog.title}
+            message={confirmDialog.message}
+            onConfirm={confirmDialog.onConfirm}
+            onCancel={() => setConfirmDialog(null)}
+            confirmText="Delete"
+            cancelText="Cancel"
+            isDangerous={true}
+          />
+        )}
       </div>
     </div>
   );

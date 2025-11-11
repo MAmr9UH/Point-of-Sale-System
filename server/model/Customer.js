@@ -403,3 +403,18 @@ export const createNewCustomer = async (customerData) => {
     customer.customerID = result.insertId;
     return customer;
 }
+
+export const searchCustomers = async (searchTerm) => {
+    const searchPattern = `%${searchTerm}%`;
+    const query = `
+        SELECT * FROM Customer 
+        WHERE Fname LIKE ? 
+           OR Lname LIKE ? 
+           OR Email LIKE ? 
+           OR PhoneNumber LIKE ?
+        ORDER BY Fname, Lname
+        LIMIT 20
+    `;
+    const [rows] = await db.execute(query, [searchPattern, searchPattern, searchPattern, searchPattern]);
+    return rows.map(row => Customer.fromDB(row));
+}

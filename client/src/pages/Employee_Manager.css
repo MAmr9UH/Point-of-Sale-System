@@ -152,7 +152,7 @@
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
     margin-bottom: 2rem;
     width: 100%;
-    max-width: 1200px;
+    max-width: 900px;
 }
 
 .content-card h2 {
@@ -189,6 +189,9 @@
     color: #333;
 }
 
+#statusFilter {
+    color: "black";
+}
 .form-group input:focus,
 .form-group textarea:focus,
 .form-group select:focus {
@@ -266,6 +269,48 @@
     cursor: not-allowed;
     opacity: 0.6;
     box-shadow: none;
+}
+
+/* Icon Buttons for Table Actions */
+.icon-button {
+    padding: 6px;
+    border: 1px solid #d1d5db;
+    background: white;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.icon-button:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.icon-button:active {
+    transform: translateY(0);
+}
+
+.edit-button {
+    color: #3b82f6;
+    border-color: #bfdbfe;
+}
+
+.edit-button:hover {
+    background-color: #eff6ff;
+    border-color: #3b82f6;
+}
+
+.delete-button {
+    color: #ef4444;
+    border-color: #fecaca;
+}
+
+.delete-button:hover {
+    background-color: #fef2f2;
+    border-color: #ef4444;
 }
 
 .btn-secondary {
@@ -757,18 +802,6 @@
     align-items: center;
 }
 
-.detail-label {
-    font-weight: 600;
-    color: #7f8c8d;
-    font-size: 0.9rem;
-}
-
-.detail-value {
-    font-weight: 600;
-    color: #2c3e50;
-    font-size: 1rem;
-}
-
 .detail-value.low-stock {
     color: #e74c3c;
 }
@@ -921,6 +954,7 @@
 /* Employee Management Tab Styles */
 .employees-grid {
     display: grid;
+    width: 100%;
     grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
     gap: 1.5rem;
     margin-top: 2rem;
@@ -995,9 +1029,25 @@
 
 .employee-detail {
     display: flex;
-    justify-content: space-between;
-    align-items: center;
+    gap: 0.5rem;
     font-size: 0.9rem;
+    align-items: flex-start;
+}
+
+.detail-label {
+    font-weight: 600;
+    color: #7f8c8d;
+    font-size: 0.9rem;
+    white-space: nowrap;
+    flex-shrink: 0;
+}
+
+.detail-value {
+    font-weight: 600;
+    color: #2c3e50;
+    font-size: 0.9rem;
+    word-break: break-word;
+    flex: 1;
 }
 
 .employee-actions {

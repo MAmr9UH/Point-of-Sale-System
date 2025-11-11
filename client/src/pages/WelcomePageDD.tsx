@@ -33,8 +33,19 @@ export default function WelcomePageDD() {
     );
   }
 
+  // Debug: Log background URL
+  console.log('WelcomePage - BackgroundURL:', pageData?.BackgroundURL);
+
   return (
-    <div className="welcome-container" style={{ backgroundImage: `url(${pageData?.BackgroundURL})` }}>
+    <div 
+      className="welcome-container" 
+      style={{
+        backgroundImage: pageData?.BackgroundURL ? `url("${pageData.BackgroundURL}")` : 'none',
+        backgroundSize: 'cover',
+        backgroundPosition: 'center',
+        backgroundRepeat: 'no-repeat'
+      }}
+    >
        <TopNav />
        
       <header className="welcome-header-outside fade-in">
