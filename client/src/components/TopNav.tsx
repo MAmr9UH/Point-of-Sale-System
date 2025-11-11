@@ -21,6 +21,9 @@ export function TopNav() {
         {user ? (
           <>
             <span className="nav-user-name">Hello, {user.Fname}</span>
+            {userType === "customer" && (
+              <Link to="/profile" className="btn btn-ghost">My Profile</Link>
+            )}
             {userType === "manager" && (
               <Link to="/manager" className="btn btn-ghost">Dashboard</Link>
             )}

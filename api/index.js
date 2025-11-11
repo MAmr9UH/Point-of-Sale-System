@@ -11,6 +11,7 @@ import { handleInventoryRoutes } from '../server/routes/inventoryRoutes.js';
 import { handleUtilityRoutes } from '../server/routes/utilityRoutes.js';
 import { handleEditPage } from '../server/routes/editpage.js';
 import { handleNotificationRoutes } from '../server/routes/notifications.js';
+import { handleCustomerProfile } from './routes/customerProfile.js';
 
 import '../server/db/connection.js';
 
@@ -124,7 +125,9 @@ export default async (req, res) => {
         handleUtilityRoutes(req, res);
     } else if (url.startsWith('/api/reports')) {
         handleReports(req, res);
-    } 
+    } else if (url.startsWith('/api/customer/profile')) {
+            handleCustomerProfile(req, res);
+    }
     // Serve React app
     else {
         const publicDir = path.join(__dirname, 'public');

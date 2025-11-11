@@ -191,7 +191,7 @@ export default function FoodTruckCheckout() {
     if (data.success && data.isBusy) {
       // Show warning popup
       addToast(
-        `⚠️ We're busy! We have ${data.pendingCount} pending orders. Your order may take longer than usual.`,
+        `⚠️ We're busy! Your order may take longer than usual. Thank you for your patience!`,
         "warning"
       );
     }

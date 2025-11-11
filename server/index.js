@@ -10,6 +10,7 @@ import { handleInventoryRoutes } from './routes/inventoryRoutes.js';
 import { handleUtilityRoutes } from './routes/utilityRoutes.js';
 import { handleEditPage } from './routes/editpage.js';
 import { handleNotificationRoutes } from './routes/notifications.js';
+import { handleCustomerProfile } from './routes/customerProfile.js';
 
 import './db/connection.js';
 
@@ -132,7 +133,9 @@ const server = http.createServer(async (req, res) => {
         handleReports(req, res);
     } else if (url.startsWith('/api/busy-status')){
         handleBusyStatus(req,res);
-    } 
+    } else if (url.startsWith('/api/customer/profile')) {
+        handleCustomerProfile(req, res);
+    }
     // Serve React app
     else {
         const publicDir = path.join(__dirname, 'public');

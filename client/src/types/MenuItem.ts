@@ -6,11 +6,6 @@ export interface MenuItem {
     ImageURL: string;
     Category: 'appetizer' | 'entree' | 'dessert' | 'beverage';
     Availability: number; // 0 or 1 (boolean from database)
-<<<<<<< HEAD
-}
-
-export type MenuItemCategory = 'appetizer' | 'entree' | 'dessert' | 'beverage';
-=======
     Ingredients: Ingredient[];
 }
 
@@ -27,4 +22,3 @@ export interface Ingredient {
     IsRequired: number; // 0 or 1
     CanSubstitute: number; // 0 or 1
 };
->>>>>>> origin/main

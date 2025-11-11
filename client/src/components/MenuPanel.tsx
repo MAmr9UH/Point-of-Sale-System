@@ -17,10 +17,30 @@ const MenuPanel = () => {
     const { addItem } = useShoppingCart();
     const { addToast } = useToaster();
 
-    useEffect(() => {
+        useEffect(() => {
+        // Fetch menu items
         fetchMenuUtils.fetchMenuEm().then(items => {
             setMenuItems(items);
         });
+
+        // Check busy status when menu loads
+        const checkBusyStatus = async () => {
+            try {
+                const response = await fetch('/api/busy-status');
+                const data = await response.json();
+                
+                if (data.success && data.isBusy) {
+                    addToast(
+                        `⚠️ We're busy! Orders may take longer than usual. Thank you for your patience!`,
+                        "warning"
+                    );
+                }
+            } catch (error) {
+                console.error('Error checking busy status:', error);
+            }
+        };
+
+        checkBusyStatus();
     }, []);
 
     const handleOpenCustomization = (item: MenuItemType) => {
