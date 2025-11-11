@@ -1,6 +1,9 @@
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import "./ReportsPage.css";
+import ProfitLocationChart from "../components/ProfitLocationChart";
+import PopularItemChart from "../components/PopularItemChart";
+import EmployeePerformanceChart from "../components/EmployeePerformanceChart";
 
 /* ========= Types from API ========= */
 type ReportType = "locations" | "items" | "employees";
@@ -113,11 +116,16 @@ export default function ReportsPage() {
 
   /* ---- Keep sort field sensible per report type (useEffect, not useMemo) ---- */
   useEffect(() => {
+    console.log(`🔄 Tab switched to: ${type}`);
+    
     // reset preview/table when user switches report tabs
     setViewed(false);
     setRows([]);
     setErr(null);
     setLoading(false);
+    setKeyword(""); // Clear search bar when switching tabs
+    
+    console.log(`✅ State reset complete for ${type} tab`);
 
     if (type === "locations") {
       setSortField((f) => (["LocationName","TotalOrders","TotalSales","TotalCost","TotalProfit","ProfitMarginPct"].includes(f) ? f : "TotalProfit"));
@@ -183,7 +191,15 @@ export default function ReportsPage() {
   const filtered = useMemo(() => {
     const q = keyword.trim().toLowerCase();
     if (!q) return rows;
-    return rows.filter((r) => haystackForRow(r, type).toLowerCase().includes(q));
+    
+    // Split by comma or space, remove empty strings
+    const keywords = q.split(/[,\s]+/).filter(k => k.length > 0);
+    
+    // Filter rows that match ANY of the keywords (OR logic)
+    return rows.filter((r) => {
+      const haystack = haystackForRow(r, type).toLowerCase();
+      return keywords.some(kw => haystack.includes(kw));
+    });
   }, [rows, keyword, type]);
 
   const result = useMemo(() => {
@@ -281,7 +297,13 @@ export default function ReportsPage() {
             <input
               type="text"
               className="keyword-input"
-              placeholder="Search item, employee, or location…"
+              placeholder={
+                type === "employees" 
+                  ? "Search by multiple keywords (e.g., Maria, Carlos or Manager, Server)…"
+                  : type === "items"
+                  ? "Search by multiple keywords (e.g., Burger, Pizza or Appetizer, Dessert)…"
+                  : "Search by multiple keywords (e.g., Downtown, Mall or Location A, Location B)…"
+              }
               value={keyword}
               onChange={(e) => setKeyword(e.target.value)}
             />
@@ -350,121 +372,157 @@ export default function ReportsPage() {
           </div>
 
           {/* Locations */}
-          {type === "locations" && (
-            <table className="rtable">
-              <thead>
-                <tr>
-                  <th>Location Name</th>
-                  <th style={{ textAlign: 'right' }}>Total Orders</th>
-                  <th style={{ textAlign: 'right' }}>Total Sales ($)</th>
-                  <th style={{ textAlign: 'right' }}>Total Cost ($)</th>
-                  <th style={{ textAlign: 'right' }}>Total Profit ($)</th>
-                  <th style={{ textAlign: 'right' }}>Profit Margin (%)</th>
-                </tr>
-              </thead>
-              <tbody>
-                {(result as ProfitPerLocationRow[]).map((r, i) => (
-                  <tr key={`${r.LocationName ?? 'loc'}-${i}`}>
-                    <td>{r.LocationName}</td>
-                    <td style={{ textAlign: 'right' }}>{Number(r.TotalOrders ?? 0)}</td>
-                    <td style={{ textAlign: 'right' }}>{money(Number(r.TotalSales ?? 0))}</td>
-                    <td style={{ textAlign: 'right' }}>{money(Number(r.TotalCost ?? 0))}</td>
-                    <td style={{ textAlign: 'right' }}>{money(Number(r.TotalProfit ?? 0))}</td>
-                    <td style={{ textAlign: 'right' }}>{Number(r.ProfitMarginPct ?? 0).toFixed(2)}%</td>
+          {type === "locations" && rows.length > 0 && result && result.length > 0 && (
+            <>
+              {/* Chart - only show for numeric metrics */}
+              {sortField !== "LocationName" && (
+                <ProfitLocationChart 
+                  key={`location-chart-${type}`}
+                  data={result as ProfitPerLocationRow[]} 
+                  metric={sortField as 'TotalProfit' | 'TotalSales' | 'TotalCost' | 'TotalOrders' | 'ProfitMarginPct'}
+                />
+              )}
+              
+              {/* Table */}
+              <table className="rtable">
+                <thead>
+                  <tr>
+                    <th>Location Name</th>
+                    <th style={{ textAlign: 'right' }}>Total Orders</th>
+                    <th style={{ textAlign: 'right' }}>Total Sales ($)</th>
+                    <th style={{ textAlign: 'right' }}>Total Cost ($)</th>
+                    <th style={{ textAlign: 'right' }}>Total Profit ($)</th>
+                    <th style={{ textAlign: 'right' }}>Profit Margin (%)</th>
                   </tr>
-                ))}
-                <tr className="subtotal">
-                  <td>Total</td>
-                  <td style={{ textAlign: 'right' }}>
-                    {(result as ProfitPerLocationRow[]).reduce((a, b) => a + Number(b.TotalOrders || 0), 0)}
-                  </td>
-                  <td style={{ textAlign: 'right' }}>
-                    {money((result as ProfitPerLocationRow[]).reduce((a, b) => a + Number(b.TotalSales || 0), 0))}
-                  </td>
-                  <td style={{ textAlign: 'right' }}>
-                    {money((result as ProfitPerLocationRow[]).reduce((a, b) => a + Number(b.TotalCost || 0), 0))}
-                  </td>
-                  <td style={{ textAlign: 'right' }}>
-                    {money((result as ProfitPerLocationRow[]).reduce((a, b) => a + Number(b.TotalProfit || 0), 0))}
-                  </td>
-                  <td style={{ textAlign: 'right' }}>
-                    {(() => {
-                      const totSales = (result as ProfitPerLocationRow[]).reduce((a, b) => a + Number(b.TotalSales || 0), 0);
-                      const totProfit = (result as ProfitPerLocationRow[]).reduce((a, b) => a + Number(b.TotalProfit || 0), 0);
-                      return totSales > 0 ? ( (totProfit / totSales) * 100 ).toFixed(2) + '%' : '0.00%';
-                    })()}
-                  </td>
-                </tr>
-              </tbody>
-            </table>
+                </thead>
+                <tbody>
+                  {(result as ProfitPerLocationRow[]).map((r, i) => (
+                    <tr key={`${r.LocationName ?? 'loc'}-${i}`}>
+                      <td>{r.LocationName}</td>
+                      <td style={{ textAlign: 'right' }}>{Number(r.TotalOrders ?? 0)}</td>
+                      <td style={{ textAlign: 'right' }}>{money(Number(r.TotalSales ?? 0))}</td>
+                      <td style={{ textAlign: 'right' }}>{money(Number(r.TotalCost ?? 0))}</td>
+                      <td style={{ textAlign: 'right' }}>{money(Number(r.TotalProfit ?? 0))}</td>
+                      <td style={{ textAlign: 'right' }}>{Number(r.ProfitMarginPct ?? 0).toFixed(2)}%</td>
+                    </tr>
+                  ))}
+                  <tr className="subtotal">
+                    <td>Total</td>
+                    <td style={{ textAlign: 'right' }}>
+                      {(result as ProfitPerLocationRow[]).reduce((a, b) => a + Number(b.TotalOrders || 0), 0)}
+                    </td>
+                    <td style={{ textAlign: 'right' }}>
+                      {money((result as ProfitPerLocationRow[]).reduce((a, b) => a + Number(b.TotalSales || 0), 0))}
+                    </td>
+                    <td style={{ textAlign: 'right' }}>
+                      {money((result as ProfitPerLocationRow[]).reduce((a, b) => a + Number(b.TotalCost || 0), 0))}
+                    </td>
+                    <td style={{ textAlign: 'right' }}>
+                      {money((result as ProfitPerLocationRow[]).reduce((a, b) => a + Number(b.TotalProfit || 0), 0))}
+                    </td>
+                    <td style={{ textAlign: 'right' }}>
+                      {(() => {
+                        const totSales = (result as ProfitPerLocationRow[]).reduce((a, b) => a + Number(b.TotalSales || 0), 0);
+                        const totProfit = (result as ProfitPerLocationRow[]).reduce((a, b) => a + Number(b.TotalProfit || 0), 0);
+                        return totSales > 0 ? ( (totProfit / totSales) * 100 ).toFixed(2) + '%' : '0.00%';
+                      })()}
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </>
           )}
 
           {/* Items */}
-          {type === "items" && (
-            <table className="rtable">
-              <thead>
-                <tr>
-                  <th>Item name</th>
-                  <th>Category</th>
-                  <th style={{ textAlign: 'right' }}>Quantity</th>
-                  <th style={{ textAlign: 'right' }}>Total sales ($)</th>
-                  <th style={{ textAlign: 'right' }}>Avg Item Price</th>
-                  <th style={{ textAlign: 'right' }}>Porcentage of total sales</th>
-                </tr>
-              </thead>
-              <tbody>
-                {(result as PopularItemRow[]).map((r, i) => (
-                  <tr key={`${r.ItemName}-${i}`}>
-                    <td>{r.ItemName}</td>
-                    <td>{r.Category}</td>
-                    <td style={{ textAlign: 'right' }}>{Number(r.TotalQuantity ?? 0)}</td>
-                    <td style={{ textAlign: 'right' }}>{money(Number(r.TotalSales ?? 0))}</td>
-                    <td style={{ textAlign: 'right' }}>{money(Number(r.AvgPricePerItem ?? 0))}</td>
-                    <td style={{ textAlign: 'right' }}>{Number(r.SalesSharePct ?? 0).toFixed(2)}%</td>
+          {type === "items" && rows.length > 0 && result && result.length > 0 && (
+            <>
+              {/* Chart - only show for numeric metrics */}
+              {sortField !== "ItemName" && sortField !== "Category" && (
+                <PopularItemChart 
+                  key={`item-chart-${type}`}
+                  data={result as PopularItemRow[]} 
+                  metric={sortField as 'TotalQuantity' | 'TotalSales' | 'AvgPricePerItem' | 'SalesSharePct'}
+                />
+              )}
+              
+              {/* Table */}
+              <table className="rtable">
+                <thead>
+                  <tr>
+                    <th>Item name</th>
+                    <th>Category</th>
+                    <th style={{ textAlign: 'right' }}>Quantity</th>
+                    <th style={{ textAlign: 'right' }}>Total sales ($)</th>
+                    <th style={{ textAlign: 'right' }}>Avg Item Price</th>
+                    <th style={{ textAlign: 'right' }}>Porcentage of total sales</th>
                   </tr>
-                ))}
-                <tr className="subtotal">
-                  <td>Total</td>
-                  <td />
-                  <td style={{ textAlign: 'right' }}>
-                    {(result as PopularItemRow[]).reduce((a, b) => a + Number(b.TotalQuantity || 0), 0)}
-                  </td>
-                  <td style={{ textAlign: 'right' }}>
-                    {money((result as PopularItemRow[]).reduce((a, b) => a + Number(b.TotalSales || 0), 0))}
-                  </td>
-                  <td />
-                  <td />
-                </tr>
-              </tbody>
-            </table>
+                </thead>
+                <tbody>
+                  {(result as PopularItemRow[]).map((r, i) => (
+                    <tr key={`${r.ItemName}-${i}`}>
+                      <td>{r.ItemName}</td>
+                      <td>{r.Category}</td>
+                      <td style={{ textAlign: 'right' }}>{Number(r.TotalQuantity ?? 0)}</td>
+                      <td style={{ textAlign: 'right' }}>{money(Number(r.TotalSales ?? 0))}</td>
+                      <td style={{ textAlign: 'right' }}>{money(Number(r.AvgPricePerItem ?? 0))}</td>
+                      <td style={{ textAlign: 'right' }}>{Number(r.SalesSharePct ?? 0).toFixed(2)}%</td>
+                    </tr>
+                  ))}
+                  <tr className="subtotal">
+                    <td>Total</td>
+                    <td />
+                    <td style={{ textAlign: 'right' }}>
+                      {(result as PopularItemRow[]).reduce((a, b) => a + Number(b.TotalQuantity || 0), 0)}
+                    </td>
+                    <td style={{ textAlign: 'right' }}>
+                      {money((result as PopularItemRow[]).reduce((a, b) => a + Number(b.TotalSales || 0), 0))}
+                    </td>
+                    <td />
+                    <td />
+                  </tr>
+                </tbody>
+              </table>
+            </>
           )}
 
           {/* Employees */}
-          {type === "employees" && (
-            <table className="rtable">
-              <thead>
-                <tr>
-                  <th>Employee Name</th>
-                  <th>Role / Position</th>
-                  <th style={{ textAlign: 'right' }}>Total Orders Handled</th>
-                  <th style={{ textAlign: 'right' }}>Total Sales ($)</th>
-                  <th style={{ textAlign: 'right' }}>Total Hours Worked</th>
-                  <th style={{ textAlign: 'right' }}>Sales per Hour</th>
-                </tr>
-              </thead>
-              <tbody>
-                {(result as EmployeePerfRow[]).map((r, i) => (
-                  <tr key={`${r.EmployeeName ?? `employee-${i}`}`}>
-                    <td>{r.EmployeeName}</td>
-                    <td>{r.Role}</td>
-                    <td style={{ textAlign: 'right' }}>{Number(r.TotalOrdersHandled ?? 0)}</td>
-                    <td style={{ textAlign: 'right' }}>{money(Number(r.TotalSales ?? 0))}</td>
-                    <td style={{ textAlign: 'right' }}>{Number(r.TotalHoursWorked ?? 0).toFixed(2)}</td>
-                    <td style={{ textAlign: 'right' }}>{Number(r.SalesPerHour ?? 0).toFixed(2)}</td>
+          {type === "employees" && rows.length > 0 && (
+            <>
+              {/* Chart - only show for numeric metrics */}
+              {sortField !== "EmployeeName" && sortField !== "Role" && (
+                <EmployeePerformanceChart 
+                  key={`employee-chart-${type}`}
+                  data={result as EmployeePerfRow[]} 
+                  metric={sortField as 'TotalOrdersHandled' | 'TotalSales' | 'TotalHoursWorked' | 'SalesPerHour'}
+                />
+              )}
+              
+              {/* Table */}
+              <table className="rtable">
+                <thead>
+                  <tr>
+                    <th>Employee Name</th>
+                    <th>Role / Position</th>
+                    <th style={{ textAlign: 'right' }}>Total Orders Handled</th>
+                    <th style={{ textAlign: 'right' }}>Total Sales ($)</th>
+                    <th style={{ textAlign: 'right' }}>Total Hours Worked</th>
+                    <th style={{ textAlign: 'right' }}>Sales per Hour</th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
+                </thead>
+                <tbody>
+                  {(result as EmployeePerfRow[]).map((r, i) => (
+                    <tr key={`${r.EmployeeName ?? `employee-${i}`}`}>
+                      <td>{r.EmployeeName}</td>
+                      <td>{r.Role}</td>
+                      <td style={{ textAlign: 'right' }}>{Number(r.TotalOrdersHandled ?? 0)}</td>
+                      <td style={{ textAlign: 'right' }}>{money(Number(r.TotalSales ?? 0))}</td>
+                      <td style={{ textAlign: 'right' }}>{Number(r.TotalHoursWorked ?? 0).toFixed(2)}</td>
+                      <td style={{ textAlign: 'right' }}>{Number(r.SalesPerHour ?? 0).toFixed(2)}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </>
           )}
 
           <div className="report-footer">Generated on {new Date().toLocaleString()}</div>
