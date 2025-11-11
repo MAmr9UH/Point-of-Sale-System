@@ -107,24 +107,32 @@ export default async (req, res) => {
     } 
     // API routes
     else if (url.startsWith('/api/staff/notifications')) {
-        handleNotificationRoutes(req, res);
-    } else if (url.startsWith('/api/editpage')) {
-        handleEditPage(req, res);
-    } else if (url.startsWith('/api/menu/')) {
-        handleMenu(req, res);
-    } else if (url.startsWith('/api/welcome')) {
-        handleWelcome(req, res);
-    } else if (url.startsWith('/api/auth')) {
-        handleAuth(req, res);
-    } else if (url.startsWith('/api/checkout')) {
-        handleCheckout(req, res);
-    } else if (url.startsWith('/api/inventory')) {
-        handleInventoryRoutes(req, res);
-    } else if (url.startsWith('/api/utilities')) {
-        handleUtilityRoutes(req, res);
-    } else if (url.startsWith('/api/reports')) {
-        handleReports(req, res);
-    } 
+            handleNotificationRoutes(req, res);
+        } else if (url.startsWith('/api/editpage')) {
+            handleEditPage(req, res);
+        } else if (url.startsWith('/api/menu/')) {
+            handleMenu(req, res);
+        } else if (url.startsWith('/api/welcome')) {
+            handleWelcome(req, res);
+        } else if (url.startsWith('/api/auth')) {
+            handleAuth(req, res);
+        } else if (url.startsWith('/api/checkout')) {
+            handleCheckout(req, res);
+        } else if (url.startsWith('/api/inventory')) {
+            handleInventoryRoutes(req, res);
+        } else if (url.startsWith('/api/utilities')) {
+            handleUtilityRoutes(req, res);
+        } else if (url.startsWith('/api/reports')) {
+            handleReports(req, res);
+        } else if (url.startsWith('/api/ingredients')) {
+            handleIngredient(req, res);
+        } else if (url.startsWith('/api/employees')) {
+            handleEmployee(req, res);
+        } else if (url.startsWith('/api/customers')) {
+            handleCustomer(req, res);
+        } else if (url.startsWith('/api/shifts')) {
+            handleShifts(req, res);
+        }
     // Serve React app
     else {
         const publicDir = path.join(__dirname, 'public');
