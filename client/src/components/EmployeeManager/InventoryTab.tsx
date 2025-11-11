@@ -27,7 +27,6 @@ export const InventoryTab: React.FC = () => {
   const [selectedIngredientId, setSelectedIngredientId] = useState<number | null>(null);
   const [showIngredients, setShowIngredients] = useState(false);
   const [receivedDate, setReceivedDate] = useState('');
-  const [costPerUnit, setCostPerUnit] = useState('');
   const [quantity, setQuantity] = useState('');
   const [inventoryList, setInventoryList] = useState<InventoryOrder[]>([]);
   const [ingredients, setIngredients] = useState<{ IngredientID: number; Name: string; CostPerUnit: number }[]>([]);
@@ -68,13 +67,26 @@ export const InventoryTab: React.FC = () => {
 
   const handleSaveInventoryOrder = async () => {
     try {
+      // Validate quantity
+      const quantityNum = parseInt(quantity || '0');
+      if (quantityNum < 0) {
+        addToast('Quantity cannot be less than 0', 'error', 3000);
+        return;
+      }
+
+      // Calculate total cost: CostPerUnit * quantity
+      const selectedIngredientData = ingredients.find(ing => ing.IngredientID === selectedIngredientId);
+      const totalCost = selectedIngredientData 
+        ? selectedIngredientData.CostPerUnit * quantityNum
+        : 0;
+
       const payload = {
         status,
         ingredientId: selectedIngredientId,
         ingredientItem: selectedIngredient || 'Example Ingredient',
         receivedDate,
-        costPerUnit: parseFloat(costPerUnit),
-        quantity: parseInt(quantity),
+        costPerUnit: totalCost, // Total cost (not per unit)
+        quantity: quantityNum,
       };
 
       const method = editingOrder ? 'PUT' : 'POST';
@@ -103,7 +115,6 @@ export const InventoryTab: React.FC = () => {
       setSelectedIngredient('');
       setSelectedIngredientId(null);
       setReceivedDate('');
-      setCostPerUnit('');
       setQuantity('');
       setEditingOrder(null);
 
@@ -123,7 +134,6 @@ export const InventoryTab: React.FC = () => {
     setSelectedIngredient(order.ingredientItem);
     setSelectedIngredientId(order.ingredientId || null);
     setReceivedDate(order.receivedDate);
-    setCostPerUnit(order.costPerUnit.toString());
     setQuantity(order.quantity.toString());
     setEditingOrder(order);
     window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -177,9 +187,9 @@ export const InventoryTab: React.FC = () => {
     ? inventoryList 
     : inventoryList.filter(order => selectedStatuses.includes(order.status));
 
-  // Calculate total cost
+  // Calculate total cost (costPerUnit already contains the total cost)
   const totalCost = filteredInventory.reduce((sum, order) => {
-    const cost = parseFloat(order.costPerUnit) * parseInt(order.quantity);
+    const cost = parseFloat(order.costPerUnit);
     return sum + (isNaN(cost) ? 0 : cost);
   }, 0);
 
@@ -212,7 +222,6 @@ export const InventoryTab: React.FC = () => {
                 setSelectedIngredient('');
                 setSelectedIngredientId(null);
                 setReceivedDate('');
-                setCostPerUnit('');
                 setQuantity('');
               }}
               style={{
@@ -240,8 +249,6 @@ export const InventoryTab: React.FC = () => {
           setShowIngredients={setShowIngredients}
           receivedDate={receivedDate}
           setReceivedDate={setReceivedDate}
-          costPerUnit={costPerUnit}
-          setCostPerUnit={setCostPerUnit}
           quantity={quantity}
           setQuantity={setQuantity}
           ingredients={ingredients}

@@ -1,10 +1,10 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
-import { MenuIcon, UtilitiesIcon, InventoryIcon, IngredientsIcon, EmployeeIcon, HomeIcon } from './Icons';
+import { MenuIcon, CustomizationIcon, UtilitiesIcon, InventoryIcon, IngredientsIcon, EmployeeIcon, LocationIcon, HomeIcon } from './Icons';
 
 interface SidebarProps {
-  activeTab: 'menu' | 'utilities' | 'inventory' | 'ingredients' | 'employees';
-  setActiveTab: (tab: 'menu' | 'utilities' | 'inventory' | 'ingredients' | 'employees') => void;
+  activeTab: 'menu' | 'customizations' | 'utilities' | 'inventory' | 'ingredients' | 'employees' | 'locations';
+  setActiveTab: (tab: 'menu' | 'customizations' | 'utilities' | 'inventory' | 'ingredients' | 'employees' | 'locations') => void;
 }
 
 export const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab }) => {
@@ -22,6 +22,13 @@ export const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab }) => 
         >
           <MenuIcon />
           <span>Menu Items</span>
+        </button>
+        <button
+          className={`sidebar-button ${activeTab === 'customizations' ? 'active' : ''}`}
+          onClick={() => setActiveTab('customizations')}
+        >
+          <CustomizationIcon />
+          <span>Customizations</span>
         </button>
         <button
           className={`sidebar-button ${activeTab === 'utilities' ? 'active' : ''}`}
@@ -50,6 +57,13 @@ export const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab }) => 
         >
           <EmployeeIcon />
           <span>Employees</span>
+        </button>
+        <button
+          className={`sidebar-button ${activeTab === 'locations' ? 'active' : ''}`}
+          onClick={() => setActiveTab('locations')}
+        >
+          <LocationIcon />
+          <span>Locations</span>
         </button>
         <button
           className="sidebar-button home-button"

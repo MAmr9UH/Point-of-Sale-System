@@ -13,8 +13,6 @@ interface InventoryFormProps {
   setShowIngredients: (value: boolean) => void;
   receivedDate: string;
   setReceivedDate: (value: string) => void;
-  costPerUnit: string;
-  setCostPerUnit: (value: string) => void;
   quantity: string;
   setQuantity: (value: string) => void;
   ingredients: Ingredient[];
@@ -26,14 +24,12 @@ export const InventoryForm: React.FC<InventoryFormProps> = ({
   setStatus,
   selectedIngredient,
   setSelectedIngredient,
-  selectedIngredientId: _selectedIngredientId,
+  selectedIngredientId,
   setSelectedIngredientId,
   showIngredients,
   setShowIngredients,
   receivedDate,
   setReceivedDate,
-  costPerUnit,
-  setCostPerUnit,
   quantity,
   setQuantity,
   ingredients,
@@ -41,9 +37,24 @@ export const InventoryForm: React.FC<InventoryFormProps> = ({
 }) => {
   const [ingredientSearch, setIngredientSearch] = useState('');
 
+  // Calculate total cost automatically
+  const selectedIngredientData = ingredients.find(ing => ing.IngredientID === selectedIngredientId);
+  const quantityNum = parseFloat(quantity || '0');
+  const totalCost = selectedIngredientData && quantityNum > 0
+    ? (selectedIngredientData.CostPerUnit * quantityNum).toFixed(2)
+    : '0.00';
+
   const filteredIngredients = ingredients.filter(item =>
     item.Name.toLowerCase().includes(ingredientSearch.toLowerCase())
   );
+
+  // Validation handler for quantity
+  const handleQuantityChange = (value: string) => {
+    const numValue = parseFloat(value);
+    if (value === '' || (!isNaN(numValue) && numValue >= 0)) {
+      setQuantity(value);
+    }
+  };
 
   return (
     <>
@@ -118,23 +129,33 @@ export const InventoryForm: React.FC<InventoryFormProps> = ({
       </div>
 
       <div className="form-group">
-        <label>Cost per Unit:</label>
-        <input
-          type="number"
-          value={costPerUnit}
-          onChange={e => setCostPerUnit(e.target.value)}
-          placeholder="0.00"
-          step="0.01"
-        />
-      </div>
-
-      <div className="form-group">
         <label>Quantity Resupply:</label>
         <input
           type="number"
           value={quantity}
-          onChange={e => setQuantity(e.target.value)}
+          onChange={e => handleQuantityChange(e.target.value)}
           placeholder="0"
+          min="0"
+          step="1"
+        />
+      </div>
+
+      <div className="form-group">
+        <label>Total Cost:</label>
+        <input
+          type="text"
+          value={`$${totalCost}`}
+          readOnly
+          style={{ 
+            backgroundColor: '#f5f5f5', 
+            cursor: 'not-allowed',
+            fontWeight: 'bold',
+            color: '#333'
+          }}
+          title={selectedIngredientData 
+            ? `${quantity || 0} × $${Number(selectedIngredientData.CostPerUnit).toFixed(2)} per unit`
+            : 'Select an ingredient and enter quantity'
+          }
         />
       </div>
 

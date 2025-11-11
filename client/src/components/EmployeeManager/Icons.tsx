@@ -88,3 +88,18 @@ export const EmployeeIcon: React.FC<React.SVGProps<SVGSVGElement>> = (props) => 
     <path d="M16 3.13a4 4 0 0 1 0 7.75" />
   </svg>
 );
+
+export const LocationIcon: React.FC<React.SVGProps<SVGSVGElement>> = (props) => (
+  <svg className="sidebar-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" {...props}>
+    <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z" />
+    <circle cx="12" cy="10" r="3" />
+  </svg>
+);
+
+export const CustomizationIcon: React.FC<React.SVGProps<SVGSVGElement>> = (props) => (
+  <svg className="sidebar-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" {...props}>
+    <circle cx="12" cy="12" r="3" />
+    <path d="M12 1v6m0 6v6m-9-9h6m6 0h6" />
+    <path d="M4.93 4.93l4.24 4.24m5.66 5.66l4.24 4.24M4.93 19.07l4.24-4.24m5.66-5.66l4.24-4.24" />
+  </svg>
+);

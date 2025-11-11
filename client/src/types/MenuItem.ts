@@ -17,7 +17,7 @@ export interface Ingredient {
     PriceAdjustment: string;
     CustomizableCategory: string;
     QuantityRequired: number;
-    MaxiumQuantity: number;
+    MaximumQuantity: number;
     IsRemovable: number; // 0 or 1
     IsRequired: number; // 0 or 1
     CanSubstitute: number; // 0 or 1

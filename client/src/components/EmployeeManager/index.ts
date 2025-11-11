@@ -7,6 +7,7 @@ export { NotificationDropdown } from './NotificationDropdown';
 export { MenuTab } from './MenuTab';
 export { MenuItemCard } from './MenuItemCard';
 export { MenuItemForm } from './MenuItemForm';
+export { MenuItemCustomizationTab } from './MenuItemCustomizationTab';
 
 // Utilities Tab components
 export { UtilitiesTab } from './UtilitiesTab';
@@ -30,6 +31,9 @@ export { EmployeeList } from './EmployeeList';
 export { ShiftAssignment } from './ShiftAssignment';
 export { CustomerSearch } from './CustomerSearch';
 export { ConfirmDialog } from './ConfirmDialog';
+
+// Location Management Tab components
+export { LocationManagementTab } from './LocationManagementTab';
 
 // Icons
 export * from './Icons';

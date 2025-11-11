@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import './CustomizationModal.css';
 import type { MenuItem, Ingredient } from '../types/MenuItem';
+import { useToaster } from '../contexts/ToastContext';
 
 interface CustomizationModalProps {
     item: MenuItem | null;
@@ -16,6 +17,7 @@ export interface IngredientCustomization {
 }
 
 const CustomizationModal = ({ item, isOpen, onClose, onAddToCart }: CustomizationModalProps) => {
+    const { addToast } = useToaster();
     const [customizations, setCustomizations] = useState<Map<number, IngredientCustomization>>(new Map());
     const [selectedSubstitutions, setSelectedSubstitutions] = useState<Map<string, number>>(new Map());
     const [isClosing, setIsClosing] = useState(false);
@@ -37,7 +39,7 @@ const CustomizationModal = ({ item, isOpen, onClose, onAddToCart }: Customizatio
             const categorizedIngredients = groupByCategory(item.Ingredients);
             
             Object.entries(categorizedIngredients).forEach(([category, ingredients]) => {
-                const requiredSubstitutable = ingredients.find(ing => ing.IsRequired && ing.CanSubstitute);
+                const requiredSubstitutable = ingredients.find(ing => ing.IsRequired === 1 && ing.CanSubstitute === 1);
                 if (requiredSubstitutable) {
                     defaultSubstitutions.set(category, requiredSubstitutable.IngredientID);
                 }
@@ -53,8 +55,9 @@ const CustomizationModal = ({ item, isOpen, onClose, onAddToCart }: Customizatio
 
     const groupByCategory = (ingredients: Ingredient[]) => {
         return ingredients.reduce((acc, ingredient) => {
-            // Skip ingredients that are required and cannot be substituted (they'll always be included)
-            if (ingredient.IsRequired && !ingredient.CanSubstitute) {
+            // Skip ingredients that are required, cannot be substituted, AND cannot be added
+            // (they'll always be included at the default quantity with no customization options)
+            if (ingredient.IsRequired === 1 && ingredient.CanSubstitute === 0 && ingredient.MaximumQuantity <= ingredient.QuantityRequired) {
                 return acc;
             }
             
@@ -67,7 +70,35 @@ const CustomizationModal = ({ item, isOpen, onClose, onAddToCart }: Customizatio
         }, {} as Record<string, Ingredient[]>);
     };
 
+    // Calculate total price adjustment based on customizations
+    const calculatePriceAdjustment = (): number => {
+        let total = 0;
+        customizations.forEach((customization, ingredientId) => {
+            const ingredient = item?.Ingredients.find(ing => ing.IngredientID === ingredientId);
+            if (ingredient) {
+                const pricePerUnit = parseFloat(ingredient.PriceAdjustment) || 0;
+                if (customization.changeType === 'removed') {
+                    // Removing ingredients doesn't add cost
+                    total += 0;
+                } else if (customization.changeType === 'substituted') {
+                    // Substitution: charge for the new ingredient
+                    total += pricePerUnit * Math.abs(customization.quantityDelta);
+                } else if (customization.changeType === 'added') {
+                    // Adding more: charge for the extra quantity
+                    total += pricePerUnit * customization.quantityDelta;
+                }
+            }
+        });
+        return total;
+    };
+
     const handleToggleIngredient = (ingredient: Ingredient) => {
+        // Prevent removing required ingredients when max > default (they can only add more)
+        if (ingredient.IsRequired === 1 && ingredient.MaximumQuantity > ingredient.QuantityRequired) {
+            addToast('This ingredient is required and cannot be removed. You can only add more.', 'error', 3000);
+            return;
+        }
+        
         const newCustomizations = new Map(customizations);
         
         if (customizations.has(ingredient.IngredientID)) {
@@ -106,7 +137,7 @@ const CustomizationModal = ({ item, isOpen, onClose, onAddToCart }: Customizatio
         
         // Check if the new selection is the default (required) ingredient
         const newIngredient = ingredients.find(ing => ing.IngredientID === newIngredientId);
-        const defaultIngredient = ingredients.find(ing => ing.IsRequired && ing.CanSubstitute);
+        const defaultIngredient = ingredients.find(ing => ing.IsRequired === 1 && ing.CanSubstitute === 1);
         
         if (newIngredient && defaultIngredient && newIngredientId !== defaultIngredient.IngredientID) {
             // This is a substitution
@@ -131,7 +162,7 @@ const CustomizationModal = ({ item, isOpen, onClose, onAddToCart }: Customizatio
         const newQuantity = currentQuantity + delta;
         
         // Validate against max quantity
-        if (newQuantity > ingredient.MaxiumQuantity || newQuantity < ingredient.QuantityRequired) {
+        if (newQuantity > ingredient.MaximumQuantity || newQuantity < ingredient.QuantityRequired) {
             return;
         }
         
@@ -150,8 +181,62 @@ const CustomizationModal = ({ item, isOpen, onClose, onAddToCart }: Customizatio
         setCustomizations(newCustomizations);
     };
 
+    const validateRequiredIngredients = (): { isValid: boolean; message: string } => {
+        // Check each category to ensure required ingredients are selected
+        const categorizedIngredients = groupByCategory(item.Ingredients);
+        
+        for (const [category, ingredients] of Object.entries(categorizedIngredients)) {
+            // Check if this category has required substitutable ingredients
+            const requiredSubstitutableIngredients = ingredients.filter(ing => ing.IsRequired === 1 && ing.CanSubstitute === 1);
+            
+            if (requiredSubstitutableIngredients.length > 0) {
+                // Make sure one is selected (not removed)
+                const selectedIngredient = selectedSubstitutions.get(category);
+                
+                if (!selectedIngredient) {
+                    return {
+                        isValid: false,
+                        message: `Please select an option for "${category}"`
+                    };
+                }
+                
+                // Check if the selected ingredient was removed
+                const customization = customizations.get(selectedIngredient);
+                if (customization && customization.changeType === 'removed') {
+                    return {
+                        isValid: false,
+                        message: `Please select an option for "${category}"`
+                    };
+                }
+            }
+            
+            // Check for non-substitutable required ingredients that might have been removed
+            const requiredNonSubstitutable = ingredients.filter(ing => ing.IsRequired === 1 && ing.CanSubstitute === 0);
+            for (const ingredient of requiredNonSubstitutable) {
+                const customization = customizations.get(ingredient.IngredientID);
+                if (customization && customization.changeType === 'removed') {
+                    return {
+                        isValid: false,
+                        message: `"${ingredient.Name}" is required and cannot be removed`
+                    };
+                }
+            }
+        }
+        
+        return { isValid: true, message: '' };
+    };
+
     const handleAddToCart = () => {
+        // Validate required ingredients
+        const validation = validateRequiredIngredients();
+        if (!validation.isValid) {
+            // Show error message with toast
+            addToast(validation.message, 'error', 4000);
+            return;
+        }
+        
         onAddToCart(item, Array.from(customizations.values()));
+        addToast(`${item?.Name} added to cart!`, 'success', 2000);
         setIsClosing(true);
         setTimeout(() => {
             onClose();
@@ -210,8 +295,12 @@ const CustomizationModal = ({ item, isOpen, onClose, onAddToCart }: Customizatio
                             <h3>Customize Your Order</h3>
                             
                             {Object.entries(categorizedIngredients).map(([category, ingredients]) => {
-                                const hasSubstitutable = ingredients.some(ing => ing.CanSubstitute);
-                                const hasRemovable = ingredients.some(ing => ing.IsRemovable && !ing.CanSubstitute);
+                                const hasSubstitutable = ingredients.some(ing => ing.CanSubstitute === 1);
+                                // Show non-substitutable section if there are removable OR addable items (including required addable)
+                                const hasNonSubstitutableOptions = ingredients.some(ing => 
+                                    ing.CanSubstitute === 0 && 
+                                    (ing.IsRequired === 0 || ing.MaximumQuantity > ing.QuantityRequired)
+                                );
                                 
                                 return (
                                     <div key={category} className="customization-category">
@@ -220,44 +309,41 @@ const CustomizationModal = ({ item, isOpen, onClose, onAddToCart }: Customizatio
                                         {hasSubstitutable && (
                                             <div className="substitution-options">
                                                 {ingredients
-                                                    .filter(ing => ing.CanSubstitute)
-                                                    .map(ingredient => (
-                                                        <label key={ingredient.IngredientID} className="radio-option">
-                                                            <input
-                                                                type="radio"
-                                                                name={category}
-                                                                checked={selectedSubstitutions.get(category) === ingredient.IngredientID}
-                                                                onChange={() => handleSubstitution(category, ingredient.IngredientID, ingredients)}
-                                                            />
-                                                            <span>{ingredient.Name}</span>
-                                                        </label>
-                                                    ))}
-                                            </div>
-                                        )}
-                                        
-                                        {hasRemovable && (
-                                            <div className="removable-options">
-                                                {ingredients
-                                                    .filter(ing => ing.IsRemovable && !ing.CanSubstitute)
+                                                    .filter(ing => ing.CanSubstitute === 1)
                                                     .map(ingredient => {
-                                                        const isRemoved = customizations.has(ingredient.IngredientID);
+                                                        const priceAdj = parseFloat(ingredient.PriceAdjustment) || 0;
+                                                        const isDefault = ingredient.IsRequired === 1;
+                                                        const showPrice = !isDefault && priceAdj > 0;
+                                                        const isAddable = ingredient.MaximumQuantity > ingredient.QuantityRequired;
+                                                        const isSelected = selectedSubstitutions.get(category) === ingredient.IngredientID;
+                                                        
+                                                        // Calculate current quantity for selected substitutable ingredient
                                                         const customization = customizations.get(ingredient.IngredientID);
-                                                        const currentQty = customization 
-                                                            ? ingredient.QuantityRequired + customization.quantityDelta 
-                                                            : ingredient.QuantityRequired;
+                                                        let currentQty = ingredient.QuantityRequired;
+                                                        if (customization?.changeType === 'added') {
+                                                            currentQty = ingredient.QuantityRequired + customization.quantityDelta;
+                                                        }
                                                         
                                                         return (
-                                                            <div key={ingredient.IngredientID} className="ingredient-option">
-                                                                <label className="checkbox-option">
+                                                            <div key={ingredient.IngredientID} className="substitutable-ingredient-option">
+                                                                <label className="radio-option">
                                                                     <input
-                                                                        type="checkbox"
-                                                                        checked={!isRemoved}
-                                                                        onChange={() => handleToggleIngredient(ingredient)}
+                                                                        type="radio"
+                                                                        name={category}
+                                                                        checked={isSelected}
+                                                                        onChange={() => handleSubstitution(category, ingredient.IngredientID, ingredients)}
                                                                     />
-                                                                    <span>{ingredient.Name}</span>
+                                                                    <span>
+                                                                        {ingredient.Name}
+                                                                        {showPrice && <span className="price-badge"> +${priceAdj.toFixed(2)}</span>}
+                                                                        {isDefault && <span className="default-badge"> (Included)</span>}
+                                                                        {isAddable && priceAdj > 0 && (
+                                                                            <span className="price-info"> (+${priceAdj.toFixed(2)} per extra)</span>
+                                                                        )}
+                                                                    </span>
                                                                 </label>
                                                                 
-                                                                {!isRemoved && ingredient.MaxiumQuantity > ingredient.QuantityRequired && (
+                                                                {isSelected && isAddable && (
                                                                     <div className="quantity-controls">
                                                                         <button 
                                                                             onClick={() => handleQuantityChange(ingredient, -1)}
@@ -268,7 +354,78 @@ const CustomizationModal = ({ item, isOpen, onClose, onAddToCart }: Customizatio
                                                                         <span>{currentQty}</span>
                                                                         <button 
                                                                             onClick={() => handleQuantityChange(ingredient, 1)}
-                                                                            disabled={currentQty >= ingredient.MaxiumQuantity}
+                                                                            disabled={currentQty >= ingredient.MaximumQuantity}
+                                                                        >
+                                                                            +
+                                                                        </button>
+                                                                    </div>
+                                                                )}
+                                                            </div>
+                                                        );
+                                                    })}
+                                            </div>
+                                        )}
+                                        
+                                        {hasNonSubstitutableOptions && (
+                                            <div className="removable-options">
+                                                {ingredients
+                                                    .filter(ing => ing.CanSubstitute === 0 && (ing.IsRequired === 0 || ing.MaximumQuantity > ing.QuantityRequired))
+                                                    .map(ingredient => {
+                                                        const customization = customizations.get(ingredient.IngredientID);
+                                                        const isRemoved = customization?.changeType === 'removed';
+                                                        
+                                                        // Calculate current quantity
+                                                        let currentQty = ingredient.QuantityRequired;
+                                                        if (isRemoved) {
+                                                            currentQty = 0;
+                                                        } else if (customization?.changeType === 'added') {
+                                                            currentQty = ingredient.QuantityRequired + customization.quantityDelta;
+                                                        }
+                                                        
+                                                        const isAddable = ingredient.MaximumQuantity > ingredient.QuantityRequired;
+                                                        // Removable = NOT required (IsRequired === 0)
+                                                        const isRemovable = ingredient.IsRequired === 0;
+                                                        const priceAdj = parseFloat(ingredient.PriceAdjustment) || 0;
+                                                        
+                                                        return (
+                                                            <div key={ingredient.IngredientID} className="ingredient-option">
+                                                                <div className="ingredient-info">
+                                                                    {isRemovable ? (
+                                                                        <label className="checkbox-option">
+                                                                            <input
+                                                                                type="checkbox"
+                                                                                checked={!isRemoved}
+                                                                                onChange={() => handleToggleIngredient(ingredient)}
+                                                                            />
+                                                                            <span>
+                                                                                {ingredient.Name}
+                                                                            </span>
+                                                                        </label>
+                                                                    ) : (
+                                                                        <span className="ingredient-name">
+                                                                            {ingredient.Name}
+                                                                            <span className="default-badge"> (Included)</span>
+                                                                        </span>
+                                                                    )}
+                                                                    {isAddable && (
+                                                                        <span className="price-info">
+                                                                            {priceAdj > 0 ? `+$${priceAdj.toFixed(2)} per extra` : 'Can add more'}
+                                                                        </span>
+                                                                    )}
+                                                                </div>
+                                                                
+                                                                {!isRemoved && isAddable && (
+                                                                    <div className="quantity-controls">
+                                                                        <button 
+                                                                            onClick={() => handleQuantityChange(ingredient, -1)}
+                                                                            disabled={currentQty <= ingredient.QuantityRequired}
+                                                                        >
+                                                                            -
+                                                                        </button>
+                                                                        <span>{currentQty}</span>
+                                                                        <button 
+                                                                            onClick={() => handleQuantityChange(ingredient, 1)}
+                                                                            disabled={currentQty >= ingredient.MaximumQuantity}
                                                                         >
                                                                             +
                                                                         </button>
@@ -289,7 +446,14 @@ const CustomizationModal = ({ item, isOpen, onClose, onAddToCart }: Customizatio
                 <div className="customization-footer">
                     <button className="cancel-btn" onClick={handleClose}>Cancel</button>
                     <button className="add-to-cart-btn" onClick={handleAddToCart}>
-                        Add to Cart - ${item.Price}
+                        {(() => {
+                            const basePrice = parseFloat(item.Price);
+                            const adjustment = calculatePriceAdjustment();
+                            const total = basePrice + adjustment;
+                            return adjustment > 0 
+                                ? `Add to Cart - $${total.toFixed(2)} (Base: $${basePrice.toFixed(2)} + $${adjustment.toFixed(2)})`
+                                : `Add to Cart - $${total.toFixed(2)}`;
+                        })()}
                     </button>
                 </div>
             </div>

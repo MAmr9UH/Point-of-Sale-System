@@ -20,7 +20,7 @@ export const InventoryList: React.FC<InventoryListProps> = ({ inventory, onEdit,
           <tr>
             <th>Status</th>
             <th>Item</th>
-            <th>Cost/Unit</th>
+            <th>Cost</th>
             <th>Qty</th>
             <th>Date</th>
             <th>Actions</th>
