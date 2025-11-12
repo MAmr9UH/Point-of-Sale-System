@@ -72,6 +72,7 @@ const CustomerProfile: React.FC = () => {
 
   const { user } = useAuth();
   const { addToast } = useToaster();
+  const { updateUser } = useAuth();
 
   useEffect(() => {
     if (!user) {
@@ -122,6 +123,18 @@ const CustomerProfile: React.FC = () => {
       if (data.success) {
         addToast('Profile updated successfully', 'success');
         setShowEditForm(false);
+        
+        // Update the auth context with new user data
+        const updatedUser: Customer = {
+          ...user as Customer,
+          Fname: editForm.Fname,
+          Lname: editForm.Lname,
+          Email: editForm.Email,
+          PhoneNumber: editForm.PhoneNumber,
+          OptInMarketing: editForm.OptInMarketing
+        };
+        updateUser(updatedUser);
+        
         fetchProfile(customerId);
       } else {
         addToast(data.error || 'Failed to update profile', 'error');

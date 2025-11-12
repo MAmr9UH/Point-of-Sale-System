@@ -8,7 +8,7 @@ export const NotificationBell: React.FC = () => {
 
   useEffect(() => {
     fetchUnreadCount();
-    const interval = setInterval(fetchUnreadCount, 60000); // Poll every minute
+    const interval = setInterval(fetchUnreadCount, 1000); // Poll every minute
     return () => clearInterval(interval);
   }, []);
 

@@ -30,6 +30,7 @@ interface AuthContextType {
     loginStaff: (employeeId: string, password: string) => Promise<void>;
     register: (data: RegisterData) => Promise<void>;
     logout: () => void;
+    updateUser: (updatedUser: Customer | Staff) => void;
 }
 
 interface RegisterData {
@@ -135,6 +136,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         localStorage.removeItem('userType');
     };
 
+    // Update user data
+    const updateUser = (updatedUser: Customer | Staff) => {
+        setUser(updatedUser);
+        localStorage.setItem('user', JSON.stringify(updatedUser));
+    };
+
     const value: AuthContextType = {
         user,
         userType,
@@ -144,6 +151,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         loginStaff,
         register,
         logout,
+        updateUser,
     };
 
     return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

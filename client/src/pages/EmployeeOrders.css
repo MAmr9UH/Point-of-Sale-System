@@ -146,7 +146,7 @@
   border: 1px solid rgba(255, 255, 255, 0.1);
 }
 
-.tab {
+.employee-orders-container .tab {
   flex: 1;
   padding: 1rem 1.5rem;
   border: none;
@@ -164,12 +164,12 @@
   position: relative;
 }
 
-.tab:hover {
+.employee-orders-container .tab:hover {
   background: rgba(255, 255, 255, 0.1);
   color: white;
 }
 
-.tab.active {
+.employee-orders-container .tab.active {
   background: rgba(255, 255, 255, 0.15);
   color: white;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);

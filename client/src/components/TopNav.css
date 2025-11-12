@@ -18,7 +18,7 @@
   color: #3B82F6;        
 }
 
-.btn {
+.topnav .btn {
   display: inline-flex;
   align-items: center;
   gap: 6px;
@@ -30,17 +30,17 @@
   font-size: 0.95rem;
   line-height: 1;
 }
-.btn-primary-nav {
+.topnav .btn-primary-nav {
   background: #3B82F6;
   color: #fff;
 }
-.btn-primary-nav:hover { background: #3B82F6; }
-.btn-ghost {
+.topnav .btn-primary-nav:hover { background: #3B82F6; }
+.topnav .btn-ghost {
   background: #f3f4f6;
   color: #111827;
   border-color: #e5e7eb;
 }
-.btn-ghost:hover { background: #e5e7eb; }
+.topnav .btn-ghost:hover { background: #e5e7eb; }
 
 .nav-user-name {
   font-weight: 500;

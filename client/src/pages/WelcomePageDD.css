@@ -1,17 +1,17 @@
 /* Main container */
 .welcome-container {
-  height: 100vh;
+  min-height: 100vh;
   width: 100vw;
   display: flex;
   flex-direction: column;
   align-items: center;
-  justify-content: center;
+  justify-content: flex-start;
   background-color: #f0f2f5;
   background-size: cover;
   background-position: center;
   background-repeat: no-repeat;
   background-attachment: fixed;
-  padding: 80px 0 0 0;
+  padding: 100px 0 40px 0;
   font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
   color: #333;
   overflow-y: auto;
@@ -118,7 +118,7 @@
   box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
   width: 90%;
   max-width: 600px;
-  max-height: calc(100vh - 280px);
+  max-height: 450px;
   overflow-y: auto;
   text-align: center;
   display: flex;
@@ -415,5 +415,110 @@
   background: #f9fafb;
   border-radius: 6px;
   text-align: center;
+}
+
+/* Responsive Design */
+@media (max-width: 1024px) {
+  .welcome-card {
+    width: 85%;
+  }
+
+  .feedback-carousel-container {
+    width: 85%;
+  }
+}
+
+@media (max-width: 768px) {
+  .welcome-container {
+    padding: 80px 0 30px 0;
+  }
+
+  .welcome-card {
+    width: 95%;
+    max-height: none;
+    padding: 1.5rem;
+  }
+
+  .welcome-title-outside {
+    font-size: 2.5rem;
+    padding: 1.5rem 2rem;
+  }
+
+  .welcome-section-header h2 {
+    font-size: 1.4rem;
+  }
+
+  .location-name {
+    font-size: 1rem !important;
+  }
+
+  .location-day {
+    font-size: 0.9rem !important;
+  }
+}
+
+@media (max-width: 600px) {
+  .welcome-container {
+    padding: 70px 0 20px 0;
+  }
+
+  .welcome-card {
+    width: 95%;
+    padding: 1.25rem;
+  }
+
+  .welcome-title-outside {
+    font-size: 2rem;
+    padding: 1.25rem 1.5rem;
+  }
+
+  .welcome-section {
+    gap: 0.75rem;
+  }
+
+  .welcome-section-header {
+    gap: 0.75rem;
+  }
+
+  .welcome-section-header h2 {
+    font-size: 1.2rem;
+  }
+
+  .welcome-icon {
+    width: 22px;
+    height: 22px;
+  }
+}
+
+@media (max-width: 480px) {
+  .welcome-container {
+    padding: 60px 0 20px 0;
+  }
+
+  .welcome-card {
+    width: 95%;
+    padding: 1rem;
+  }
+
+  .welcome-title-outside {
+    font-size: 1.75rem;
+    padding: 1rem 1.25rem;
+  }
+
+  .welcome-section-header h2 {
+    font-size: 1.1rem;
+  }
+
+  .location-entry p {
+    font-size: 0.85rem;
+  }
+
+  .location-name {
+    font-size: 0.95rem !important;
+  }
+
+  .location-day {
+    font-size: 0.85rem !important;
+  }
 }
 

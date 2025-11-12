@@ -19,7 +19,7 @@ const MenuPanel = () => {
 
         useEffect(() => {
         // Fetch menu items
-        fetchMenuUtils.fetchMenuEm().then(items => {
+        fetchMenuUtils.fetchMenuCustomer().then(items => {
             setMenuItems(items);
         });
 
@@ -73,8 +73,6 @@ const MenuPanel = () => {
         if (itemCustomizations.length > 0) {
             console.log('Item customizations:', itemCustomizations);
         }
-        
-        addToast(`Added ${item.Name} to cart`, 'success', 2000);
     };
 
 
