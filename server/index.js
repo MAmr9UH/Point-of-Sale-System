@@ -14,6 +14,7 @@ import { handleNotificationRoutes } from './routes/notifications.js';
 import { handleIngredient } from './routes/ingredient.js';
 import { handleEmployee } from './routes/employee.js';
 import { handleShifts } from './routes/shifts.js';
+import { handleTimecard } from './routes/timecard.js';
 import { handleCustomer } from './routes/customer.js';
 import { handleLocationRoutes } from './routes/locationRoutes.js';
 import { handleOrderRoutes } from './routes/orderRoutes.js';
@@ -147,6 +148,8 @@ export const app = async (req, res) => {
         handleCustomer(req, res);
     } else if (url.startsWith('/api/shifts')) {
         handleShifts(req, res);
+    } else if (url.startsWith('/api/timecard')) {
+        handleTimecard(req, res);
     } else if (url.startsWith('/api/order-items')) {
         handleOrderRoutes(req, res);
     } else if (url.startsWith('/api/orders')) {

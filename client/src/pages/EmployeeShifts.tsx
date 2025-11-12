@@ -33,7 +33,7 @@ export const EmployeeShifts: React.FC = () => {
   }, []);
 
   useEffect(() => {
-    if (userType !== 'staff' && userType !== 'manager') {
+    if (userType !== 'employee' && userType !== 'manager') {
       navigate('/login');
       return;
     }

@@ -55,10 +55,16 @@ export const EmployeeOrders: React.FC = () => {
     requestAnimationFrame(() => {
       setIsLoaded(true);
     });
+
+    const poll = setInterval(() => {
+      fetchOrders();
+    }, 5000); // Poll every 5 seconds
+
+    return () => clearInterval(poll);
   }, []);
 
   useEffect(() => {
-    if (userType !== 'staff' && userType !== 'manager') {
+    if (userType !== 'employee' && userType !== 'manager') {
       navigate('/login');
       return;
     }

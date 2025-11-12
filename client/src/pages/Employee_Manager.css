@@ -1093,13 +1093,14 @@
     gap: 1rem;
 }
 
-.shifts-list {
+/* Shift Management Styles - Scoped to Employee Manager */
+.employee-manager-container .shifts-list {
     display: flex;
     flex-direction: column;
     gap: 1rem;
 }
 
-.shift-card {
+.employee-manager-container .shift-card {
     display: flex;
     justify-content: space-between;
     align-items: center;
@@ -1110,29 +1111,29 @@
     transition: all 0.2s ease;
 }
 
-.shift-card:hover {
+.employee-manager-container .shift-card:hover {
     border-color: #3498db;
     box-shadow: 0 2px 8px rgba(52, 152, 219, 0.1);
 }
 
-.shift-info {
+.employee-manager-container .shift-info {
     display: flex;
     flex-direction: column;
     gap: 0.5rem;
 }
 
-.shift-date {
+.employee-manager-container .shift-date {
     font-weight: 600;
     color: #2c3e50;
 }
 
-.shift-time,
-.shift-location {
+.employee-manager-container .shift-time,
+.employee-manager-container .shift-location {
     font-size: 0.9rem;
     color: #7f8c8d;
 }
 
-.btn-delete-shift {
+.employee-manager-container .btn-delete-shift {
     padding: 0.5rem 1rem;
     background: #e74c3c;
     color: white;
@@ -1143,7 +1144,7 @@
     font-size: 0.875rem;
 }
 
-.btn-delete-shift:hover {
+.employee-manager-container .btn-delete-shift:hover {
     background: #c0392b;
 }
 
