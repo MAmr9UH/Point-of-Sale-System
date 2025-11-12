@@ -1,11 +1,11 @@
 class Ingredient {
     constructor(data = {}) {
         this.IngredientID = data.IngredientID || null;
-        this.name = data.name || '';
-        this.quantityInStock = data.quantityInStock !== undefined ? data.quantityInStock : 0;
-        this.costPerUnit = data.costPerUnit || 0;
-        this.createdAt = data.createdAt || null;
-        this.lastUpdatedAt = data.lastUpdatedAt || null;
+        this.name = data.Name || '';
+        this.quantityInStock = data.QuantityInStock !== undefined ? data.QuantityInStock : 0;
+        this.costPerUnit = data.CostPerUnit || 0;
+        this.createdAt = data.CreatedAt || null;
+        this.lastUpdatedAt = data.LastUpdatedAt || null;
     }
 
     /**
@@ -81,11 +81,11 @@ class Ingredient {
     static fromDB(row) {
         return new Ingredient({
             IngredientID: row.IngredientID,
-            name: row.Name,
-            quantityInStock: row.QuantityInStock,
-            costPerUnit: row.CostPerUnit,
-            createdAt: row.CreatedAt,
-            lastUpdatedAt: row.LastUpdatedAt
+            Name: row.Name,
+            QuantityInStock: row.QuantityInStock,
+            CostPerUnit: row.CostPerUnit,
+            CreatedAt: row.CreatedAt,
+            LastUpdatedAt: row.LastUpdatedAt
         });
     }
 
@@ -240,8 +240,10 @@ export const createIngredient = async (ingredientData) => {
 export const updateIngredient = async (ingredientId, ingredientData) => {
     // Merge with ID to ensure validation works
     const ingredient = new Ingredient({ ...ingredientData, IngredientID: ingredientId });
+    console.log('Update Data:', ingredient);
     const updateData = ingredient.getUpdateData();
     
+
     const query = `
         UPDATE pos.Ingredient
         SET Name = ?, QuantityInStock = ?, CostPerUnit = ?

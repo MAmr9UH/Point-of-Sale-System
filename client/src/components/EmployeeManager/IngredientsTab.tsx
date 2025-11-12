@@ -2,9 +2,11 @@ import React, { useState, useEffect } from 'react';
 import { IngredientsForm } from './IngredientsForm.tsx';
 import { IngredientsList } from './IngredientsList.tsx';
 import { PlusIcon } from './Icons';
+import { useToaster } from '../../contexts/ToastContext';
 import type { Ingredient } from '../../types/Ingredient';
 
 export const IngredientsTab: React.FC = () => {
+  const { addToast } = useToaster();
   const [ingredients, setIngredients] = useState<Ingredient[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [showForm, setShowForm] = useState(false);
@@ -24,10 +26,18 @@ export const IngredientsTab: React.FC = () => {
     setIsLoading(true);
     try {
       const response = await fetch('/api/ingredients');
+      if (!response.ok) {
+        throw new Error(`Failed to load ingredients: ${response.statusText}`);
+      }
       const data = await response.json();
       setIngredients(data);
     } catch (error) {
       console.error('Error loading ingredients:', error);
+      addToast(
+        error instanceof Error ? error.message : 'Failed to load ingredients',
+        'error',
+        5000
+      );
     } finally {
       setIsLoading(false);
     }
@@ -84,14 +94,25 @@ export const IngredientsTab: React.FC = () => {
         body: JSON.stringify(payload),
       });
 
-      if (!response.ok) throw new Error('Failed to save ingredient');
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.error || `Failed to save ingredient: ${response.statusText}`);
+      }
 
-      alert(editingIngredient ? 'Ingredient updated!' : 'Ingredient created!');
+      addToast(
+        editingIngredient ? 'Ingredient updated successfully!' : 'Ingredient created successfully!',
+        'success',
+        3000
+      );
       closeForm();
       await loadIngredients();
     } catch (error) {
       console.error('Error saving ingredient:', error);
-      alert('Failed to save ingredient');
+      addToast(
+        error instanceof Error ? error.message : 'Failed to save ingredient',
+        'error',
+        5000
+      );
     }
   };
 
@@ -103,13 +124,20 @@ export const IngredientsTab: React.FC = () => {
         method: 'DELETE',
       });
 
-      if (!response.ok) throw new Error('Failed to delete ingredient');
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.error || `Failed to delete ingredient: ${response.statusText}`);
+      }
 
-      alert('Ingredient deleted!');
+      addToast('Ingredient deleted successfully!', 'success', 3000);
       await loadIngredients();
     } catch (error) {
       console.error('Error deleting ingredient:', error);
-      alert('Failed to delete ingredient');
+      addToast(
+        error instanceof Error ? error.message : 'Failed to delete ingredient',
+        'error',
+        5000
+      );
     }
   };
 

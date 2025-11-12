@@ -10,8 +10,8 @@ import App from './App.tsx';
 
 
 createRoot(document.getElementById('root')!).render(
-  <BrowserRouter>
-    <ToasterProvider>
+  <ToasterProvider>
+    <BrowserRouter>
       <ShoppingCartProvider>
         <WelcomePageProvider>
           <AuthProvider>
@@ -19,6 +19,6 @@ createRoot(document.getElementById('root')!).render(
           </AuthProvider>
         </WelcomePageProvider>
       </ShoppingCartProvider>
-    </ToasterProvider>
-  </BrowserRouter>
+    </BrowserRouter>
+  </ToasterProvider>
 );
