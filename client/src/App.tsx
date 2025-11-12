@@ -9,8 +9,8 @@ import ManagerDashboard from './pages/ManagerDashboard.tsx';
 import EditLandingPage from './pages/EditLandingPage.tsx';
 import ReportsPage from "./pages/ReportsPage.tsx"
 import LoadingSpinner from './components/LoadingSpinner.tsx';
-
 import { useAuth } from './contexts/AuthContext.tsx';
+import CustomerProfile from './pages/Profile.tsx';
 
 const ProtectedRoute = ({ children }: any) => {
   const { user, isLoading } = useAuth();
@@ -63,6 +63,7 @@ function App() {
       <Route path="/edit-landing" element={<ManagerProtectedRoute><EditLandingPage /></ManagerProtectedRoute>} />
       <Route path="/posmenu" element={<Menu />} />
       <Route path="/menu" element={<MenuUserPage />} />
+      <Route path="/profile" element={<CustomerProfile />} />
       <Route path="/employee_manager" element={<ManagerProtectedRoute><Employee_Manager /></ManagerProtectedRoute>} />
       <Route path="/checkout" element={<ProtectedRoute><Checkout /></ProtectedRoute>} />
       <Route path="/reports" element={<ManagerProtectedRoute><ReportsPage /></ManagerProtectedRoute>} />

@@ -1,4 +1,3 @@
-// Import the built-in 'http' module
 import http from 'http';
 import { promises as fs } from 'fs';
 import path from 'path';
@@ -18,6 +17,7 @@ import { handleShifts } from './routes/shifts.js';
 import { handleCustomer } from './routes/customer.js';
 import { handleLocationRoutes } from './routes/locationRoutes.js';
 
+import { handleCustomerProfile } from './routes/customerProfile.js';
 
 import './db/connection.js';
 
@@ -25,6 +25,7 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 import { handleReports } from "./routes/reportsData.js"
+import { handleBusyStatus } from './routes/busyStatus.js';
 
 
 const hostname = '0.0.0.0';
@@ -111,14 +112,20 @@ export const app = async (req, res) => {
     if (url.startsWith('/uploads/')) {
         serveStaticFile(req, res);
         return;
+    }
+    if (method === 'GET' && url === '/api') {
+        res.statusCode = 200;
+        res.setHeader('Content-Type', 'text/html');
+        res.end('<h1>Welcome to the Homepage!</h1><p>This is a plain Node.js server.</p>');
     } 
-    // API routes
     else if (url.startsWith('/api/staff/notifications')) {
         handleNotificationRoutes(req, res);
     } else if (url.startsWith('/api/editpage')) {
         handleEditPage(req, res);
     } else if (url.startsWith('/api/menu/customizations')) {
         handleMenuCustomizationRoutes(req, res);
+    } else if (url.startsWith('/api/menuItems')) {  // ADD THIS
+        handleMenuRoutes(req, res);
     } else if (url.startsWith('/api/menu/')) {
         handleMenu(req, res);
     } else if (url.startsWith('/api/welcome')) {
@@ -143,6 +150,10 @@ export const app = async (req, res) => {
         handleShifts(req, res);
     } else if (url.startsWith('/api/locations')) {
         handleLocationRoutes(req, res);
+    } else if (url.startsWith('/api/busy-status')){
+        handleBusyStatus(req,res);
+    } else if (url.startsWith('/api/customer/profile')) {
+        handleCustomerProfile(req, res);
     }
     // Serve React app
     else {
@@ -170,8 +181,6 @@ export const app = async (req, res) => {
 
 const server = http.createServer(app);
 
-// Start the server and have it listen on the specified port and hostname.
-// The callback function is executed once the server starts listening.
 server.listen(port, hostname, () => {
     console.log(`Server running at http://${hostname}:${port}/`);
     console.log('Press Ctrl+C to stop the server.');

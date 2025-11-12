@@ -182,7 +182,23 @@ export default function FoodTruckCheckout() {
     setFormData({ ...formData, [name]: newValue });
   };
 
-  const handlePlaceOrder = async (): Promise<void> => {
+   const handlePlaceOrder = async (): Promise<void> => {
+    // Check busy status before submitting order
+  try {
+    const response = await fetch('/api/busy-status');
+    const data = await response.json();
+   
+    if (data.success && data.isBusy) {
+      // Show warning popup
+      addToast(
+        `⚠️ We're busy! Your order may take longer than usual. Thank you for your patience!`,
+        "warning"
+      );
+    }
+  } catch (error) {
+    console.error('Error checking busy status:', error);
+    // Continue anyway if check fails
+  }
     // Validate form first
     if (
       formData.cardNumber.replace(/\s/g, '').length === 16 &&
@@ -199,14 +215,17 @@ export default function FoodTruckCheckout() {
           quantity: item.quantity
         }));
 
+
         const payload = {
-          userId: (user as Customer).CustomerID, // replace with real user id if available
+          userId: 1, // replace with real user id if available
           orderItems: itemsArray,
           total: grandTotal,
           formData
         };
 
+
         console.log(payload);
+
 
         try {
           const data = await createOrder(payload);
@@ -218,10 +237,12 @@ export default function FoodTruckCheckout() {
           addToast(err.message || 'Something went wrong. Try again.', "error");
         }
 
+
       } catch (err: any) {
         console.error(err);
         addToast('Unable to connect to server.', "error");
       }
+
 
     } else {
       addToast('Please check all required (*) fields and card details are complete.', "error");
