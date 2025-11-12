@@ -20,11 +20,18 @@ interface EmployeePerformanceChartProps {
 const metricConfig: Record<MetricKey, { title: string; format: (n: number) => string }> = {
   SalesPerHour: {
     title: 'Sales per Hour by Employee',
-    format: (n) => `$${n.toFixed(2)}/hr`
+    format: (n) => {
+      if (n >= 1000) return `$${(n / 1000).toFixed(1)}k/hr`;
+      return `$${n.toFixed(2)}/hr`;
+    }
   },
   TotalSales: {
     title: 'Total Sales by Employee',
-    format: (n) => `$${(n / 1000).toFixed(1)}k`
+    format: (n) => {
+      if (n >= 1000000) return `$${(n / 1000000).toFixed(1)}M`;
+      if (n >= 1000) return `$${(n / 1000).toFixed(1)}k`;
+      return `$${n.toFixed(0)}`;
+    }
   },
   TotalOrdersHandled: {
     title: 'Orders Handled by Employee',
@@ -153,8 +160,14 @@ export default function EmployeePerformanceChart({ data, metric = 'SalesPerHour'
                     : validMetric === 'TotalHoursWorked'
                     ? `${value.toFixed(0)}h`
                     : validMetric === 'SalesPerHour'
-                    ? `$${value.toFixed(0)}`
-                    : `$${(value / 1000).toFixed(0)}k`}
+                    ? value >= 1000
+                      ? `$${(value / 1000).toFixed(0)}k`
+                      : `$${value.toFixed(0)}`
+                    : value >= 1000000
+                    ? `$${(value / 1000000).toFixed(0)}M`
+                    : value >= 1000
+                    ? `$${(value / 1000).toFixed(0)}k`
+                    : `$${value.toFixed(0)}`}
                 </text>
               </g>
             );
