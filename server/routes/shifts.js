@@ -1,4 +1,4 @@
-import { getEmployeeShifts, assignStaffToShift } from '../model/Staff.js';
+import { getEmployeeShifts, assignStaffToShift, deleteShift } from '../model/Staff.js';
 
 export const handleShifts = async (req, res) => {
     const { method, url } = req;
@@ -24,13 +24,6 @@ export const handleShifts = async (req, res) => {
     } else if (method === 'GET' && url.startsWith('/api/shifts/staff') && url.split('/').at(-1).match(/^\d+$/)) {
         const id = url.split('/').at(-1);
 
-        if (!id) {
-            res.statusCode = 400;
-            res.setHeader('Content-Type', 'application/json');
-            res.end(JSON.stringify({ error: "Employee ID is required" }));
-            return;
-        }
-
         try {
             const shifts = await getEmployeeShifts(id);
             console.log("Shifts fetched:", shifts);
@@ -42,5 +35,27 @@ export const handleShifts = async (req, res) => {
             res.setHeader('Content-Type', 'application/json');
             res.end(JSON.stringify({ error: "Failed to fetch shifts", details: error.message }));
         }
+    } else if (method === 'DELETE' && url.startsWith('/api/shifts') && url.split('/').at(-1).match(/^\d+$/)) {
+        const id = url.split('/').at(-1);
+
+        try {
+
+            const success = await deleteShift(id);
+            if (success) {
+                res.statusCode = 200;
+                res.setHeader('Content-Type', 'application/json');
+                res.end(JSON.stringify({ message: `Shift with ID ${id} deleted successfully` }));
+            } else {
+                res.statusCode = 404;
+                res.setHeader('Content-Type', 'application/json');
+                res.end(JSON.stringify({ error: `Shift with ID ${id} not found` }));
+            }
+
+        } catch (error) {
+            res.statusCode = 500;
+            res.setHeader('Content-Type', 'application/json');
+            res.end(JSON.stringify({ error: "Failed to delete shift", details: error.message }));   
+        }
+
     }
 }

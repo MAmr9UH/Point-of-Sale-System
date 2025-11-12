@@ -4,8 +4,63 @@ import { getLocationToday } from '../model/ActiveLocation.js';
 export const handleCheckout = async (req, res) => {
   const { url, method } = req;
 
+  // Handle staff order creation (in-store)
+  if (method === 'POST' && url === '/api/checkout/staffCreateOrder') {
+    let body = '';
+
+    req.on('data', chunk => {
+      body += chunk.toString();
+    });
+
+    req.on('end', async () => {
+      try {
+        const { staffId, phoneNumber, orderItems, paymentMethod, totalAmount } = JSON.parse(body);
+
+        if (!staffId) {
+          res.statusCode = 400;
+          res.setHeader('Content-Type', 'application/json');
+          res.end(JSON.stringify({ success: false, error: 'Staff ID is required' }));
+          return;
+        }
+
+        // Get current active location
+        const locations = await getLocationToday();
+        if (!locations || locations.length === 0) {
+          res.statusCode = 400;
+          res.setHeader('Content-Type', 'application/json');
+          res.end(JSON.stringify({ success: false, error: 'No active location today' }));
+          return;
+        }
+
+        const locationName = locations[0].locationName;
+
+        const order = await createOrder(
+          orderItems,
+          phoneNumber,
+          null, // userId - not needed for in-store orders
+          false, // isOnline
+          staffId,
+          paymentMethod || 'cash',
+          0, // usedIncentivePoints
+          totalAmount,
+          locationName
+        );
+
+        console.log('Staff order created successfully:', order);
+
+        res.statusCode = 201;
+        res.setHeader('Content-Type', 'application/json');
+        res.end(JSON.stringify({ success: true, order }));
+      } catch (err) {
+        console.error('Error creating staff order:', err);
+        res.statusCode = 500;
+        res.setHeader('Content-Type', 'application/json');
+        res.end(JSON.stringify({ success: false, error: 'Failed to create order', details: err.message }));
+      }
+    });
+  }
   // Only handle POST requests to /api/checkout/createOrder
-  if (method === 'POST' && url === '/api/checkout/userCreateOrder') {
+  else if (method === 'POST' && url === '/api/checkout/userCreateOrder') {
     let body = '';
 
     // Collect data chunks

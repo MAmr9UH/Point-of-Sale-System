@@ -28,6 +28,31 @@ export const handleWelcome = async (req, res) => {
         res.statusCode = 200;
         res.setHeader('Content-Type', 'application/json');
         res.end(JSON.stringify(ans));
+    } else if (method === 'GET' && url === '/api/welcome/feedback') {
+        // Fetch top 10 most recent customer feedback
+        try {
+            const [ feedbackResults ] = await db.execute(`
+                SELECT 
+                    cf.Rating,
+                    cf.Comments,
+                    cf.SubmittedAt,
+                    c.Fname,
+                    c.Lname
+                FROM customer_feedback cf
+                JOIN customer c ON cf.CustomerID = c.CustomerID
+                ORDER BY cf.SubmittedAt DESC
+                LIMIT 10
+            `);
+
+            res.statusCode = 200;
+            res.setHeader('Content-Type', 'application/json');
+            res.end(JSON.stringify(feedbackResults));
+        } catch (err) {
+            console.error('Error fetching feedback:', err);
+            res.statusCode = 500;
+            res.setHeader('Content-Type', 'application/json');
+            res.end(JSON.stringify([]));
+        }
     } else if (method === 'GET' && url === '/api/welcome/test') {
         res.statusCode = 200;
         res.setHeader('Content-Type', 'application/json');
