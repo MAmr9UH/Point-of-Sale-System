@@ -152,7 +152,7 @@ import { db } from '../db/connection.js';
 
 export const getAllMenuItems = async (availableOnly = true) => {
     const query = `
-        SELECT *, MI.name as MIName, MI.MenuItemID as MIID, I.name as IName
+        SELECT *, MI.name as MIName, MI.MenuItemID as MIID, I.name as IName, I.QuantityInStock as IQuantityInStock
         FROM pos.Menu_Item as MI LEFT JOIN pos.Used_For as UF on MI.MenuItemID = UF.MenuItemID
         LEFT JOIN pos.Ingredient as I ON UF.IngredientID = I.IngredientID
         ${availableOnly ? "WHERE MI.Availability = TRUE" : ""}
@@ -184,7 +184,8 @@ export const getAllMenuItems = async (availableOnly = true) => {
                 MaximumQuantity: item.MaximumQuantity,
                 IsRemovable: item.IsRemovable,
                 IsRequired: item.IsRequired,
-                CanSubstitute: item.CanSubstitute
+                CanSubstitute: item.CanSubstitute,
+                QuantityInStock: item.IQuantityInStock
             })
     } 
 

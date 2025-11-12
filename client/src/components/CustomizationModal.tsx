@@ -70,6 +70,24 @@ const CustomizationModal = ({ item, isOpen, onClose, onAddToCart }: Customizatio
         }, {} as Record<string, Ingredient[]>);
     };
 
+    // Check if ingredient has sufficient stock
+    const hasInsufficientStock = (ingredient: Ingredient, requiredQuantity: number = ingredient.QuantityRequired): boolean => {
+        return ingredient.QuantityInStock < requiredQuantity;
+    };
+
+    // Check if menu item should be disabled due to insufficient stock
+    const isMenuItemAvailable = (): boolean => {
+        // Check all required non-substitutable ingredients
+        const requiredIngredients = item.Ingredients.filter(
+            ing => ing.IsRequired === 1 && ing.CanSubstitute === 0
+        );
+        
+        // If any required ingredient doesn't have enough stock, disable the item
+        return !requiredIngredients.some(ing => hasInsufficientStock(ing));
+    };
+
+    const itemAvailable = isMenuItemAvailable();
+
     // Calculate total price adjustment based on customizations
     const calculatePriceAdjustment = (): number => {
         let total = 0;
@@ -290,6 +308,12 @@ const CustomizationModal = ({ item, isOpen, onClose, onAddToCart }: Customizatio
                         <div className="no-customizations">
                             <p>No customizations available for this item.</p>
                         </div>
+                    ) : !itemAvailable ? (
+                        <div className="unavailable-message">
+                            <div className="unavailable-icon">⚠️</div>
+                            <h3>Item Currently Unavailable</h3>
+                            <p>This item cannot be ordered because required ingredients are out of stock.</p>
+                        </div>
                     ) : (
                         <div className="customization-options">
                             <h3>Customize Your Order</h3>
@@ -324,26 +348,31 @@ const CustomizationModal = ({ item, isOpen, onClose, onAddToCart }: Customizatio
                                                             currentQty = ingredient.QuantityRequired + customization.quantityDelta;
                                                         }
                                                         
+                                                        // Check if base required quantity has insufficient stock
+                                                        const outOfStock = hasInsufficientStock(ingredient);
+                                                        
                                                         return (
-                                                            <div key={ingredient.IngredientID} className="substitutable-ingredient-option">
+                                                            <div key={ingredient.IngredientID} className={`substitutable-ingredient-option ${outOfStock ? 'out-of-stock' : ''}`}>
                                                                 <label className="radio-option">
                                                                     <input
                                                                         type="radio"
                                                                         name={category}
                                                                         checked={isSelected}
                                                                         onChange={() => handleSubstitution(category, ingredient.IngredientID, ingredients)}
+                                                                        disabled={outOfStock}
                                                                     />
                                                                     <span>
                                                                         {ingredient.Name}
-                                                                        {showPrice && <span className="price-badge"> +${priceAdj.toFixed(2)}</span>}
-                                                                        {isDefault && <span className="default-badge"> (Included)</span>}
-                                                                        {isAddable && priceAdj > 0 && (
+                                                                        {outOfStock && <span className="stock-badge"> (Out of Stock)</span>}
+                                                                        {!outOfStock && showPrice && <span className="price-badge"> +${priceAdj.toFixed(2)}</span>}
+                                                                        {!outOfStock && isDefault && <span className="default-badge"> (Included)</span>}
+                                                                        {!outOfStock && isAddable && priceAdj > 0 && (
                                                                             <span className="price-info"> (+${priceAdj.toFixed(2)} per extra)</span>
                                                                         )}
                                                                     </span>
                                                                 </label>
                                                                 
-                                                                {isSelected && isAddable && (
+                                                                {isSelected && isAddable && !outOfStock && (
                                                                     <div className="quantity-controls">
                                                                         <button 
                                                                             onClick={() => handleQuantityChange(ingredient, -1)}
@@ -354,7 +383,7 @@ const CustomizationModal = ({ item, isOpen, onClose, onAddToCart }: Customizatio
                                                                         <span>{currentQty}</span>
                                                                         <button 
                                                                             onClick={() => handleQuantityChange(ingredient, 1)}
-                                                                            disabled={currentQty >= ingredient.MaximumQuantity}
+                                                                            disabled={currentQty >= ingredient.MaximumQuantity || currentQty >= ingredient.QuantityInStock}
                                                                         >
                                                                             +
                                                                         </button>
@@ -386,9 +415,11 @@ const CustomizationModal = ({ item, isOpen, onClose, onAddToCart }: Customizatio
                                                         // Removable = NOT required (IsRequired === 0)
                                                         const isRemovable = ingredient.IsRequired === 0;
                                                         const priceAdj = parseFloat(ingredient.PriceAdjustment) || 0;
+                                                        // Only grey out completely if base required quantity is out of stock
+                                                        const outOfStock = hasInsufficientStock(ingredient, isRemoved ? 0 : ingredient.QuantityRequired);
                                                         
                                                         return (
-                                                            <div key={ingredient.IngredientID} className="ingredient-option">
+                                                            <div key={ingredient.IngredientID} className={`ingredient-option ${outOfStock ? 'out-of-stock' : ''}`}>
                                                                 <div className="ingredient-info">
                                                                     {isRemovable ? (
                                                                         <label className="checkbox-option">
@@ -396,25 +427,28 @@ const CustomizationModal = ({ item, isOpen, onClose, onAddToCart }: Customizatio
                                                                                 type="checkbox"
                                                                                 checked={!isRemoved}
                                                                                 onChange={() => handleToggleIngredient(ingredient)}
+                                                                                disabled={outOfStock && !isRemoved}
                                                                             />
                                                                             <span>
                                                                                 {ingredient.Name}
+                                                                                {outOfStock && !isRemoved && <span className="stock-badge"> (Out of Stock)</span>}
                                                                             </span>
                                                                         </label>
                                                                     ) : (
                                                                         <span className="ingredient-name">
                                                                             {ingredient.Name}
-                                                                            <span className="default-badge"> (Included)</span>
+                                                                            {outOfStock && <span className="stock-badge"> (Out of Stock)</span>}
+                                                                            {!outOfStock && <span className="default-badge"> (Included)</span>}
                                                                         </span>
                                                                     )}
-                                                                    {isAddable && (
+                                                                    {!outOfStock && isAddable && (
                                                                         <span className="price-info">
                                                                             {priceAdj > 0 ? `+$${priceAdj.toFixed(2)} per extra` : 'Can add more'}
                                                                         </span>
                                                                     )}
                                                                 </div>
                                                                 
-                                                                {!isRemoved && isAddable && (
+                                                                {!isRemoved && isAddable && !outOfStock && (
                                                                     <div className="quantity-controls">
                                                                         <button 
                                                                             onClick={() => handleQuantityChange(ingredient, -1)}
@@ -425,7 +459,7 @@ const CustomizationModal = ({ item, isOpen, onClose, onAddToCart }: Customizatio
                                                                         <span>{currentQty}</span>
                                                                         <button 
                                                                             onClick={() => handleQuantityChange(ingredient, 1)}
-                                                                            disabled={currentQty >= ingredient.MaximumQuantity}
+                                                                            disabled={currentQty >= ingredient.MaximumQuantity || currentQty >= ingredient.QuantityInStock}
                                                                         >
                                                                             +
                                                                         </button>
@@ -445,8 +479,15 @@ const CustomizationModal = ({ item, isOpen, onClose, onAddToCart }: Customizatio
                 
                 <div className="customization-footer">
                     <button className="cancel-btn" onClick={handleClose}>Cancel</button>
-                    <button className="add-to-cart-btn" onClick={handleAddToCart}>
+                    <button 
+                        className="add-to-cart-btn" 
+                        onClick={handleAddToCart}
+                        disabled={!itemAvailable}
+                    >
                         {(() => {
+                            if (!itemAvailable) {
+                                return 'Item Unavailable';
+                            }
                             const basePrice = parseFloat(item.Price);
                             const adjustment = calculatePriceAdjustment();
                             const total = basePrice + adjustment;

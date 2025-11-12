@@ -106,6 +106,33 @@
     color: #999;
 }
 
+.unavailable-message {
+    text-align: center;
+    padding: 60px 40px;
+    background: linear-gradient(135deg, #fff5f5 0%, #ffe5e5 100%);
+    border-radius: 12px;
+    margin: 20px;
+}
+
+.unavailable-icon {
+    font-size: 64px;
+    margin-bottom: 16px;
+}
+
+.unavailable-message h3 {
+    color: #dc2626;
+    font-size: 24px;
+    margin: 0 0 12px 0;
+    font-weight: 700;
+}
+
+.unavailable-message p {
+    color: #991b1b;
+    font-size: 16px;
+    margin: 0;
+    line-height: 1.5;
+}
+
 .customization-category {
     margin-bottom: 24px;
     padding: 16px;
@@ -213,6 +240,52 @@
     flex: 1;
 }
 
+/* Out of Stock Styling */
+.out-of-stock {
+    opacity: 0.5;
+    pointer-events: none;
+    position: relative;
+}
+
+.out-of-stock::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: repeating-linear-gradient(
+        45deg,
+        transparent,
+        transparent 10px,
+        rgba(255, 0, 0, 0.05) 10px,
+        rgba(255, 0, 0, 0.05) 20px
+    );
+    pointer-events: none;
+    border-radius: 8px;
+}
+
+.out-of-stock input[type="radio"],
+.out-of-stock input[type="checkbox"] {
+    cursor: not-allowed;
+}
+
+.out-of-stock .radio-option,
+.out-of-stock .checkbox-option {
+    cursor: not-allowed;
+}
+
+.stock-badge {
+    display: inline-block;
+    padding: 2px 8px;
+    background-color: #fee2e2;
+    color: #991b1b;
+    border-radius: 4px;
+    font-size: 12px;
+    font-weight: 600;
+    margin-left: 8px;
+}
+
 /* Quantity Controls */
 .quantity-controls {
     display: flex;
@@ -306,6 +379,18 @@
 
 .add-to-cart-btn:hover {
     background: linear-gradient(145deg, #0056b3, #004494);
+}
+
+.add-to-cart-btn:disabled {
+    background: #d1d5db;
+    color: #9ca3af;
+    cursor: not-allowed;
+    opacity: 0.6;
+}
+
+.add-to-cart-btn:disabled:hover {
+    background: #d1d5db;
+    transform: none;
 }
 
 /* Price Badges and Info */
