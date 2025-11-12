@@ -21,17 +21,29 @@ const metricConfig: Record<MetricKey, { title: string; color: string; format: (n
   TotalProfit: {
     title: 'Total Profit by Location',
     color: '#10b981',
-    format: (n) => `$${(n / 1000).toFixed(1)}k`
+    format: (n) => {
+      if (n >= 1000000) return `$${(n / 1000000).toFixed(1)}M`;
+      if (n >= 1000) return `$${(n / 1000).toFixed(1)}k`;
+      return `$${n.toFixed(0)}`;
+    }
   },
   TotalSales: {
     title: 'Total Sales by Location',
     color: '#3b82f6',
-    format: (n) => `$${(n / 1000).toFixed(1)}k`
+    format: (n) => {
+      if (n >= 1000000) return `$${(n / 1000000).toFixed(1)}M`;
+      if (n >= 1000) return `$${(n / 1000).toFixed(1)}k`;
+      return `$${n.toFixed(0)}`;
+    }
   },
   TotalCost: {
     title: 'Total Cost by Location',
     color: '#ef4444',
-    format: (n) => `$${(n / 1000).toFixed(1)}k`
+    format: (n) => {
+      if (n >= 1000000) return `$${(n / 1000000).toFixed(1)}M`;
+      if (n >= 1000) return `$${(n / 1000).toFixed(1)}k`;
+      return `$${n.toFixed(0)}`;
+    }
   },
   TotalOrders: {
     title: 'Total Orders by Location',
@@ -92,6 +104,122 @@ export default function ProfitLocationChart({ data, metric = 'TotalProfit' }: Pr
   const barGap = 40;
   const padding = { top: 20, right: 40, bottom: 80, left: 60 };
 
+  // Pie chart specific calculations
+  const isPieChart = validMetric === 'ProfitMarginPct';
+  const pieRadius = 120;
+  const pieCenterX = 200;
+  const pieCenterY = 160;
+  
+  if (isPieChart) {
+    // Calculate total for percentage
+    const total = chartData.reduce((sum, d) => sum + d.value, 0);
+    let currentAngle = -90; // Start from top
+    
+    return (
+      <div className="location-chart-container">
+        <h3 className="location-chart-title">{config.title}</h3>
+        <div className="location-chart-wrapper">
+          <svg 
+            width="100%" 
+            height="400"
+            viewBox="0 0 800 400"
+            preserveAspectRatio="xMidYMid meet"
+          >
+            {/* Pie slices */}
+            {chartData.map((item, index) => {
+              const percentage = (item.value / total) * 100;
+              const sliceAngle = (percentage / 100) * 360;
+              const startAngle = currentAngle;
+              const endAngle = currentAngle + sliceAngle;
+              
+              // Calculate path for pie slice
+              const startRad = (startAngle * Math.PI) / 180;
+              const endRad = (endAngle * Math.PI) / 180;
+              
+              const x1 = pieCenterX + pieRadius * Math.cos(startRad);
+              const y1 = pieCenterY + pieRadius * Math.sin(startRad);
+              const x2 = pieCenterX + pieRadius * Math.cos(endRad);
+              const y2 = pieCenterY + pieRadius * Math.sin(endRad);
+              
+              const largeArc = sliceAngle > 180 ? 1 : 0;
+              
+              const pathData = [
+                `M ${pieCenterX} ${pieCenterY}`,
+                `L ${x1} ${y1}`,
+                `A ${pieRadius} ${pieRadius} 0 ${largeArc} 1 ${x2} ${y2}`,
+                'Z'
+              ].join(' ');
+              
+              // Calculate label position (middle of slice)
+              const labelAngle = startAngle + sliceAngle / 2;
+              const labelRad = (labelAngle * Math.PI) / 180;
+              const labelDistance = pieRadius * 0.7;
+              const labelX = pieCenterX + labelDistance * Math.cos(labelRad);
+              const labelY = pieCenterY + labelDistance * Math.sin(labelRad);
+              
+              currentAngle = endAngle;
+              
+              return (
+                <g key={index}>
+                  <path
+                    d={pathData}
+                    fill={config.color}
+                    opacity={1 - (index * 0.15)}
+                    stroke="white"
+                    strokeWidth="2"
+                    className="location-chart-bar"
+                  >
+                    <title>{item.name}: {config.format(item.value)}</title>
+                  </path>
+                  {percentage > 5 && (
+                    <text
+                      x={labelX}
+                      y={labelY}
+                      textAnchor="middle"
+                      fontSize="12"
+                      fill="white"
+                      fontWeight="600"
+                    >
+                      {percentage.toFixed(1)}%
+                    </text>
+                  )}
+                </g>
+              );
+            })}
+            
+            {/* Legend */}
+            <g transform="translate(450, 50)">
+              {chartData.map((item, index) => (
+                <g key={index} transform={`translate(0, ${index * 25})`}>
+                  <rect
+                    x="0"
+                    y="0"
+                    width="20"
+                    height="20"
+                    fill={config.color}
+                    opacity={1 - (index * 0.15)}
+                    rx="3"
+                  />
+                  <text
+                    x="30"
+                    y="15"
+                    fontSize="13"
+                    fill="#374151"
+                  >
+                    {item.name.length > 20 ? item.name.substring(0, 20) + '...' : item.name}
+                    {' '}({config.format(item.value)})
+                  </text>
+                </g>
+              ))}
+            </g>
+          </svg>
+        </div>
+      </div>
+    );
+  }
+
+  // Bar chart (original code)
+
   return (
     <div className="location-chart-container">
       <h3 className="location-chart-title">{config.title}</h3>
@@ -125,7 +253,7 @@ export default function ProfitLocationChart({ data, metric = 'TotalProfit' }: Pr
                   fontSize="12"
                   fill="#6b7280"
                 >
-                  {validMetric === 'ProfitMarginPct' ? `${value.toFixed(0)}%` : `$${value.toFixed(0)}`}
+                  {`$${value.toFixed(0)}`}
                 </text>
               </g>
             );
