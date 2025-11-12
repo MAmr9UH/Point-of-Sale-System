@@ -19,7 +19,7 @@ interface CartItem extends MenuItem {
 
 interface ShoppingCartContextType {
     items: Record<string, CartItem>;
-    addItem: (item: MenuItem, customizations?: ItemCustomization[]) => void;
+    addItem: (item: MenuItem, customizations?: ItemCustomization[]) => boolean;
     removeItem: (itemId: string) => void;
     clearCart: () => void;
     adjustQuantity: (itemId: string, delta: number) => void;
@@ -66,13 +66,26 @@ export const ShoppingCartProvider: React.FC<{ children: React.ReactNode }> = ({ 
         return `${item.MenuItemID}-${btoa(customizationString).substring(0, 10)}`;
     };
     
-    const addItem = (item: MenuItem, customizations?: ItemCustomization[]) => { 
+    const PRICE_THRESHOLD = 100;
+
+    const addItem = (item: MenuItem, customizations?: ItemCustomization[]): boolean => {
         const adjustedPrice = calculateAdjustedPrice(item, customizations);
-        
+
+        // Compute projected grand total (after tax)
+        const projectedTotal = total + adjustedPrice;
+        const projectedTax = projectedTotal * 0.1; // 10% tax
+        const projectedGrandTotal = projectedTotal + projectedTax;
+
+        // If adding exceeds the threshold, block addition
+        if (projectedGrandTotal > PRICE_THRESHOLD) {
+            console.warn(`Order limit exceeded: $${projectedGrandTotal.toFixed(2)} > $${PRICE_THRESHOLD}`);
+            return false; // indicates "add failed"
+        }
+
+        // Proceed with adding item normally
         setItems((prev) => {
-            console.log('addItem called with:', item, 'customizations:', customizations);
             const cartItemId = generateCartItemId(item, customizations);
-            
+
             if (cartItemId in prev) {
                 const temp = { ...prev };
                 temp[cartItemId] = {
@@ -81,24 +94,27 @@ export const ShoppingCartProvider: React.FC<{ children: React.ReactNode }> = ({ 
                 };
                 return temp;
             } else {
-                return { 
-                    ...prev, 
-                    [cartItemId]: { 
-                        ...item, 
+                return {
+                    ...prev,
+                    [cartItemId]: {
+                        ...item,
                         quantity: 1,
-                        customizations: customizations,
-                        cartItemId: cartItemId,
-                        adjustedPrice: adjustedPrice
-                    } 
+                        customizations,
+                        cartItemId,
+                        adjustedPrice
+                    }
                 };
             }
         });
-        
-        if (!adjustedPrice) return;
-        setTotal(total + adjustedPrice);
-        setTax((total + adjustedPrice) * 0.1); // Example: 10% tax
-        setGrandTotal(total + adjustedPrice + (total + adjustedPrice) * 0.1); 
-     };
+
+        const newTotal = projectedTotal;
+        setTotal(newTotal);
+        setTax(projectedTax);
+        setGrandTotal(projectedGrandTotal);
+
+        return true; // "add success"
+    };
+
     const removeItem = (itemId: string) => { 
         const item = items[itemId];
         if (!item || !item.adjustedPrice) {

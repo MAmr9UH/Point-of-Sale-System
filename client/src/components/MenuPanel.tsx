@@ -46,8 +46,12 @@ const MenuPanel = () => {
             };
         });
         
-        // Add item to cart with customizations
-        addItem(item, itemCustomizations.length > 0 ? itemCustomizations : undefined);
+        const success = addItem(item, itemCustomizations.length > 0 ? itemCustomizations : undefined);
+        if (!success) {
+            addToast("⚠️ Adding this item would bring your total over $100. Please proceed to checkout to complete your order.")
+            return;
+        }
+
         
         // Log customizations for debugging
         if (itemCustomizations.length > 0) {

@@ -25,7 +25,10 @@ const useClickOutside = (ref: React.RefObject<HTMLElement>, handler: () => void)
 };
 
 const ShoppingCartPanel = ({ isOpen, onClose }: { isOpen: boolean; onClose: () => void }) => {
-    const { items, removeItem, adjustQuantity, tax, grandTotal, clearCart, total } = useShoppingCart();
+    const [showLimitMessage, setShowLimitMessage] = useState(false);
+    const PRICE_THRESHOLD = 100;
+
+    const { items, removeItem, adjustQuantity, tax, grandTotal, clearCart, total, addItem } = useShoppingCart();
     const panelRef = useRef<HTMLDivElement>(null);
     const [isAnimating, setIsAnimating] = useState(false);
 
@@ -60,6 +63,16 @@ const ShoppingCartPanel = ({ isOpen, onClose }: { isOpen: boolean; onClose: () =
                 <h2>Shopping Cart</h2>
                 <button className="close-button" onClick={handleClose}>&times;</button>
             </div>
+
+            {showLimitMessage && (
+                <div className="order-limit-banner">
+                    <span>⚠️ Adding this item would bring your total over $100. Please proceed to checkout to complete your order.</span>
+                    <button className="dismiss-btn" onClick={() => setShowLimitMessage(false)}>
+                    OK
+                    </button>
+                </div>
+            )}
+
             
             <div className="panel-body">
                 {cartItems.length === 0 ? (
@@ -114,19 +127,35 @@ const ShoppingCartPanel = ({ isOpen, onClose }: { isOpen: boolean; onClose: () =
                                 
                                 <div className="cart-item-controls">
                                     <div className="qty-controls">
-                                        <button 
+                                        <button
                                             className="qty-btn"
-                                            onClick={() => adjustQuantity(item.cartItemId || String(item.MenuItemID), -1)}
-                                        >
-                                            -
+                                            onClick={() => {
+                                                if (grandTotal >= PRICE_THRESHOLD) {
+                                                    setShowLimitMessage(true);
+                                                    return;
+                                                }
+                                                adjustQuantity(item.cartItemId || String(item.MenuItemID), -1);
+                                            }}
+                                            >
+                                                -
                                         </button>
+
                                         <span className="quantity">{item.quantity}</span>
-                                        <button 
+
+                                        <button
                                             className="qty-btn"
-                                            onClick={() => adjustQuantity(item.cartItemId || String(item.MenuItemID), 1)}
+                                            onClick={() => {
+                                                const added = addItem(item, item.customizations);
+                                                if (!added) {
+                                                    setShowLimitMessage(true);
+                                                    return;
+                                                }
+                                            }}
+
                                         >
                                             +
                                         </button>
+
                                     </div>
                                     <button 
                                         className="remove-btn"
