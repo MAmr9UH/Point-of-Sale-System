@@ -1,10 +1,76 @@
 import "./WelcomePageDD.css";
+import "./WelcomePageDD-Carousel.css";
 import {TopNav} from "../components/TopNav";
 import { useWelcomePage } from "../contexts/WelcomePageContext";
+import { useState, useEffect } from "react";
+
+interface CustomerFeedback {
+  Rating: number;
+  Comments: string;
+  SubmittedAt: string;
+  Fname: string;
+  Lname: string;
+}
 
 export default function WelcomePageDD() {
 
   const { pageData, isLoading, error } = useWelcomePage();
+  const [feedback, setFeedback] = useState<CustomerFeedback[]>([]);
+  const [currentFeedbackIndex, setCurrentFeedbackIndex] = useState(0);
+
+  // Fetch feedback data
+  useEffect(() => {
+    const fetchFeedback = async () => {
+      try {
+        const response = await fetch('/api/welcome/feedback');
+        if (response.ok) {
+          const data = await response.json();
+          setFeedback(data);
+        }
+      } catch (err) {
+        console.error('Failed to fetch feedback:', err);
+      }
+    };
+    
+    fetchFeedback();
+  }, []);
+
+  // Auto-advance carousel every 5 seconds
+  useEffect(() => {
+    if (feedback.length === 0) return;
+
+    const interval = setInterval(() => {
+      setCurrentFeedbackIndex((prev) => 
+        prev === feedback.length - 1 ? 0 : prev + 1
+      );
+    }, 5000);
+
+    return () => clearInterval(interval);
+  }, [feedback]);
+
+  const handlePrevFeedback = () => {
+    setCurrentFeedbackIndex((prev) => 
+      prev === 0 ? feedback.length - 1 : prev - 1
+    );
+  };
+
+  const handleNextFeedback = () => {
+    setCurrentFeedbackIndex((prev) => 
+      prev === feedback.length - 1 ? 0 : prev + 1
+    );
+  };
+
+  const renderStars = (rating: number) => {
+    return (
+      <div className="feedback-stars">
+        {[1, 2, 3, 4, 5].map((star) => (
+          <span key={star} className={star <= rating ? 'star-filled' : 'star-empty'}>
+            ★
+          </span>
+        ))}
+      </div>
+    );
+  };
 
   if (isLoading) {
     return (
@@ -88,6 +154,59 @@ export default function WelcomePageDD() {
           </div>
         </main>
         </div>
+
+      {/* Customer Feedback Carousel */}
+      {feedback.length > 0 && (
+        <div className="feedback-carousel-container fade-in delay-4">
+          <h2 className="feedback-carousel-title">What Our Customers Say</h2>
+          <div className="feedback-carousel">
+            <button 
+              className="carousel-btn carousel-btn-prev" 
+              onClick={handlePrevFeedback}
+              aria-label="Previous feedback"
+            >
+              ❮
+            </button>
+
+            <div className="feedback-card">
+              {renderStars(feedback[currentFeedbackIndex].Rating)}
+              <p className="feedback-comment">
+                "{feedback[currentFeedbackIndex].Comments || 'Great experience!'}"
+              </p>
+              <p className="feedback-author">
+                - {feedback[currentFeedbackIndex].Fname} {feedback[currentFeedbackIndex].Lname}
+              </p>
+              <p className="feedback-date">
+                {new Date(feedback[currentFeedbackIndex].SubmittedAt).toLocaleDateString('en-US', {
+                  month: 'short',
+                  day: 'numeric',
+                  year: 'numeric'
+                })}
+              </p>
+            </div>
+
+            <button 
+              className="carousel-btn carousel-btn-next" 
+              onClick={handleNextFeedback}
+              aria-label="Next feedback"
+            >
+              ❯
+            </button>
+          </div>
+
+          <div className="carousel-dots">
+            {feedback.map((_, index) => (
+              <button
+                key={index}
+                className={`carousel-dot ${index === currentFeedbackIndex ? 'active' : ''}`}
+                onClick={() => setCurrentFeedbackIndex(index)}
+                aria-label={`Go to feedback ${index + 1}`}
+              />
+            ))}
+          </div>
+        </div>
+      )}
+
       <footer className="welcome-footer fade-in delay-3">
         © {new Date().getFullYear()} TEAM 4
       </footer>

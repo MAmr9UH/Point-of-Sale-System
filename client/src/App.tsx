@@ -11,6 +11,9 @@ import ReportsPage from "./pages/ReportsPage.tsx"
 import LoadingSpinner from './components/LoadingSpinner.tsx';
 import { useAuth } from './contexts/AuthContext.tsx';
 import CustomerProfile from './pages/Profile.tsx';
+import { EmployeeDashboard } from './pages/EmployeeDashboard.tsx';
+import { EmployeeShifts } from './pages/EmployeeShifts.tsx';
+import { EmployeeOrders } from './pages/EmployeeOrders.tsx';
 
 const ProtectedRoute = ({ children }: any) => {
   const { user, isLoading } = useAuth();
@@ -67,6 +70,9 @@ function App() {
       <Route path="/employee_manager" element={<ManagerProtectedRoute><Employee_Manager /></ManagerProtectedRoute>} />
       <Route path="/checkout" element={<ProtectedRoute><Checkout /></ProtectedRoute>} />
       <Route path="/reports" element={<ManagerProtectedRoute><ReportsPage /></ManagerProtectedRoute>} />
+      <Route path="/employee" element={<ProtectedRoute><EmployeeDashboard/></ProtectedRoute>} />
+      <Route path="/shifts" element={<ProtectedRoute><EmployeeShifts/></ProtectedRoute>} />
+      <Route path="/orders" element={<ProtectedRoute><EmployeeOrders/></ProtectedRoute>} />
     </Routes>
   )
 }

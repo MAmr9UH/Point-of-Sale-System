@@ -1,0 +1,202 @@
+/* Customer Feedback Carousel */
+.feedback-carousel-container {
+  max-width: 900px;
+  width: 90%;
+  margin: 2rem auto;
+  padding: 2rem;
+  background: rgba(255, 255, 255, 0.95);
+  backdrop-filter: blur(10px);
+  border-radius: 20px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+  /* animation: fadeIn 0.8s ease-out; */
+}
+
+.feedback-carousel-title {
+  text-align: center;
+  font-size: 2rem;
+  font-weight: 700;
+  color: #333;
+  margin: 0 0 2rem 0;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background-clip: text;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.feedback-carousel {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 1.5rem;
+  position: relative;
+  min-height: 250px;
+}
+
+.feedback-card {
+  flex: 1;
+  padding: 2rem;
+  text-align: center;
+  background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+  border-radius: 16px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+  /* animation: slideInUp 0.5s ease-out; */
+  min-height: 200px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+
+.feedback-stars {
+  display: flex;
+  justify-content: center;
+  gap: 0.25rem;
+  margin-bottom: 1rem;
+  font-size: 1.5rem;
+}
+
+.star-filled {
+  color: #FFD700;
+  text-shadow: 0 2px 4px rgba(255, 215, 0, 0.3);
+}
+
+.star-empty {
+  color: #d1d5db;
+}
+
+.feedback-comment {
+  font-size: 1.125rem;
+  line-height: 1.6;
+  color: #333;
+  font-style: italic;
+  margin: 0 0 1rem 0;
+  min-height: 60px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.feedback-author {
+  font-weight: 700;
+  color: #667eea;
+  margin: 0.5rem 0 0.25rem 0;
+  font-size: 1rem;
+}
+
+.feedback-date {
+  font-size: 0.875rem;
+  color: #6b7280;
+  margin: 0;
+}
+
+.carousel-btn {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  border: none;
+  width: 50px;
+  height: 50px;
+  border-radius: 50%;
+  font-size: 1.5rem;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.carousel-btn:hover {
+  transform: scale(1.1);
+  box-shadow: 0 6px 20px rgba(102, 126, 234, 0.4);
+}
+
+.carousel-btn:active {
+  transform: scale(0.95);
+}
+
+.carousel-dots {
+  display: flex;
+  justify-content: center;
+  gap: 0.75rem;
+  margin-top: 1.5rem;
+}
+
+.carousel-dot {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  border: none;
+  background: #d1d5db;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  padding: 0;
+}
+
+.carousel-dot:hover {
+  background: #9ca3af;
+  transform: scale(1.2);
+}
+
+.carousel-dot.active {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  width: 32px;
+  border-radius: 6px;
+  box-shadow: 0 2px 8px rgba(102, 126, 234, 0.4);
+}
+
+/* Responsive Design for Carousel */
+@media (max-width: 768px) {
+  .feedback-carousel-container {
+    width: 95%;
+    padding: 1.5rem;
+    margin: 1.5rem auto;
+  }
+
+  .feedback-carousel-title {
+    font-size: 1.5rem;
+    margin-bottom: 1.5rem;
+  }
+
+  .feedback-carousel {
+    gap: 1rem;
+    min-height: 280px;
+  }
+
+  .feedback-card {
+    padding: 1.5rem;
+  }
+
+  .feedback-comment {
+    font-size: 1rem;
+  }
+
+  .carousel-btn {
+    width: 40px;
+    height: 40px;
+    font-size: 1.25rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .feedback-carousel {
+    flex-direction: column;
+    gap: 1rem;
+  }
+
+  .carousel-btn-prev {
+    order: -1;
+  }
+
+  .carousel-btn-next {
+    order: 1;
+  }
+
+  .feedback-card {
+    order: 0;
+  }
+
+  .feedback-comment {
+    font-size: 0.95rem;
+    min-height: 80px;
+  }
+}
