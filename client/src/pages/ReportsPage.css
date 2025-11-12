@@ -166,3 +166,30 @@
   .report-output{ margin-top:0; }
   @page{ margin:16mm; }
 }
+
+.tabs{
+  display:flex;
+  gap:.5rem;
+  margin-bottom:.5rem;
+}
+.tab{
+  background:transparent;
+  border:1px solid var(--line);
+  color:var(--text);
+  padding:.5rem .75rem;
+  border-radius:10px;
+  font-weight:700;
+  cursor:pointer;
+  transition: all 0.12s ease;
+}
+.tab:hover{
+  border-color: var(--primary);
+  box-shadow: 0 4px 10px rgba(37,99,235,0.06);
+  transform: translateY(-2px);
+}
+.tab.active{
+  background: var(--primary);
+  color: white;
+  border-color: var(--primary);
+  box-shadow: 0 6px 18px rgba(37,99,235,0.14);
+}

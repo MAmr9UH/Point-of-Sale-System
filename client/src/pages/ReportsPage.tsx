@@ -1,21 +1,37 @@
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import "./ReportsPage.css";
+import ProfitLocationChart from "../components/ProfitLocationChart";
+import PopularItemChart from "../components/PopularItemChart";
+import EmployeePerformanceChart from "../components/EmployeePerformanceChart";
 
 /* ========= Types from API ========= */
 type ReportType = "locations" | "items" | "employees";
 type Range = { from: string; to: string };
-type OrderType = "in-person" | "online" | "delivery";
 
-type ProfitPerLocationRow = { LocationName: string; TotalProfit: number | string };
-type PopularItemRow = { Name: string; OrderCount: number | string };
+type ProfitPerLocationRow = {
+  LocationName: string;
+  TotalOrders: number | string;
+  TotalSales: number | string;
+  TotalCost: number | string;
+  TotalProfit: number | string;
+  ProfitMarginPct: number | string;
+};
+type PopularItemRow = {
+  ItemName: string;
+  Category: string;
+  TotalQuantity: number | string;
+  TotalSales: number | string;
+  AvgPricePerItem: number | string;
+  SalesSharePct: number | string;
+};
 type EmployeePerfRow = {
-  FName: string;
-  LName: string;
-  OrdersHandled: number | string;
+  EmployeeName: string;
+  Role: string;
+  TotalOrdersHandled: number | string;
   TotalSales: number | string;
   TotalHoursWorked: number | string; // decimal hours
-  SalesPerHour?: number;             // derived on client
+  SalesPerHour?: number;             // provided by server
 };
 
 const API_BASE = "";
@@ -27,16 +43,24 @@ const money = (n: number) =>
 const sortFieldsByType: Record<ReportType, { key: string; label: string }[]> = {
   locations: [
     { key: "LocationName", label: "Location" },
+    { key: "TotalOrders", label: "Total Orders" },
+    { key: "TotalSales", label: "Total Sales" },
+    { key: "TotalCost", label: "Total Cost" },
     { key: "TotalProfit", label: "Total Profit" },
+    { key: "ProfitMarginPct", label: "Profit Margin (%)" },
   ],
   items: [
-    { key: "Name", label: "Item" },
-    { key: "OrderCount", label: "Orders" },
+    { key: "ItemName", label: "Item" },
+    { key: "Category", label: "Category" },
+    { key: "TotalQuantity", label: "Quantity" },
+    { key: "TotalSales", label: "Total Sales" },
+    { key: "AvgPricePerItem", label: "Avg Price" },
+    { key: "SalesSharePct", label: "% of Total Sales" },
   ],
   employees: [
-    { key: "FName", label: "First Name" },
-    { key: "LName", label: "Last Name" },
-    { key: "OrdersHandled", label: "Orders" },
+    { key: "EmployeeName", label: "Employee Name" },
+    { key: "Role", label: "Role / Position" },
+    { key: "TotalOrdersHandled", label: "Orders" },
     { key: "TotalSales", label: "Sales" },
     { key: "TotalHoursWorked", label: "Hours" },
     { key: "SalesPerHour", label: "Sales / Hour" },
@@ -47,15 +71,14 @@ const isNumeric = (v: any) => v !== null && v !== "" && !isNaN(Number(v));
 
 const haystackForRow = (row: any, type: ReportType) => {
   if (type === "locations") {
-    return `${row.LocationName} ${row.TotalProfit}`;
+    return `${row.LocationName ?? ""} ${row.TotalOrders ?? ""} ${row.TotalSales ?? ""} ${row.TotalProfit ?? ""}`;
   }
   if (type === "items") {
-    return `${row.Name} ${row.OrderCount}`;
+    return `${row.ItemName ?? row.Name ?? ""} ${row.Category ?? ""} ${row.TotalQuantity ?? row.OrderCount ?? ""} ${row.TotalSales ?? ""}`;
   }
   // employees
-  const fname = row.FName ?? "";
-  const lname = row.LName ?? row.Lname ?? "";
-  return `${fname} ${lname} ${row.OrdersHandled} ${row.TotalSales} ${row.TotalHoursWorked} ${row.SalesPerHour ?? ""}`;
+  const name = row.EmployeeName ?? `${row.FName ?? ""} ${row.LName ?? row.Lname ?? ""}`.trim();
+  return `${name} ${row.Role ?? ""} ${row.TotalOrdersHandled ?? row.OrdersHandled ?? ""} ${row.TotalSales ?? ""} ${row.TotalHoursWorked ?? ""}`;
 };
 
 const HomeIcon: React.FC<React.SVGProps<SVGSVGElement>> = (props) => (
@@ -71,14 +94,13 @@ export default function ReportsPage() {
   /* ---- Default range (last 7 days) ---- */
   const today = new Date();
   const to = today.toISOString().slice(0, 10);
-  const fromDate = new Date();
-  fromDate.setDate(today.getDate() - 6);
+  const fromDate = new Date(today);
+  // default "from" = one month prior
+  fromDate.setMonth(today.getMonth() - 1);
   const from = fromDate.toISOString().slice(0, 10);
 
   /* ---- Form state ---- */
   const [type, setType] = useState<ReportType>("locations");
-  const [location, setLocation] = useState<string>("all"); // placeholder for future server filters
-  const [orderType, setOrderType] = useState<"all" | OrderType>("all"); // placeholder
   const [keyword, setKeyword] = useState<string>(""); // now used to filter rows
   const [range, setRange] = useState<Range>({ from, to });
   const [viewed, setViewed] = useState(false);
@@ -94,13 +116,24 @@ export default function ReportsPage() {
 
   /* ---- Keep sort field sensible per report type (useEffect, not useMemo) ---- */
   useEffect(() => {
+    console.log(`🔄 Tab switched to: ${type}`);
+    
+    // reset preview/table when user switches report tabs
+    setViewed(false);
+    setRows([]);
+    setErr(null);
+    setLoading(false);
+    setKeyword(""); // Clear search bar when switching tabs
+    
+    console.log(`✅ State reset complete for ${type} tab`);
+
     if (type === "locations") {
-      setSortField((f) => (["LocationName", "TotalProfit"].includes(f) ? f : "TotalProfit"));
+      setSortField((f) => (["LocationName","TotalOrders","TotalSales","TotalCost","TotalProfit","ProfitMarginPct"].includes(f) ? f : "TotalProfit"));
     } else if (type === "items") {
-      setSortField((f) => (["Name", "OrderCount"].includes(f) ? f : "OrderCount"));
+      setSortField((f) => (["ItemName","Category","TotalQuantity","TotalSales","AvgPricePerItem","SalesSharePct"].includes(f) ? f : "TotalSales"));
     } else {
       setSortField((f) =>
-        ["FName", "LName", "OrdersHandled", "TotalSales", "TotalHoursWorked", "SalesPerHour"].includes(f)
+        ["EmployeeName", "Role", "TotalOrdersHandled", "TotalSales", "TotalHoursWorked", "SalesPerHour"].includes(f)
           ? f
           : "SalesPerHour"
       );
@@ -132,18 +165,14 @@ export default function ReportsPage() {
       const data = await res.json();
 
       if (type === "employees") {
-        const normalized = (data as EmployeePerfRow[]).map((r: any) => {
-          const LName = r.LName ?? r.Lname ?? r.lname ?? "";
-          const TotalHoursWorked = Number(r.TotalHoursWorked ?? 0);
-          const TotalSales = Number(r.TotalSales ?? 0);
-          return {
-            ...r,
-            LName,
-            TotalHoursWorked,
-            TotalSales,
-            SalesPerHour: TotalHoursWorked > 0 ? TotalSales / TotalHoursWorked : 0,
-          } as EmployeePerfRow;
-        });
+        const normalized = (data as any[]).map((r: any) => ({
+          EmployeeName: r.EmployeeName ?? `${r.FName ?? ""} ${r.LName ?? r.Lname ?? ""}`.trim(),
+          Role: r.Role ?? r.RoleName ?? "",
+          TotalOrdersHandled: Number(r.TotalOrdersHandled ?? r.total_orders ?? 0),
+          TotalSales: Number(r.TotalSales ?? r.total_sales ?? 0),
+          TotalHoursWorked: Number(r.TotalHoursWorked ?? r.total_hours ?? 0),
+          SalesPerHour: Number(r.SalesPerHour ?? 0),
+        }));
         setRows(normalized);
       } else {
         setRows(data);
@@ -162,7 +191,15 @@ export default function ReportsPage() {
   const filtered = useMemo(() => {
     const q = keyword.trim().toLowerCase();
     if (!q) return rows;
-    return rows.filter((r) => haystackForRow(r, type).toLowerCase().includes(q));
+    
+    // Split by comma or space, remove empty strings
+    const keywords = q.split(/[,\s]+/).filter(k => k.length > 0);
+    
+    // Filter rows that match ANY of the keywords (OR logic)
+    return rows.filter((r) => {
+      const haystack = haystackForRow(r, type).toLowerCase();
+      return keywords.some(kw => haystack.includes(kw));
+    });
   }, [rows, keyword, type]);
 
   const result = useMemo(() => {
@@ -226,41 +263,47 @@ export default function ReportsPage() {
         <h1 className="page-title">Report Request</h1>
         <h2 className="section-title">Activity Report</h2>
 
-        <div className="form-grid">
-          <label className="field span-2">
-            <span>Report Type *</span>
-            <select value={type} onChange={(e) => setType(e.target.value as ReportType)}>
-              <option value="locations">Most Profitable Location</option>
-              <option value="items">Most Popular Menu Item</option>
-              <option value="employees">Employee Performance</option>
-            </select>
-          </label>
+        {/* Tabs for report type */}
+        <div className="tabs" role="tablist" aria-label="Report tabs">
+          <button
+            role="tab"
+            aria-selected={type === "locations"}
+            className={`tab ${type === "locations" ? "active" : ""}`}
+            onClick={() => setType("locations")}
+          >
+            Most Profitable Location
+          </button>
+          <button
+            role="tab"
+            aria-selected={type === "items"}
+            className={`tab ${type === "items" ? "active" : ""}`}
+            onClick={() => setType("items")}
+          >
+            Most Popular Item
+          </button>
+          <button
+            role="tab"
+            aria-selected={type === "employees"}
+            className={`tab ${type === "employees" ? "active" : ""}`}
+            onClick={() => setType("employees")}
+          >
+            Employee Performance
+          </button>
+        </div>
 
-          <label className="field">
-            <span>Location</span>
-            <select value={location} onChange={(e) => setLocation(e.target.value)}>
-              <option value="all">All</option>
-              <option>Midtown</option>
-              <option>Campus</option>
-            </select>
-          </label>
-
-          <label className="field">
-            <span>Order Type</span>
-            <select value={orderType} onChange={(e) => setOrderType(e.target.value as any)}>
-              <option value="all">All Orders</option>
-              <option value="in-person">In-person</option>
-              <option value="online">Online</option>
-              <option value="delivery">Delivery</option>
-            </select>
-          </label>
-
+        <div className="form-grid" style={{ marginTop: '0.75rem' }}>
           <label className="field span-2">
             <span>Keyword</span>
             <input
               type="text"
               className="keyword-input"
-              placeholder="Search item, employee, or location…"
+              placeholder={
+                type === "employees" 
+                  ? "Search by multiple keywords (e.g., Maria, Carlos or Manager, Server)…"
+                  : type === "items"
+                  ? "Search by multiple keywords (e.g., Burger, Pizza or Appetizer, Dessert)…"
+                  : "Search by multiple keywords (e.g., Downtown, Mall or Location A, Location B)…"
+              }
               value={keyword}
               onChange={(e) => setKeyword(e.target.value)}
             />
@@ -306,7 +349,7 @@ export default function ReportsPage() {
               {type === "employees" && "Employee Performance"}
             </div>
             <div className="report-meta">
-              Range: {range.from} → {range.to} • Location: {location} • Orders: {orderType}
+              Range: {range.from} → {range.to}
               {keyword.trim() ? <> • Filter: “{keyword}”</> : null}
               {err ? <span className="error"> • {err}</span> : null}
             </div>
@@ -329,89 +372,157 @@ export default function ReportsPage() {
           </div>
 
           {/* Locations */}
-          {type === "locations" && (
-            <table className="rtable">
-              <thead>
-                <tr>
-                  <th>Location</th>
-                  <th>Total Profit</th>
-                </tr>
-              </thead>
-              <tbody>
-                {(result as ProfitPerLocationRow[]).map((r) => (
-                  <tr key={r.LocationName}>
-                    <td>{r.LocationName}</td>
-                    <td>{money(Number(r.TotalProfit))}</td>
+          {type === "locations" && rows.length > 0 && result && result.length > 0 && (
+            <>
+              {/* Chart - only show for numeric metrics */}
+              {sortField !== "LocationName" && (
+                <ProfitLocationChart 
+                  key={`location-chart-${type}`}
+                  data={result as ProfitPerLocationRow[]} 
+                  metric={sortField as 'TotalProfit' | 'TotalSales' | 'TotalCost' | 'TotalOrders' | 'ProfitMarginPct'}
+                />
+              )}
+              
+              {/* Table */}
+              <table className="rtable">
+                <thead>
+                  <tr>
+                    <th>Location Name</th>
+                    <th style={{ textAlign: 'right' }}>Total Orders</th>
+                    <th style={{ textAlign: 'right' }}>Total Sales ($)</th>
+                    <th style={{ textAlign: 'right' }}>Total Cost ($)</th>
+                    <th style={{ textAlign: 'right' }}>Total Profit ($)</th>
+                    <th style={{ textAlign: 'right' }}>Profit Margin (%)</th>
                   </tr>
-                ))}
-                <tr className="subtotal">
-                  <td>Total</td>
-                  <td>
-                    {money(
-                      (result as ProfitPerLocationRow[]).reduce(
-                        (a, b) => a + Number(b.TotalProfit || 0),
-                        0
-                      )
-                    )}
-                  </td>
-                </tr>
-              </tbody>
-            </table>
+                </thead>
+                <tbody>
+                  {(result as ProfitPerLocationRow[]).map((r, i) => (
+                    <tr key={`${r.LocationName ?? 'loc'}-${i}`}>
+                      <td>{r.LocationName}</td>
+                      <td style={{ textAlign: 'right' }}>{Number(r.TotalOrders ?? 0)}</td>
+                      <td style={{ textAlign: 'right' }}>{money(Number(r.TotalSales ?? 0))}</td>
+                      <td style={{ textAlign: 'right' }}>{money(Number(r.TotalCost ?? 0))}</td>
+                      <td style={{ textAlign: 'right' }}>{money(Number(r.TotalProfit ?? 0))}</td>
+                      <td style={{ textAlign: 'right' }}>{Number(r.ProfitMarginPct ?? 0).toFixed(2)}%</td>
+                    </tr>
+                  ))}
+                  <tr className="subtotal">
+                    <td>Total</td>
+                    <td style={{ textAlign: 'right' }}>
+                      {(result as ProfitPerLocationRow[]).reduce((a, b) => a + Number(b.TotalOrders || 0), 0)}
+                    </td>
+                    <td style={{ textAlign: 'right' }}>
+                      {money((result as ProfitPerLocationRow[]).reduce((a, b) => a + Number(b.TotalSales || 0), 0))}
+                    </td>
+                    <td style={{ textAlign: 'right' }}>
+                      {money((result as ProfitPerLocationRow[]).reduce((a, b) => a + Number(b.TotalCost || 0), 0))}
+                    </td>
+                    <td style={{ textAlign: 'right' }}>
+                      {money((result as ProfitPerLocationRow[]).reduce((a, b) => a + Number(b.TotalProfit || 0), 0))}
+                    </td>
+                    <td style={{ textAlign: 'right' }}>
+                      {(() => {
+                        const totSales = (result as ProfitPerLocationRow[]).reduce((a, b) => a + Number(b.TotalSales || 0), 0);
+                        const totProfit = (result as ProfitPerLocationRow[]).reduce((a, b) => a + Number(b.TotalProfit || 0), 0);
+                        return totSales > 0 ? ( (totProfit / totSales) * 100 ).toFixed(2) + '%' : '0.00%';
+                      })()}
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </>
           )}
 
           {/* Items */}
-          {type === "items" && (
-            <table className="rtable">
-              <thead>
-                <tr>
-                  <th>Item</th>
-                  <th>Orders</th>
-                </tr>
-              </thead>
-              <tbody>
-                {(result as PopularItemRow[]).map((r) => (
-                  <tr key={r.Name}>
-                    <td>{r.Name}</td>
-                    <td>{Number(r.OrderCount)}</td>
+          {type === "items" && rows.length > 0 && result && result.length > 0 && (
+            <>
+              {/* Chart - only show for numeric metrics */}
+              {sortField !== "ItemName" && sortField !== "Category" && (
+                <PopularItemChart 
+                  key={`item-chart-${type}`}
+                  data={result as PopularItemRow[]} 
+                  metric={sortField as 'TotalQuantity' | 'TotalSales' | 'AvgPricePerItem' | 'SalesSharePct'}
+                />
+              )}
+              
+              {/* Table */}
+              <table className="rtable">
+                <thead>
+                  <tr>
+                    <th>Item name</th>
+                    <th>Category</th>
+                    <th style={{ textAlign: 'right' }}>Quantity</th>
+                    <th style={{ textAlign: 'right' }}>Total sales ($)</th>
+                    <th style={{ textAlign: 'right' }}>Avg Item Price</th>
+                    <th style={{ textAlign: 'right' }}>Porcentage of total sales</th>
                   </tr>
-                ))}
-                <tr className="subtotal">
-                  <td>Total</td>
-                  <td>
-                    {(result as PopularItemRow[]).reduce(
-                      (a, b) => a + Number(b.OrderCount || 0),
-                      0
-                    )}
-                  </td>
-                </tr>
-              </tbody>
-            </table>
+                </thead>
+                <tbody>
+                  {(result as PopularItemRow[]).map((r, i) => (
+                    <tr key={`${r.ItemName}-${i}`}>
+                      <td>{r.ItemName}</td>
+                      <td>{r.Category}</td>
+                      <td style={{ textAlign: 'right' }}>{Number(r.TotalQuantity ?? 0)}</td>
+                      <td style={{ textAlign: 'right' }}>{money(Number(r.TotalSales ?? 0))}</td>
+                      <td style={{ textAlign: 'right' }}>{money(Number(r.AvgPricePerItem ?? 0))}</td>
+                      <td style={{ textAlign: 'right' }}>{Number(r.SalesSharePct ?? 0).toFixed(2)}%</td>
+                    </tr>
+                  ))}
+                  <tr className="subtotal">
+                    <td>Total</td>
+                    <td />
+                    <td style={{ textAlign: 'right' }}>
+                      {(result as PopularItemRow[]).reduce((a, b) => a + Number(b.TotalQuantity || 0), 0)}
+                    </td>
+                    <td style={{ textAlign: 'right' }}>
+                      {money((result as PopularItemRow[]).reduce((a, b) => a + Number(b.TotalSales || 0), 0))}
+                    </td>
+                    <td />
+                    <td />
+                  </tr>
+                </tbody>
+              </table>
+            </>
           )}
 
           {/* Employees */}
-          {type === "employees" && (
-            <table className="rtable">
-              <thead>
-                <tr>
-                  <th>Employee</th>
-                  <th>Hours</th>
-                  <th>Orders</th>
-                  <th>Sales</th>
-                  <th>Sales / Hour</th>
-                </tr>
-              </thead>
-              <tbody>
-                {(result as EmployeePerfRow[]).map((r, i) => (
-                  <tr key={`${r.FName}-${r.LName}-${i}`}>
-                    <td>{r.FName} {r.LName}</td>
-                    <td>{Number(r.TotalHoursWorked ?? 0).toFixed(2)}</td>
-                    <td>{Number(r.OrdersHandled ?? 0)}</td>
-                    <td>{money(Number(r.TotalSales ?? 0))}</td>
-                    <td>{money(Number(r.SalesPerHour ?? 0))}</td>
+          {type === "employees" && rows.length > 0 && (
+            <>
+              {/* Chart - only show for numeric metrics */}
+              {sortField !== "EmployeeName" && sortField !== "Role" && (
+                <EmployeePerformanceChart 
+                  key={`employee-chart-${type}`}
+                  data={result as EmployeePerfRow[]} 
+                  metric={sortField as 'TotalOrdersHandled' | 'TotalSales' | 'TotalHoursWorked' | 'SalesPerHour'}
+                />
+              )}
+              
+              {/* Table */}
+              <table className="rtable">
+                <thead>
+                  <tr>
+                    <th>Employee Name</th>
+                    <th>Role / Position</th>
+                    <th style={{ textAlign: 'right' }}>Total Orders Handled</th>
+                    <th style={{ textAlign: 'right' }}>Total Sales ($)</th>
+                    <th style={{ textAlign: 'right' }}>Total Hours Worked</th>
+                    <th style={{ textAlign: 'right' }}>Sales per Hour</th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
+                </thead>
+                <tbody>
+                  {(result as EmployeePerfRow[]).map((r, i) => (
+                    <tr key={`${r.EmployeeName ?? `employee-${i}`}`}>
+                      <td>{r.EmployeeName}</td>
+                      <td>{r.Role}</td>
+                      <td style={{ textAlign: 'right' }}>{Number(r.TotalOrdersHandled ?? 0)}</td>
+                      <td style={{ textAlign: 'right' }}>{money(Number(r.TotalSales ?? 0))}</td>
+                      <td style={{ textAlign: 'right' }}>{Number(r.TotalHoursWorked ?? 0).toFixed(2)}</td>
+                      <td style={{ textAlign: 'right' }}>{Number(r.SalesPerHour ?? 0).toFixed(2)}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </>
           )}
 
           <div className="report-footer">Generated on {new Date().toLocaleString()}</div>

@@ -1,49 +1,212 @@
 import { db } from '../db/connection.js';
 
+/*
+  reports.js
+    1) profitPerLocation(startDate, endDate, desc)
+    2) mostPopularItems(startDate, endDate, desc)
+    3) employeePerformance(startDate, endDate, desc)
+  
+*/
+
+/**
+ * Most profitable location
+ * - Calculates per-location metrics for a date range:
+ *   LocationName, TotalOrders, TotalSales, TotalCost, TotalProfit, ProfitMarginPct
+ * - TotalCost is composed of:
+ *     ingredient costs derived from order items × recipe quantities × ingredient cost
+ *     PLUS utility payments (deduplicated per location/year)
+ * - Uses LEFT JOINs so locations with missing components still appear (costs default to 0)
+ * - Groups by location and orders by TotalProfit
+ */
 const profitPerLocation = async (startDate, endDate, desc = false) => {
-    const order = desc ? 'DESC' : 'ASC';
-    const query = `
-        SELECT LocationName, SUM(TotalAmount) AS TotalProfit
-        FROM pos.Order
-        WHERE OrderDate BETWEEN ? AND ?
-        GROUP BY LocationName
-        ORDER BY TotalProfit ${order};
-    `;
+  const order = desc ? 'DESC' : 'ASC';
+  const query = `
+    SELECT
+      orders.LocationName                             AS LocationName,
+      COUNT(DISTINCT orders.OrderID)                  AS TotalOrders,
+      SUM(IFNULL(orders.TotalAmount, 0))              AS TotalSales,
 
-    const [results] = await db.query(query, [startDate, endDate]);
-    return results;
+      (
+        /* ingredient costs:
+           sum over each order_item: quantity * quantityRequired (recipe) * ingredient cost */
+        SUM(
+          IFNULL(order_items.Quantity, 0)
+          * IFNULL(used_for.QuantityRequired, 0)
+          * IFNULL(ingredients.CostPerUnit, 0)
+        )
+        /* plus utility payments for the location (deduplicated with DISTINCT) */
+        +
+        SUM(DISTINCT IFNULL(utility_payments.Amount, 0))
+      )                                                AS TotalCost,
+
+      /* profit = sales - cost */
+      SUM(IFNULL(orders.TotalAmount, 0))
+        - (
+            SUM(
+              IFNULL(order_items.Quantity, 0)
+              * IFNULL(used_for.QuantityRequired, 0)
+              * IFNULL(ingredients.CostPerUnit, 0)
+            )
+            +
+            SUM(DISTINCT IFNULL(utility_payments.Amount, 0))
+          )                                              AS TotalProfit,
+
+      /* profit margin as percentage (safely handle zero sales) */
+      ROUND(
+        CASE
+          WHEN SUM(IFNULL(orders.TotalAmount, 0)) > 0 THEN
+            (
+              SUM(IFNULL(orders.TotalAmount, 0)) -
+              (
+                SUM(
+                  IFNULL(order_items.Quantity, 0)
+                  * IFNULL(used_for.QuantityRequired, 0)
+                  * IFNULL(ingredients.CostPerUnit, 0)
+                )
+                +
+                SUM(DISTINCT IFNULL(utility_payments.Amount, 0))
+              )
+            ) / SUM(IFNULL(orders.TotalAmount, 0)) * 100
+          ELSE 0
+        END, 2
+      )                                                AS ProfitMarginPct
+
+    FROM \`order\` AS orders
+
+    /* join to order items so we can compute ingredient consumption */
+    LEFT JOIN \`order_item\` AS order_items
+           ON order_items.OrderID = orders.OrderID
+
+    /* used_for links menu items to ingredients and required quantities (the recipe) */
+    LEFT JOIN \`used_for\` AS used_for
+           ON used_for.MenuItemID = order_items.MenuItemID
+
+    /* ingredient contains CostPerUnit used in cost calc */
+    LEFT JOIN \`ingredient\` AS ingredients
+           ON ingredients.IngredientID = used_for.IngredientID
+
+    /* utility payments per location; restrict to same year as order using YEAR() */
+    LEFT JOIN \`utility_payment\` AS utility_payments
+           ON utility_payments.LocationName = orders.LocationName
+              AND YEAR(utility_payments.PaymentDate) = YEAR(orders.OrderDate)
+
+    /* restrict to provided date range (outer WHERE uses parameters) */
+    WHERE orders.OrderDate BETWEEN ? AND ?
+    GROUP BY orders.LocationName
+    ORDER BY TotalProfit ${order};
+  `;
+
+  const params = [startDate, endDate];
+  const [results] = await db.query(query, params);
+  return results;
 }
 
+/**
+ * Most popular items
+ * - Aggregates order items for the date range to compute per-item:
+ *   ItemName, Category, TotalQuantity, TotalSales, AvgPricePerItem, SalesSharePct
+ * - SalesSharePct is percent of overall sales in the date range (subquery t)
+ * - Uses a subquery (t) to compute GrandTotalSales for the same period, used to compute share%
+ */
 const mostPopularItems = async (startDate, endDate, desc = false) => {
-    const order = desc ? 'DESC' : 'ASC';
-    const query = `
-        SELECT MI.Name, COUNT(OI.MenuItemID) AS OrderCount, COUNT(*) * MI.Price AS TotalRevenue
-        FROM pos.Order as O, pos.Menu_Item as MI, pos.Order_Item as OI
-        WHERE O.OrderID = OI.OrderID AND OI.MenuItemID = MI.MenuItemID AND O.OrderDate BETWEEN ? AND ?
-        GROUP BY OI.MenuItemID
-        ORDER BY OrderCount ${order};
-    `;
+  const order = desc ? 'DESC' : 'ASC';
+  const query = `
+    SELECT
+      mi.Name                                   AS ItemName,
+      mi.Category                               AS Category,
+      SUM(oi.Quantity)                          AS TotalQuantity,
+      SUM(oi.Quantity * IFNULL(oi.Price, 0))    AS TotalSales,
+      AVG(IFNULL(oi.Price, 0))                  AS AvgPricePerItem,
 
-    const [results] = await db.query(query, [startDate, endDate]);
-    console.log(results)
+      /* percent of total sales: item sales / grand total sales (multiplied by 100) */
+      ROUND(
+        100 * SUM(oi.Quantity * IFNULL(oi.Price, 0)) / NULLIF(t.GrandTotalSales, 0),
+        2
+      )                                         AS SalesSharePct
 
-    return results;
+    FROM order_item oi
+    JOIN \`order\` o     ON o.OrderID     = oi.OrderID
+    JOIN menu_item mi   ON mi.MenuItemID = oi.MenuItemID
+
+    /* Subquery to compute grand total sales across the same date range.
+       This allows calculating each item's share of total sales. */
+    JOIN (
+      SELECT SUM(oi2.Quantity * IFNULL(oi2.Price, 0)) AS GrandTotalSales
+      FROM order_item oi2
+      JOIN \`order\` o2 ON o2.OrderID = oi2.OrderID
+      WHERE o2.OrderDate >= ? AND o2.OrderDate < DATE_ADD(?, INTERVAL 1 DAY)
+    ) t
+
+    WHERE o.OrderDate >= ? AND o.OrderDate < DATE_ADD(?, INTERVAL 1 DAY)
+
+    GROUP BY mi.MenuItemID, mi.Name, mi.Category, t.GrandTotalSales
+    ORDER BY TotalSales ${order};
+  `;
+
+  // params: subquery start/end, then outer start/end
+  const params = [startDate, endDate, startDate, endDate];
+  const [results] = await db.query(query, params);
+  return results;
 }
 
+/**
+ * Employee performance
+ * - Builds two small aggregated subqueries:
+ *   1) orders_year: per-staff total orders and sum of sales for current year (I am thinking calendar year because most likely staff will change)
+ *   2) timecards_year: per-staff total hours worked for current year
+ * - LEFT JOINs those aggregates to staff table so staff without orders/timecards are included
+ * - Computes SalesPerHour = total_sales / total_hours (safe when total_hours = 0)
+ * - Filters out Admins in this example (optional business rule)
+ */
 const employeePerformance = async (startDate, endDate, desc = false) => {
-    const order = desc ? 'DESC' : 'ASC';
-    const query = `
-        SELECT E.FName, E.lname,  COUNT(O.OrderID) AS OrdersHandled, SUM(O.TotalAmount) AS TotalSales, SUM(T.ClockOutTime - T.ClockInTime) AS TotalHoursWorked
-        FROM Staff AS E
-        JOIN \`Order\` AS O ON E.StaffID = O.StaffID
-        JOIN Timecard as T ON T.StaffID = E.StaffID
-        WHERE  T.StaffID = E.StaffID AND  T.ClockOutTime is NOT NULL
-        GROUP BY (E.StaffID)
-        ORDER BY TotalSales ${order};
-    `;
+  const order = desc ? 'DESC' : 'ASC';
+  const query = `
+    SELECT
+      CONCAT(staff.Fname, ' ', staff.Lname)                     AS EmployeeName,
+      staff.Role                                                AS Role,
+      IFNULL(orders_year.total_orders, 0)                       AS TotalOrdersHandled,
+      IFNULL(orders_year.total_sales, 0.00)                     AS TotalSales,
+      IFNULL(timecards_year.total_hours, 0.00)                  AS TotalHoursWorked,
+      ROUND(
+        CASE 
+          WHEN IFNULL(timecards_year.total_hours, 0) > 0
+            THEN IFNULL(orders_year.total_sales, 0) / timecards_year.total_hours
+          ELSE 0
+        END
+      , 2)                                                      AS SalesPerHour
+    FROM staff AS staff
 
-    const [results] = await db.query(query, [startDate, endDate, startDate, endDate]);
-    return results;
-}   
+    /* per-staff orders aggregation for the current year */
+    LEFT JOIN (
+      SELECT
+        o.StaffID,
+        COUNT(*)                             AS total_orders,
+        SUM(IFNULL(o.TotalAmount, 0))        AS total_sales
+      FROM \`order\` AS o
+      WHERE YEAR(o.OrderDate) = YEAR(CURDATE())
+      GROUP BY o.StaffID
+    ) AS orders_year
+      ON orders_year.StaffID = staff.StaffID
+
+    /* per-staff timecards aggregation (hours) for the current year */
+    LEFT JOIN (
+      SELECT
+        t.StaffID,
+        SUM(IFNULL(t.TotalHours, 0))         AS total_hours
+      FROM timecard AS t
+      WHERE YEAR(t.ClockInTime) = YEAR(CURDATE())
+      GROUP BY t.StaffID
+    ) AS timecards_year
+      ON timecards_year.StaffID = staff.StaffID
+
+    /* optional rule: exclude admin users from the report */
+    WHERE staff.Role <> 'Admin'
+    /* primary sort by SalesPerHour then by TotalSales */
+    ORDER BY SalesPerHour ${order}, TotalSales ${order};
+  `;
+
+  const [results] = await db.query(query);
+  return results;
+}
 
 export { profitPerLocation, mostPopularItems, employeePerformance };
