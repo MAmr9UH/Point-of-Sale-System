@@ -15,6 +15,7 @@ export const handleMenu = async (req, res) => {
         res.statusCode = 200;
         res.setHeader('Content-Type', 'application/json');
         const menuItems = await getAllMenuItems(true);
+        console.log(menuItems)
         res.end(JSON.stringify(menuItems));
     } else if (method === 'POST' && url === '/api/menu/updateItem/') {
         let body = '';

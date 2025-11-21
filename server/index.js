@@ -14,10 +14,10 @@ import { handleNotificationRoutes } from './routes/notifications.js';
 import { handleIngredient } from './routes/ingredient.js';
 import { handleEmployee } from './routes/employee.js';
 import { handleShifts } from './routes/shifts.js';
+import { handleTimecard } from './routes/timecard.js';
 import { handleCustomer } from './routes/customer.js';
 import { handleLocationRoutes } from './routes/locationRoutes.js';
-
-import { handleCustomerProfile } from './routes/customerProfile.js';
+import { handleOrderRoutes } from './routes/orderRoutes.js';
 
 import './db/connection.js';
 
@@ -35,7 +35,7 @@ const port = process.env.PORT || 3000;
 async function serveStaticFromPublic(filepath, res) {
     try {
         const data = await fs.readFile(filepath);
-        
+
         // Determine content type
         const ext = path.extname(filepath).toLowerCase();
         const contentTypes = {
@@ -97,7 +97,7 @@ async function serveStaticFile(req, res) {
 export const app = async (req, res) => {
     const { url, method } = req;
     console.log(`${method} request for ${url}`);
-    
+
     // Handle CORS preflight
     if (method === 'OPTIONS') {
         res.statusCode = 200;
@@ -107,7 +107,7 @@ export const app = async (req, res) => {
         res.end();
         return;
     }
-    
+
     // Serve static files from uploads directory
     if (url.startsWith('/uploads/')) {
         serveStaticFile(req, res);
@@ -117,7 +117,7 @@ export const app = async (req, res) => {
         res.statusCode = 200;
         res.setHeader('Content-Type', 'text/html');
         res.end('<h1>Welcome to the Homepage!</h1><p>This is a plain Node.js server.</p>');
-    } 
+    }
     else if (url.startsWith('/api/staff/notifications')) {
         handleNotificationRoutes(req, res);
     } else if (url.startsWith('/api/editpage')) {
@@ -148,29 +148,33 @@ export const app = async (req, res) => {
         handleCustomer(req, res);
     } else if (url.startsWith('/api/shifts')) {
         handleShifts(req, res);
+    } else if (url.startsWith('/api/timecard')) {
+        handleTimecard(req, res);
+    } else if (url.startsWith('/api/order-items')) {
+        handleOrderRoutes(req, res);
+    } else if (url.startsWith('/api/orders')) {
+        handleOrderRoutes(req, res);
     } else if (url.startsWith('/api/locations')) {
         handleLocationRoutes(req, res);
-    } else if (url.startsWith('/api/busy-status')){
-        handleBusyStatus(req,res);
-    } else if (url.startsWith('/api/customer/profile')) {
-        handleCustomerProfile(req, res);
+    } else if (url.startsWith('/api/busy-status')) {
+        handleBusyStatus(req, res);
     }
     // Serve React app
     else {
         const publicDir = path.join(__dirname, 'public');
         let filepath;
-        
+
         // Check if file exists in public directory
         if (url !== '/') {
             filepath = path.join(publicDir, url);
             const served = await serveStaticFromPublic(filepath, res);
             if (served) return;
         }
-        
+
         // For all other routes (including root), serve index.html for React Router
         filepath = path.join(publicDir, 'index.html');
         const served = await serveStaticFromPublic(filepath, res);
-        
+
         if (!served) {
             res.statusCode = 404;
             res.setHeader('Content-Type', 'text/html');

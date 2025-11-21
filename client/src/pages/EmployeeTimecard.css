@@ -1,0 +1,490 @@
+/* Import Google Fonts */
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Poppins:wght@400;500;600;700;800&display=swap');
+
+/* Employee Timecard Container */
+.employee-timecard-container {
+  min-height: 100vh;
+  width: 100vw;
+  display: flex;
+  flex-direction: column;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  padding-top: 80px;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  opacity: 0;
+  transition: opacity 0.5s ease-in-out;
+}
+
+.employee-timecard-container.loaded {
+  opacity: 1;
+}
+
+/* Main Content Area */
+.employee-timecard-content {
+  flex: 1;
+  padding: 2rem 1rem;
+  max-width: 1000px;
+  margin: 0 auto;
+  width: 100%;
+}
+
+/* Header Section */
+.employee-timecard-header {
+  text-align: center;
+  margin-bottom: 2rem;
+  color: white;
+  opacity: 0;
+  transform: translateY(-20px);
+  animation: fadeInDown 0.8s ease-out forwards;
+  position: relative;
+  padding: 2rem 1rem;
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 24px;
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+}
+
+.back-button {
+  position: absolute;
+  top: 2rem;
+  left: 2rem;
+  background: rgba(255, 255, 255, 0.15);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  color: white;
+  padding: 0.75rem 1.5rem;
+  border-radius: 12px;
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  backdrop-filter: blur(10px);
+}
+
+.back-button:hover {
+  background: rgba(255, 255, 255, 0.25);
+  transform: translateX(-4px);
+}
+
+.employee-timecard-title {
+  font-size: 3.5rem;
+  font-weight: 800;
+  margin: 0;
+  font-family: 'Poppins', sans-serif;
+  letter-spacing: -1px;
+}
+
+.gradient-text {
+  background: linear-gradient(135deg, #ffd700 0%, #ffffff 100%);
+  background-size: 200% auto;
+  background-clip: text;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  animation: gradientShiftOnce 2s ease-out forwards;
+  filter: drop-shadow(0 0 20px rgba(255, 215, 0, 0.3));
+  display: inline-block;
+  background-position: 100% center;
+}
+
+@keyframes gradientShiftOnce {
+  0% {
+    background-position: 100% center;
+  }
+  100% {
+    background-position: 0% center;
+  }
+}
+
+.employee-timecard-subtitle {
+  font-size: 1.3rem;
+  margin-top: 1rem;
+  color: rgba(255, 255, 255, 0.95);
+  font-weight: 500;
+  letter-spacing: 0.5px;
+  text-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+}
+
+.subtitle-icon {
+  font-size: 1.5rem;
+  animation: pulse 2s ease-in-out infinite;
+}
+
+@keyframes pulse {
+  0%, 100% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.1);
+  }
+}
+
+@keyframes fadeInDown {
+  from {
+    opacity: 0;
+    transform: translateY(-20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Current Time Display */
+.current-time-display {
+  background: rgba(255, 255, 255, 0.1);
+  border: 2px solid rgba(255, 255, 255, 0.2);
+  border-radius: 24px;
+  padding: 2rem;
+  text-align: center;
+  margin-bottom: 2rem;
+  backdrop-filter: blur(10px);
+  animation: fadeInUp 0.8s ease-out 0.2s forwards;
+  opacity: 0;
+}
+
+.current-time {
+  font-size: 4rem;
+  font-weight: 800;
+  color: white;
+  font-family: 'Poppins', monospace;
+  letter-spacing: 2px;
+  text-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+  margin-bottom: 0.5rem;
+}
+
+.current-date {
+  font-size: 1.2rem;
+  color: rgba(255, 255, 255, 0.9);
+  font-weight: 500;
+}
+
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Clock Action Section */
+.clock-action-section {
+  margin: 2rem 0;
+  animation: fadeInUp 0.8s ease-out 0.4s forwards;
+  opacity: 0;
+}
+
+/* Active Timecard Card */
+.active-timecard-card {
+  background: rgba(16, 185, 129, 0.15);
+  border: 2px solid rgba(16, 185, 129, 0.4);
+  border-radius: 24px;
+  padding: 2rem;
+  backdrop-filter: blur(10px);
+  position: relative;
+  overflow: hidden;
+}
+
+.active-timecard-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 4px;
+  background: linear-gradient(90deg, #10b981, #34d399);
+}
+
+.status-badge {
+  background: rgba(0, 0, 0, 0.3);
+  color: white;
+  padding: 0.5rem 1rem;
+  border-radius: 20px;
+  font-size: 0.9rem;
+  font-weight: 600;
+  display: inline-block;
+  margin-bottom: 1.5rem;
+  backdrop-filter: blur(10px);
+}
+
+.status-badge.active {
+  background: rgba(16, 185, 129, 0.3);
+}
+
+.timecard-info {
+  margin-bottom: 2rem;
+}
+
+.info-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1rem;
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 12px;
+  margin-bottom: 0.75rem;
+  color: white;
+}
+
+.info-row.highlight {
+  background: rgba(255, 215, 0, 0.15);
+  border: 1px solid rgba(255, 215, 0, 0.3);
+}
+
+.info-label {
+  font-weight: 600;
+  font-size: 1rem;
+}
+
+.info-value {
+  font-size: 1.1rem;
+  font-weight: 700;
+  font-family: 'Poppins', sans-serif;
+}
+
+.elapsed-time {
+  font-size: 1.5rem;
+  color: #ffd700;
+  font-family: monospace;
+  letter-spacing: 1px;
+}
+
+.clock-out-btn {
+  width: 100%;
+  padding: 1.25rem;
+  background: linear-gradient(135deg, #ef4444, #dc2626);
+  color: white;
+  border: none;
+  border-radius: 16px;
+  font-size: 1.2rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.75rem;
+  box-shadow: 0 8px 24px rgba(239, 68, 68, 0.4);
+}
+
+.clock-out-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 12px 32px rgba(239, 68, 68, 0.5);
+}
+
+.clock-out-btn:active {
+  transform: translateY(0);
+}
+
+/* Clock In Card */
+.clock-in-card {
+  background: rgba(255, 255, 255, 0.1);
+  border: 2px solid rgba(255, 255, 255, 0.2);
+  border-radius: 24px;
+  padding: 3rem 2rem;
+  text-align: center;
+  backdrop-filter: blur(10px);
+}
+
+.clock-in-icon {
+  font-size: 5rem;
+  margin-bottom: 1rem;
+  animation: pulse 2s ease-in-out infinite;
+}
+
+.clock-in-card h2 {
+  font-size: 2rem;
+  font-weight: 700;
+  color: white;
+  margin: 0 0 0.5rem 0;
+  font-family: 'Poppins', sans-serif;
+}
+
+.clock-in-card p {
+  font-size: 1.1rem;
+  color: rgba(255, 255, 255, 0.8);
+  margin: 0 0 2rem 0;
+}
+
+.clock-in-btn {
+  padding: 1.25rem 3rem;
+  background: linear-gradient(135deg, #10b981, #059669);
+  color: white;
+  border: none;
+  border-radius: 16px;
+  font-size: 1.2rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.75rem;
+  box-shadow: 0 8px 24px rgba(16, 185, 129, 0.4);
+}
+
+.clock-in-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 12px 32px rgba(16, 185, 129, 0.5);
+}
+
+.clock-in-btn:active {
+  transform: translateY(0);
+}
+
+.btn-icon {
+  font-size: 1.3rem;
+}
+
+/* Recent Timecards Section */
+.recent-timecards-section {
+  margin-top: 3rem;
+  animation: fadeInUp 0.8s ease-out 0.6s forwards;
+  opacity: 0;
+}
+
+.section-title {
+  font-size: 1.8rem;
+  font-weight: 700;
+  color: white;
+  margin-bottom: 1.5rem;
+  font-family: 'Poppins', sans-serif;
+}
+
+.timecards-list {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.timecard-item {
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  border-radius: 16px;
+  padding: 1.5rem;
+  backdrop-filter: blur(10px);
+  transition: all 0.3s ease;
+}
+
+.timecard-item:hover {
+  transform: translateX(4px);
+  background: rgba(255, 255, 255, 0.12);
+  border-color: rgba(255, 255, 255, 0.25);
+}
+
+.timecard-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1rem;
+  padding-bottom: 0.75rem;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.timecard-location {
+  font-size: 1.2rem;
+  font-weight: 700;
+  color: white;
+  font-family: 'Poppins', sans-serif;
+}
+
+.timecard-hours {
+  background: rgba(255, 215, 0, 0.2);
+  color: #ffd700;
+  padding: 0.4rem 0.9rem;
+  border-radius: 12px;
+  font-size: 0.95rem;
+  font-weight: 700;
+  font-family: monospace;
+}
+
+.timecard-details {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.timecard-detail-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  color: rgba(255, 255, 255, 0.9);
+  font-size: 0.95rem;
+}
+
+.detail-label {
+  font-weight: 500;
+}
+
+.detail-value {
+  font-weight: 600;
+  font-family: 'Poppins', sans-serif;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .employee-timecard-container {
+    padding-top: 60px;
+  }
+
+  .employee-timecard-content {
+    padding: 1rem;
+  }
+
+  .employee-timecard-header {
+    padding: 1.5rem 1rem;
+  }
+
+  .back-button {
+    position: static;
+    margin-bottom: 1rem;
+    width: 100%;
+  }
+
+  .employee-timecard-title {
+    font-size: 2.5rem;
+  }
+
+  .current-time {
+    font-size: 3rem;
+  }
+
+  .current-date {
+    font-size: 1rem;
+  }
+
+  .clock-in-card h2 {
+    font-size: 1.5rem;
+  }
+
+  .clock-in-btn, .clock-out-btn {
+    font-size: 1.1rem;
+    padding: 1rem 2rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .employee-timecard-title {
+    font-size: 2rem;
+  }
+
+  .current-time {
+    font-size: 2.5rem;
+  }
+
+  .info-row {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.5rem;
+  }
+
+  .timecard-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.75rem;
+  }
+}

@@ -14,6 +14,7 @@ import CustomerProfile from './pages/Profile.tsx';
 import { EmployeeDashboard } from './pages/EmployeeDashboard.tsx';
 import { EmployeeShifts } from './pages/EmployeeShifts.tsx';
 import { EmployeeOrders } from './pages/EmployeeOrders.tsx';
+import { EmployeeTimecard } from './pages/EmployeeTimecard.tsx';
 
 const ProtectedRoute = ({ children }: any) => {
   const { user, isLoading } = useAuth();
@@ -73,6 +74,7 @@ function App() {
       <Route path="/employee" element={<ProtectedRoute><EmployeeDashboard/></ProtectedRoute>} />
       <Route path="/shifts" element={<ProtectedRoute><EmployeeShifts/></ProtectedRoute>} />
       <Route path="/orders" element={<ProtectedRoute><EmployeeOrders/></ProtectedRoute>} />
+      <Route path="/timecard" element={<ProtectedRoute><EmployeeTimecard/></ProtectedRoute>} />
     </Routes>
   )
 }

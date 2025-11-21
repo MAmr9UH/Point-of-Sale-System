@@ -3,7 +3,7 @@ import { useShoppingCart } from './../contexts/ShoppingCart'
 import { useNavigate } from 'react-router-dom';
 import { createOrder } from '../utils/fetchOrder';
 import { useWelcomePage } from '../contexts/WelcomePageContext';
-import { useToaster } from '../contexts/ToastContext'; 
+import { useToaster } from '../contexts/ToastContext';
 import { useAuth } from '../contexts/AuthContext';
 import type { Customer } from '../contexts/AuthContext';
 import { fetchPickupLocations } from '../utils/pickupLoc';
@@ -94,7 +94,37 @@ export default function FoodTruckCheckout() {
   const { pageData } = useWelcomePage();
   const { addToast } = useToaster();
 
-  const { user } = useAuth();
+  const { user, userType } = useAuth();
+
+  const checkBusyStatus = async () => {
+    try {
+      const response = await fetch('/api/busy-status');
+      const data = await response.json();
+
+      if (data.success && data.isBusy) {
+        addToast(
+          `⚠️ We're busy! Your order may take longer than usual. Thank you for your patience!`,
+          "warning"
+        );
+      }
+    } catch (error) {
+      console.error('Error checking busy status:', error);
+    }
+  };
+
+  // Block employees and managers from placing orders
+  useEffect(() => {
+    if (userType === 'employee' || userType === 'manager') {
+      addToast('Please use a customer account to place orders', 'error', 4000);
+      navigate('/menu');
+    }
+
+    // Check busy status when menu loads
+
+
+    checkBusyStatus();
+
+  }, [userType, navigate]);
 
   console.log('Items in cart:', items);
   console.log('First item:', Object.values(items)[0]);
@@ -206,14 +236,13 @@ export default function FoodTruckCheckout() {
           formData
         };
 
-        console.log(payload);
-
         try {
           const data = await createOrder(payload);
           console.log(data)
           setOrderPlaced(true);
           setShowError('');
           clearCart();
+          checkBusyStatus();
         } catch (err: any) {
           addToast(err.message || 'Something went wrong. Try again.', "error");
         }
@@ -279,7 +308,7 @@ export default function FoodTruckCheckout() {
             marginBottom: '24px',
             fontWeight: 500
           }}>Your food will be ready for pickup</p>
-          
+
           <button
             onClick={() => { setOrderPlaced(false); clearCart(); }}
             style={{
@@ -366,7 +395,7 @@ export default function FoodTruckCheckout() {
           <ArrowLeft style={{ width: '20px', height: '20px' }} />
           Back
         </button>
-        
+
         <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '12px' }}>
           <h1 style={{ fontSize: '30px', fontWeight: 'bold', color: '#1f2937', margin: 0 }}><ShoppingCart style={{ width: '24px', height: '24px' }} />   Checkout</h1>
         </div>
@@ -927,8 +956,8 @@ export default function FoodTruckCheckout() {
                     }
                   }}
                 >
-                  {pickupLocations.length === 0 
-                    ? 'Not Available Today' 
+                  {pickupLocations.length === 0
+                    ? 'Not Available Today'
                     : `Pay & Place Order - $${grandTotal.toFixed(2)}`}
                 </button>
               </div>

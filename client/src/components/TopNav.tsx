@@ -27,6 +27,9 @@ export function TopNav() {
             {userType === "manager" && (
               <Link to="/manager" className="btn btn-ghost">Dashboard</Link>
             )}
+            {userType === "employee" && (
+              <Link to="/employee" className="btn btn-ghost">Dashboard</Link>
+            )}
             <button onClick={logout} className="btn btn-primary-nav">Log out</button>
           </>
         ) : (

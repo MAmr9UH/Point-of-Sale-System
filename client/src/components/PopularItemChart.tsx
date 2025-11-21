@@ -26,7 +26,11 @@ const metricConfig: Record<MetricKey, { title: string; color: string; format: (n
   TotalSales: {
     title: 'Total Sales by Item',
     color: '#3b82f6',
-    format: (n) => `$${(n / 1000).toFixed(1)}k`
+    format: (n) => {
+      if (n >= 1000000) return `$${(n / 1000000).toFixed(1)}M`;
+      if (n >= 1000) return `$${(n / 1000).toFixed(1)}k`;
+      return `$${n.toFixed(0)}`;
+    }
   },
   AvgPricePerItem: {
     title: 'Average Price by Item',
@@ -148,6 +152,138 @@ export default function PopularItemChart({ data, metric = 'TotalSales' }: Popula
   const chartHeight = chartData.length * (barHeight + barGap);
   const padding = { top: 20, right: 100, bottom: 40, left: 200 };
 
+  // Pie chart specific calculations
+  const isPieChart = validMetric === 'SalesSharePct';
+  const pieRadius = 140;
+  const pieCenterX = 220;
+  const pieCenterY = 180;
+  
+  if (isPieChart) {
+    let currentAngle = -90; // Start from top
+    
+    return (
+      <div className="item-chart-container">
+        <h3 className="item-chart-title">{config.title}</h3>
+        <div className="item-chart-wrapper">
+          <svg 
+            width="100%" 
+            height="450"
+            viewBox="0 0 900 450"
+            preserveAspectRatio="xMidYMid meet"
+          >
+            {/* Pie slices */}
+            {chartData.map((item, index) => {
+              const sliceAngle = (item.value / 100) * 360; // value is already a percentage
+              const startAngle = currentAngle;
+              const endAngle = currentAngle + sliceAngle;
+              
+              // Calculate path for pie slice
+              const startRad = (startAngle * Math.PI) / 180;
+              const endRad = (endAngle * Math.PI) / 180;
+              
+              const x1 = pieCenterX + pieRadius * Math.cos(startRad);
+              const y1 = pieCenterY + pieRadius * Math.sin(startRad);
+              const x2 = pieCenterX + pieRadius * Math.cos(endRad);
+              const y2 = pieCenterY + pieRadius * Math.sin(endRad);
+              
+              const largeArc = sliceAngle > 180 ? 1 : 0;
+              
+              const pathData = [
+                `M ${pieCenterX} ${pieCenterY}`,
+                `L ${x1} ${y1}`,
+                `A ${pieRadius} ${pieRadius} 0 ${largeArc} 1 ${x2} ${y2}`,
+                'Z'
+              ].join(' ');
+              
+              // Calculate label position (middle of slice)
+              const labelAngle = startAngle + sliceAngle / 2;
+              const labelRad = (labelAngle * Math.PI) / 180;
+              const labelDistance = pieRadius * 0.7;
+              const labelX = pieCenterX + labelDistance * Math.cos(labelRad);
+              const labelY = pieCenterY + labelDistance * Math.sin(labelRad);
+              
+              currentAngle = endAngle;
+              
+              return (
+                <g key={index}>
+                  <path
+                    d={pathData}
+                    fill={item.color}
+                    stroke="white"
+                    strokeWidth="2"
+                    className="item-chart-bar"
+                  >
+                    <title>{item.name} ({item.category}): {config.format(item.value)}</title>
+                  </path>
+                  {item.value > 3 && (
+                    <text
+                      x={labelX}
+                      y={labelY}
+                      textAnchor="middle"
+                      fontSize="12"
+                      fill="white"
+                      fontWeight="600"
+                    >
+                      {item.value.toFixed(1)}%
+                    </text>
+                  )}
+                </g>
+              );
+            })}
+            
+            {/* Legend */}
+            <g transform="translate(500, 30)">
+              {chartData.slice(0, 15).map((item, index) => (
+                <g key={index} transform={`translate(0, ${index * 25})`}>
+                  <rect
+                    x="0"
+                    y="0"
+                    width="20"
+                    height="20"
+                    fill={item.color}
+                    rx="3"
+                  />
+                  <text
+                    x="30"
+                    y="15"
+                    fontSize="12"
+                    fill="#374151"
+                  >
+                    {item.name.length > 18 ? item.name.substring(0, 18) + '...' : item.name}
+                    {' '}({item.value.toFixed(1)}%)
+                  </text>
+                </g>
+              ))}
+              {chartData.length > 15 && (
+                <text x="30" y={(15 * 25) + 15} fontSize="11" fill="#9ca3af">
+                  + {chartData.length - 15} more items
+                </text>
+              )}
+            </g>
+          </svg>
+        </div>
+        
+        {/* Category Legend */}
+        <div className="item-chart-legend">
+          {Array.from(new Set(chartData.map(d => d.category))).map(category => {
+            const categoryItem = chartData.find(d => d.category === category);
+            return (
+              <div key={category} className="item-legend-item">
+                <div 
+                  className="item-legend-color" 
+                  style={{ backgroundColor: categoryItem?.color || '#6b7280' }}
+                ></div>
+                <span>{category}</span>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+    );
+  }
+
+  // Bar chart (original code)
+
   return (
     <div className="item-chart-container">
       <h3 className="item-chart-title">{config.title}</h3>
@@ -185,7 +321,11 @@ export default function PopularItemChart({ data, metric = 'TotalSales' }: Popula
                     ? value.toFixed(0) 
                     : metric === 'AvgPricePerItem'
                     ? `$${value.toFixed(0)}`
-                    : `$${(value / 1000).toFixed(0)}k`}
+                    : value >= 1000000
+                    ? `$${(value / 1000000).toFixed(0)}M`
+                    : value >= 1000
+                    ? `$${(value / 1000).toFixed(0)}k`
+                    : `$${value.toFixed(0)}`}
                 </text>
               </g>
             );

@@ -206,6 +206,48 @@
   color: white;
 }
 
+/* Employee Access Button */
+.employee-access-section {
+  margin-top: 3rem;
+  display: flex;
+  justify-content: center;
+  opacity: 0;
+  animation: fadeIn 1s ease-out 0.8s forwards;
+}
+
+.employee-access-btn {
+  background: rgba(255, 255, 255, 0.1);
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  color: white;
+  padding: 1rem 2rem;
+  border-radius: 12px;
+  font-size: 1.1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  backdrop-filter: blur(10px);
+  font-family: 'Inter', sans-serif;
+}
+
+.employee-access-btn:hover {
+  background: rgba(255, 255, 255, 0.2);
+  border-color: rgba(255, 255, 255, 0.5);
+  transform: translateY(-2px);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.2);
+}
+
+.employee-icon {
+  font-size: 1.3rem;
+}
+
+.employee-access-btn svg {
+  width: 20px;
+  height: 20px;
+}
+
 /* Footer */
 .manager-dashboard-footer {
   text-align: center;

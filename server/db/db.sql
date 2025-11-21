@@ -1,0 +1,215 @@
+CREATE DATABASE IF NOT EXISTS pos;
+USE pos;
+
+
+CREATE TABLE IF NOT EXISTS Location (
+    Name VARCHAR(30) UNIQUE NOT NULL PRIMARY KEY,
+    Address VARCHAR(255),
+    DailyFee DECIMAL(10, 2),
+    HostPhoneNumber VARCHAR(10),
+    HostEmail VARCHAR(255),
+    CreatedAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    LastUpdatedAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+);
+
+
+CREATE TABLE IF NOT EXISTS Active_Location (
+    ActiveLocationID INT PRIMARY KEY AUTO_INCREMENT,
+    LocationName VARCHAR(30),
+    BeginOperationOn TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    EndOperationOn TIMESTAMP DEFAULT NULL,
+    DaysOfWeek SET('Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'),
+    FOREIGN KEY (LocationName) REFERENCES Location(Name) ON UPDATE CASCADE
+);
+
+
+CREATE TABLE IF NOT EXISTS Staff (
+    StaffID INT PRIMARY KEY AUTO_INCREMENT,
+    Role ENUM('admin', 'manager', 'employee'),
+    Email VARCHAR(255) UNIQUE NOT NULL,
+    PasswordHash VARCHAR(255) NOT NULL,
+    PhoneNumber VARCHAR(10),
+    Fname VARCHAR(20),
+    Lname VARCHAR(20),
+    PayRate DECIMAL(10, 2),
+    CreatedAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    LastUpdatedAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+);
+
+
+CREATE TABLE IF NOT EXISTS Truck (
+    FoodTruckName VARCHAR(30) PRIMARY KEY,
+    ContactEmail VARCHAR(255),
+    PhoneNumber VARCHAR(10),
+    ManagerID INT,
+    Tagline VARCHAR(100),
+    BackgroundURL VARCHAR(255),
+    ManagerStartDate TIMESTAMP,
+    CreatedAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    LastUpdatedAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    Status BOOLEAN DEFAULT FALSE,
+
+
+    FOREIGN KEY (ManagerID) REFERENCES Staff(StaffID)ON DELETE SET NULL ON UPDATE CASCADE
+);
+
+
+CREATE TABLE IF NOT EXISTS Assigns (
+    AssignID INT PRIMARY KEY AUTO_INCREMENT,
+    ActiveLocationID INT,
+    EmployeeJob ENUM('cashier', 'cook'),
+    StaffID INT,
+
+    ScheduleStart TIMESTAMP NOT NULL,
+    ScheduleEnd TIMESTAMP NOT NULL,
+
+    AssignedAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (ActiveLocationID) REFERENCES Active_Location(ActiveLocationID) ON DELETE CASCADE,
+    FOREIGN KEY (StaffID) REFERENCES Staff(StaffID) ON DELETE RESTRICT
+);
+
+
+CREATE TABLE IF NOT EXISTS Timecard (
+    TimecardID INT PRIMARY KEY AUTO_INCREMENT,
+    StaffID INT,
+    LocationName VARCHAR(30),
+    ClockInTime TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    ClockOutTime TIMESTAMP DEFAULT NULL,
+    TotalHours DECIMAL(5,2) DEFAULT 0,
+    FOREIGN KEY (StaffID) REFERENCES Staff(StaffID) ON DELETE RESTRICT,
+    FOREIGN KEY (LocationName) REFERENCES Location(Name) ON UPDATE CASCADE
+);
+
+
+CREATE TABLE IF NOT EXISTS Customer (
+    CustomerID INT PRIMARY KEY AUTO_INCREMENT,
+    Email VARCHAR(255) UNIQUE NOT NULL,
+    PasswordHash VARCHAR(255) NOT NULL,
+    PhoneNumber VARCHAR(10),
+    Fname VARCHAR(20),
+    Lname VARCHAR(20),
+    IncentivePoints INT DEFAULT 0,
+    OptInMarketing BOOLEAN DEFAULT FALSE,
+    CreatedAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    LastUpdatedAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+);
+
+
+CREATE TABLE IF NOT EXISTS Menu_Item (
+    MenuItemID INT PRIMARY KEY AUTO_INCREMENT,
+    Name VARCHAR(30) NOT NULL,
+    Description VARCHAR(500),
+    Price DECIMAL(10, 2) NOT NULL,
+    ImageURL VARCHAR(255),
+    Category ENUM('appetizer', 'entree', 'dessert', 'beverage'),
+    Availability BOOLEAN DEFAULT TRUE,
+    CreatedAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    LastUpdatedAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+);
+
+
+CREATE TABLE IF NOT EXISTS Ingredient (
+    IngredientID INT PRIMARY KEY AUTO_INCREMENT,
+    Name VARCHAR(30) NOT NULL,
+    QuantityInStock INT DEFAULT 0,
+    CostPerUnit DECIMAL(10, 2),
+    CreatedAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    LastUpdatedAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+);
+
+
+CREATE TABLE IF NOT EXISTS Inventory_Shipment (
+    ShipmentID INT PRIMARY KEY AUTO_INCREMENT,
+    IngredientID INT,
+    QuantityReceived INT,
+    ShipmentDate TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    Status ENUM('pending', 'received', 'cancelled') DEFAULT 'pending',
+    Cost DECIMAL(10, 2),
+    FOREIGN KEY (IngredientID) REFERENCES Ingredient(IngredientID) ON DELETE CASCADE ON UPDATE CASCADE
+);
+
+
+CREATE TABLE IF NOT EXISTS Used_For (
+    UsedForID INT PRIMARY KEY AUTO_INCREMENT,
+    MenuItemID INT,
+    IngredientID INT,
+    CustomizableCategory VARCHAR(30) DEFAULT NULL,
+    QuantityRequired INT DEFAULT 1,
+    MaximumQuantity INT DEFAULT 10,
+    
+    IsDefault BOOLEAN DEFAULT FALSE,
+    PriceAdjustment DECIMAL(10, 2) DEFAULT 0.00,
+
+    IsRemovable BOOLEAN DEFAULT TRUE, 
+    IsRequired BOOLEAN DEFAULT FALSE, 
+    CanSubstitute BOOLEAN DEFAULT FALSE,     
+    
+    UNIQUE (MenuItemID, IngredientID),
+
+    FOREIGN KEY (MenuItemID) REFERENCES Menu_Item(MenuItemID) ON DELETE RESTRICT,
+    FOREIGN KEY (IngredientID) REFERENCES Ingredient(IngredientID) ON DELETE RESTRICT
+);
+
+
+CREATE TABLE IF NOT EXISTS `Order` (
+    OrderID INT PRIMARY KEY AUTO_INCREMENT,
+    CustomerID INT,
+    StaffID INT,
+    LocationName VARCHAR(30),
+    OrderDate TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    WasPlacedOnline BOOLEAN DEFAULT FALSE,
+    PaymentMethod ENUM('cash', 'card'),
+    UsedIncentivePoints INT DEFAULT 0,
+    TotalAmount DECIMAL(10, 2) NOT NULL,
+
+
+    FOREIGN KEY (CustomerID) REFERENCES Customer(CustomerID) ON DELETE RESTRICT,
+    FOREIGN KEY (StaffID) REFERENCES Staff(StaffID) ON DELETE RESTRICT
+);
+
+
+CREATE TABLE IF NOT EXISTS Customer_Feedback (
+    FeedbackID INT PRIMARY KEY AUTO_INCREMENT,
+    CustomerID INT,
+    OrderID INT,
+    Rating INT CHECK (Rating >= 1 AND Rating <= 5),
+    Comments VARCHAR(500),
+    SubmittedAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (CustomerID) REFERENCES Customer(CustomerID) ON DELETE RESTRICT ON UPDATE CASCADE,
+    FOREIGN KEY (OrderID) REFERENCES `Order`(OrderID) ON DELETE RESTRICT ON UPDATE CASCADE
+);
+
+
+CREATE TABLE IF NOT EXISTS Order_Item (
+    OrderItemID INT PRIMARY KEY AUTO_INCREMENT,
+    OrderID INT,
+    MenuItemID INT,
+    Quantity INT DEFAULT 1,
+    Price DECIMAL(10, 2) NOT NULL,
+    Status ENUM('pending', 'in_progress', 'completed', 'cancelled', 'refunded') DEFAULT 'pending',
+    FOREIGN KEY (OrderID) REFERENCES `Order`(OrderID) ON DELETE RESTRICT ON UPDATE CASCADE,
+    FOREIGN KEY (MenuItemID) REFERENCES Menu_Item(MenuItemID) ON DELETE RESTRICT
+);
+
+CREATE TABLE IF NOT EXISTS OrderItemCustomization (
+    OrderItemCustomizationID INT PRIMARY KEY AUTO_INCREMENT,
+    OrderItemID INT NOT NULL,
+    IngredientID INT NOT NULL,
+    ChangeType ENUM('added', 'removed', 'substituted') NOT NULL,
+    QuantityDelta INT NOT NULL DEFAULT 1,
+    PriceDelta DECIMAL(10, 2) DEFAULT 0.00,
+    Note VARCHAR(255),
+    CreatedAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    
+    FOREIGN KEY (OrderItemID) REFERENCES Order_Item(OrderItemID) ON DELETE CASCADE ON UPDATE CASCADE,
+    FOREIGN KEY (IngredientID) REFERENCES Ingredient(IngredientID) ON DELETE CASCADE ON UPDATE CASCADE
+);
+
+CREATE TABLE IF NOT EXISTS Utility_Payment (
+    PaymentID INT PRIMARY KEY AUTO_INCREMENT,
+    LocationName VARCHAR(30),
+    PaymentDate TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    Amount DECIMAL(10, 2) NOT NULL,
+    UtilityType ENUM('electricity', 'water', 'gas', 'internet', 'phone', 'other'),
+    FOREIGN KEY (LocationName) REFERENCES Location(Name) ON UPDATE CASCADE
+);

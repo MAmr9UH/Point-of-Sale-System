@@ -277,6 +277,12 @@ export const assignStaffToShift = async (employeeId, locationId, shiftStart, shi
     return result.insertId;
 }
 
+export const deleteShift = async (assignId) => {
+    const query = `DELETE FROM Assigns WHERE AssignID = ?;`;
+    const [result] = await db.query(query, [assignId]);
+    return result.affectedRows > 0;
+}
+
 export const removeEmployee = async (employeeId) => {
     const query = `DELETE FROM Staff WHERE StaffID = ?;`;
     const [result] = await db.query(query, [employeeId]);

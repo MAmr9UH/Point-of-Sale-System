@@ -271,7 +271,7 @@ export default function ReportsPage() {
             className={`tab ${type === "locations" ? "active" : ""}`}
             onClick={() => setType("locations")}
           >
-            Most Profitable Location
+            Locations
           </button>
           <button
             role="tab"
@@ -279,7 +279,7 @@ export default function ReportsPage() {
             className={`tab ${type === "items" ? "active" : ""}`}
             onClick={() => setType("items")}
           >
-            Most Popular Item
+            Menu Items
           </button>
           <button
             role="tab"
@@ -287,7 +287,7 @@ export default function ReportsPage() {
             className={`tab ${type === "employees" ? "active" : ""}`}
             onClick={() => setType("employees")}
           >
-            Employee Performance
+            Employees
           </button>
         </div>
 

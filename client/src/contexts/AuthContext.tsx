@@ -23,13 +23,14 @@ interface Staff {
 
 interface AuthContextType {
     user: Customer | Staff | null;
-    userType: 'customer' | 'staff' | 'manager' | null;
+    userType: 'customer' | 'employee' | 'manager' | null;
     isAuthenticated: boolean;
     isLoading: boolean;
     login: (email: string, password: string) => Promise<void>;
     loginStaff: (employeeId: string, password: string) => Promise<void>;
     register: (data: RegisterData) => Promise<void>;
     logout: () => void;
+    updateUser: (updatedUser: Customer | Staff) => void;
 }
 
 interface RegisterData {
@@ -45,7 +46,7 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
     const [user, setUser] = useState<Customer | Staff | null>(null);
-    const [userType, setUserType] = useState<'customer' | 'staff' | 'manager' | null>(null);
+    const [userType, setUserType] = useState<'customer' | 'employee' | 'manager' | null>(null);
     const [isLoading, setIsLoading] = useState(true);
 
     // Check if user is already logged in on mount
@@ -57,7 +58,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
                 if (storedUser && storedUserType) {
                     setUser(JSON.parse(storedUser));
-                    setUserType(storedUserType as 'customer' | 'staff');
+                    setUserType(storedUserType as 'customer' | 'employee' | 'manager');
                 }
             } catch (error) {
                 console.error('Error checking auth:', error);
@@ -135,6 +136,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         localStorage.removeItem('userType');
     };
 
+    // Update user data
+    const updateUser = (updatedUser: Customer | Staff) => {
+        setUser(updatedUser);
+        localStorage.setItem('user', JSON.stringify(updatedUser));
+    };
+
     const value: AuthContextType = {
         user,
         userType,
@@ -144,6 +151,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         loginStaff,
         register,
         logout,
+        updateUser,
     };
 
     return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

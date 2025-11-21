@@ -380,3 +380,292 @@ export const createOrder = async (orderItems, phoneNumber = null, userId = null,
 
     return orderID;
 }
+
+/**
+ * Get orders by status with items and customizations
+ * @param {string[]} statuses - Array of statuses to filter by
+ * @param {Date} startDate - Optional start date filter
+ * @param {Date} endDate - Optional end date filter
+ * @returns {Promise<Array>} Array of orders with items and customizations
+ */
+export const getOrdersByStatus = async (statuses, startDate = null, endDate = null) => {
+    const statusPlaceholders = statuses.map(() => '?').join(',');
+    
+    let query = `
+        SELECT 
+            o.OrderID, 
+            o.CustomerID, 
+            o.StaffID,
+            o.LocationName,
+            o.OrderDate,
+            o.WasPlacedOnline,
+            o.PaymentMethod,
+            o.UsedIncentivePoints,
+            o.TotalAmount,
+            c.Fname as CustomerFname,
+            c.Lname as CustomerLname
+        FROM pos.Order o
+        LEFT JOIN pos.Customer c ON o.CustomerID = c.CustomerID
+        WHERE 1=1
+    `;
+    
+    const params = [];
+    
+    // Add date filters if provided
+    if (startDate) {
+        query += ' AND o.OrderDate >= ?';
+        params.push(startDate);
+    }
+    
+    if (endDate) {
+        query += ' AND o.OrderDate <= ?';
+        params.push(endDate);
+    }
+    
+    query += ' ORDER BY o.OrderDate ASC';
+    
+    // Single query with joins to get all data at once
+    const [rows] = await db.query(`
+        SELECT 
+            o.OrderID, 
+            o.CustomerID, 
+            o.StaffID,
+            o.LocationName,
+            o.OrderDate,
+            o.WasPlacedOnline,
+            o.PaymentMethod,
+            o.UsedIncentivePoints,
+            o.TotalAmount,
+            c.Fname as CustomerFname,
+            c.Lname as CustomerLname,
+            oi.OrderItemID,
+            oi.MenuItemID,
+            oi.Price as ItemPrice,
+            oi.Quantity,
+            oi.Status as ItemStatus,
+            mi.Name as MenuItemName,
+            oic.OrderItemCustomizationID,
+            oic.changeType,
+            oic.quantityDelta,
+            oic.note,
+            i.Name as IngredientName
+        FROM pos.Order o
+        LEFT JOIN pos.Customer c ON o.CustomerID = c.CustomerID
+        LEFT JOIN pos.Order_Item oi ON o.OrderID = oi.OrderID
+        LEFT JOIN pos.Menu_Item mi ON oi.MenuItemID = mi.MenuItemID
+        LEFT JOIN pos.OrderItemCustomization oic ON oi.OrderItemID = oic.OrderItemID
+        LEFT JOIN pos.Ingredient i ON oic.IngredientId = i.IngredientID
+        WHERE oi.Status IN (${statusPlaceholders})
+        ${startDate ? 'AND o.OrderDate >= ?' : ''}
+        ${endDate ? 'AND o.OrderDate <= ?' : ''}
+        ORDER BY o.OrderDate ASC, oi.OrderItemID, oic.OrderItemCustomizationID
+    `, [...statuses, ...params]);
+    
+    // Process rows and group by order ID using a hash map
+    const ordersMap = new Map();
+    
+    for (const row of rows) {
+        const orderId = row.OrderID;
+        
+        // Initialize order if not exists
+        if (!ordersMap.has(orderId)) {
+            ordersMap.set(orderId, {
+                orderId: orderId,
+                customerId: row.CustomerID,
+                customerName: row.CustomerFname && row.CustomerLname 
+                    ? `${row.CustomerFname} ${row.CustomerLname}` 
+                    : null,
+                locationName: row.LocationName,
+                orderDate: row.OrderDate,
+                wasPlacedOnline: Boolean(row.WasPlacedOnline),
+                paymentMethod: row.PaymentMethod,
+                totalAmount: parseFloat(row.TotalAmount),
+                items: new Map(),
+                itemStatuses: []
+            });
+        }
+        
+        const order = ordersMap.get(orderId);
+        
+        // Add order item if exists
+        if (row.OrderItemID) {
+            const itemId = row.OrderItemID;
+            
+            if (!order.items.has(itemId)) {
+                order.items.set(itemId, {
+                    orderItemID: itemId,
+                    menuItemID: row.MenuItemID,
+                    menuItemName: row.MenuItemName,
+                    quantity: row.Quantity,
+                    price: parseFloat(row.ItemPrice),
+                    status: row.ItemStatus,
+                    customizations: []
+                });
+                order.itemStatuses.push(row.ItemStatus);
+            }
+            
+            // Add customization if exists
+            if (row.OrderItemCustomizationID) {
+                order.items.get(itemId).customizations.push({
+                    ingredientName: row.IngredientName,
+                    changeType: row.changeType,
+                    quantityDelta: row.quantityDelta,
+                    note: row.note
+                });
+            }
+        }
+    }
+    
+    // Convert maps to arrays and determine overall status
+    const orders = [];
+    
+    for (const order of ordersMap.values()) {
+        // Convert items map to array
+        order.items = Array.from(order.items.values());
+        
+        // Determine overall order status based on item statuses
+        let overallStatus = 'completed';
+        const itemStatuses = order.itemStatuses;
+        
+        // Skip orders with no items - they shouldn't be returned
+        if (itemStatuses.length === 0) {
+            continue;
+        }
+        
+        if (itemStatuses.some(s => s === 'cancelled' || s === 'refunded')) {
+            overallStatus = itemStatuses.includes('cancelled') ? 'cancelled' : 'refunded';
+        } else if (itemStatuses.every(s => s === 'completed')) {
+            overallStatus = 'completed';
+        } else if (itemStatuses.some(s => s === 'in_progress')) {
+            overallStatus = 'in_progress';
+        } else if (itemStatuses.every(s => s === 'pending')) {
+            overallStatus = 'pending';
+        } else {
+            overallStatus = 'in_progress';
+        }
+        
+        order.overallStatus = overallStatus;
+        
+        // Remove temporary itemStatuses array
+        delete order.itemStatuses;
+        
+        // Filter based on requested statuses
+        if (statuses.includes(overallStatus)) {
+            orders.push(order);
+        }
+    }
+    
+    return orders;
+};
+
+/**
+ * Update order status by changing all its items' statuses
+ * @param {number} orderId - Order ID
+ * @param {string} newStatus - New status ('in_progress' or 'completed')
+ * @returns {Promise<boolean>} Success status
+ */
+export const updateOrderStatus = async (orderId, newStatus) => {
+    const validStatuses = ['in_progress', 'completed'];
+    
+    if (!validStatuses.includes(newStatus)) {
+        throw new Error('Invalid status. Must be in_progress or completed');
+    }
+    
+    // Update all order items to the new status
+    await db.query(
+        'UPDATE pos.Order_Item SET Status = ? WHERE OrderID = ?',
+        [newStatus, orderId]
+    );
+    
+    return true;
+};
+
+/**
+ * Update a single order item's status
+ * @param {number} orderItemId - Order Item ID
+ * @param {string} newStatus - New status
+ * @returns {Promise<boolean>} Success status
+ */
+export const updateOrderItemStatus = async (orderItemId, newStatus) => {
+    const validStatuses = ['pending', 'in_progress', 'completed', 'cancelled', 'refunded'];
+    
+    if (!validStatuses.includes(newStatus)) {
+        throw new Error(`Invalid status. Must be one of: ${validStatuses.join(', ')}`);
+    }
+    
+    await db.query(
+        'UPDATE pos.Order_Item SET Status = ? WHERE OrderItemID = ?',
+        [newStatus, orderItemId]
+    );
+    
+    return true;
+};
+
+/**
+ * Accept a pending order (changes all items to in_progress and assigns staff)
+ * @param {number} orderId - Order ID
+ * @param {number} staffId - Staff ID of the employee accepting the order
+ * @returns {Promise<boolean>} Success status
+ */
+export const acceptOrder = async (orderId, staffId = null) => {
+    // First check if order exists and has pending items
+    const [items] = await db.query(
+        'SELECT Status FROM pos.Order_Item WHERE OrderID = ?',
+        [orderId]
+    );
+    
+    if (items.length === 0) {
+        throw new Error('Order not found');
+    }
+    
+    // Update the order with staff ID if provided
+    if (staffId) {
+        await db.query(
+            'UPDATE pos.Order SET StaffID = ? WHERE OrderID = ?',
+            [staffId, orderId]
+        );
+    }
+    
+    // Update all pending items to in_progress
+    await db.query(
+        'UPDATE pos.Order_Item SET Status = ? WHERE OrderID = ? AND Status = ?',
+        ['in_progress', orderId, 'pending']
+    );
+    
+    return true;
+};
+
+/**
+ * Complete an order (changes all items to completed)
+ * @param {number} orderId - Order ID
+ * @returns {Promise<boolean>} Success status
+ */
+export const completeOrder = async (orderId) => {
+    await updateOrderStatus(orderId, 'completed');
+    return true;
+};
+
+/**
+ * Cancel an order (changes all items to cancelled)
+ * @param {number} orderId - Order ID
+ * @returns {Promise<boolean>} Success status
+ */
+export const cancelOrder = async (orderId) => {
+    // First check if order exists
+    const [items] = await db.query(
+        'SELECT Status FROM pos.Order_Item WHERE OrderID = ?',
+        [orderId]
+    );
+    
+    if (items.length === 0) {
+        throw new Error('Order not found');
+    }
+    
+    // Update all items to cancelled
+    await db.query(
+        'UPDATE pos.Order_Item SET Status = ? WHERE OrderID = ?',
+        ['cancelled', orderId]
+    );
+    
+    return true;
+};
