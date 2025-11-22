@@ -131,7 +131,7 @@ export const EmployeeOrders: React.FC = () => {
       const response = await authenticatedFetch(`/api/order-items/${orderItemId}/status`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ status: newStatus })
+        body: JSON.stringify({ status: "completed" })
       });
 
       if (!response.ok) throw new Error('Failed to update item status');
