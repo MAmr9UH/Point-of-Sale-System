@@ -18,6 +18,7 @@ import { handleTimecard } from './routes/timecard.js';
 import { handleCustomer } from './routes/customer.js';
 import { handleLocationRoutes } from './routes/locationRoutes.js';
 import { handleOrderRoutes } from './routes/orderRoutes.js';
+import { handleAlerts } from './routes/alert.js';
 
 import './db/connection.js';
 
@@ -158,6 +159,9 @@ export const app = async (req, res) => {
         handleLocationRoutes(req, res);
     } else if (url.startsWith('/api/busy-status')) {
         handleBusyStatus(req, res);
+    }
+    else if (url.startsWith('/api/alerts')) {
+        handleAlerts(req, res);
     }
     // Serve React app
     else {

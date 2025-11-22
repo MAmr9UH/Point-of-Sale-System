@@ -189,7 +189,7 @@ export const NotificationDropdown: React.FC<NotificationDropdownProps> = ({
             style={{
               background: 'none',
               border: 'none',
-              color: 'var(--color1)',
+              color: '#6fd3f1ff',
               cursor: 'pointer',
               fontSize: '0.85rem'
             }}

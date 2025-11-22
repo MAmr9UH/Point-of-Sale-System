@@ -1,5 +1,7 @@
 import { Routes, Route, Navigate } from 'react-router-dom';
+import { useToaster } from './contexts/ToastContext.tsx';
 import Menu from './pages/Menu';
+import { useEffect } from 'react';
 import WelcomePage from './pages/WelcomePageDD'
 import Login from './pages/LoginPage.tsx';
 import Employee_Manager from './pages/Employee_Manager.tsx';
@@ -57,6 +59,35 @@ const LoginRoute = ( { registering = false } : { registering?: boolean } ) => {
 
 
 function App() {
+  const { user, userType } = useAuth();
+  const { addToast } = useToaster();
+
+  useEffect(() => {
+    // Only poll alerts for manager and employee
+    if (user && (userType === 'manager' || userType === 'employee')) {
+      const checkForAlerts = async () => {
+        try {
+          const response = await fetch('/api/alerts/new');
+          const alerts = await response.json();
+          
+          alerts.forEach((alert: any) => {
+            // Show toast with warning type and 10 second duration
+            addToast(alert.Message, 'alert', 10000);
+            
+            // Mark alert as shown
+            fetch(`/api/alerts/${alert.AlertID}/mark-shown`, { method: 'POST' });
+          });
+        } catch (error) {
+          console.error('Error fetching alerts:', error);
+        }
+      };
+      checkForAlerts();
+      const interval = setInterval(checkForAlerts, 10000); // Poll every 10 seconds
+      
+      return () => clearInterval(interval);
+    }
+  }, [user, userType, addToast]);
+
   return (
     <Routes>
       <Route path="/" element={<WelcomePage />} />
