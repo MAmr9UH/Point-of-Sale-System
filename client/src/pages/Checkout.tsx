@@ -7,6 +7,7 @@ import { useToaster } from '../contexts/ToastContext';
 import { useAuth } from '../contexts/AuthContext';
 import type { Customer } from '../contexts/AuthContext';
 import { fetchPickupLocations } from '../utils/pickupLoc';
+import { authenticatedFetch } from '../utils/jwtAuth';
 
 const ShoppingCart: React.FC<React.SVGProps<SVGSVGElement>> = (props) => (
   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" xmlns="http://www.w3.org/2000/svg" {...props}>
@@ -98,7 +99,7 @@ export default function FoodTruckCheckout() {
 
   const checkBusyStatus = async () => {
     try {
-      const response = await fetch('/api/busy-status');
+      const response = await authenticatedFetch('/api/busy-status');
       const data = await response.json();
 
       if (data.success && data.isBusy) {

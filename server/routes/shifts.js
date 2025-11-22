@@ -1,8 +1,16 @@
 import { getEmployeeShifts, assignStaffToShift, deleteShift } from '../model/Staff.js';
+import { withAuth, isManager, getAuthStaffId } from '../utils/authMiddleware.js';
 
-export const handleShifts = async (req, res) => {
+export const handleShifts = withAuth(async (req, res) => {
     const { method, url } = req;
     if (method === 'POST' && url === '/api/shifts') {
+        if (!isManager(req)) {
+            res.statusCode = 403;
+            res.setHeader('Content-Type', 'application/json');
+            res.end(JSON.stringify({ error: "Forbidden: Only managers can create shifts" }));
+            return;
+        }
+
         let body = '';
         req.on('data', chunk => {
             body += chunk.toString();
@@ -24,7 +32,22 @@ export const handleShifts = async (req, res) => {
     } else if (method === 'GET' && url.startsWith('/api/shifts/staff') && url.split('/').at(-1).match(/^\d+$/)) {
         const id = url.split('/').at(-1);
 
+        if (!isManager(req) && !isEmployee(req)) {
+            res.statusCode = 403;
+            res.setHeader('Content-Type', 'application/json');
+            res.end(JSON.stringify({ error: "Forbidden: Only managers and employees can view shifts" }));
+            return;
+        }
+
+        if (id != getAuthStaffId(req) && !isManager(req)) {
+            res.statusCode = 403;
+            res.setHeader('Content-Type', 'application/json');
+            res.end(JSON.stringify({ error: "Forbidden: Employees can only view their own shifts" }));
+            return;
+        }
+
         try {
+
             const shifts = await getEmployeeShifts(id);
             console.log("Shifts fetched:", shifts);
             res.statusCode = 200;
@@ -58,4 +81,6 @@ export const handleShifts = async (req, res) => {
         }
 
     }
-}
+}, {
+    roles: ['manager', 'employee']
+})

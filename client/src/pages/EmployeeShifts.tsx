@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { TopNav } from '../components/TopNav';
 import LoadingSpinner from '../components/LoadingSpinner';
+import { authenticatedFetch } from '../utils/jwtAuth';
 import './EmployeeShifts.css';
 
 interface Shift {
@@ -50,7 +51,7 @@ export const EmployeeShifts: React.FC = () => {
           return;
         }
 
-        const response = await fetch(`/api/shifts/staff/${staffId}`);
+        const response = await authenticatedFetch(`/api/shifts/staff/${staffId}`);
         
         if (!response.ok) {
           throw new Error('Failed to fetch shifts');

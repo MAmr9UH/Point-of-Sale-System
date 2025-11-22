@@ -1,6 +1,6 @@
 import { createContext, useContext, useState, useEffect } from 'react';
 import type { ReactNode } from 'react';
-import { fetchWelcomePage } from '../utils/fetchWelcomePage';
+import { fetchWelcomeData } from '../utils/fetchWelcomePage';
 
 export interface ActiveLocation {
   ActiveLocationID?: number;
@@ -37,7 +37,7 @@ export function WelcomePageProvider({ children }: { children: ReactNode }) {
     try {
       setIsLoading(true);
       setError(null);
-      const data = await fetchWelcomePage();
+      const data = await fetchWelcomeData();
 
       console.log(pageData)
 
@@ -67,7 +67,6 @@ export function WelcomePageProvider({ children }: { children: ReactNode }) {
 
 export function useWelcomePage() {
   const context = useContext(WelcomePageContext);
-  console.log(context?.pageData);
   if (context === undefined) {
     throw new Error('useWelcomePage must be used within a WelcomePageProvider');
   }

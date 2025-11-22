@@ -1,9 +1,10 @@
 import {db} from '../db/connection.js';
+import { withAuth } from '../utils/authMiddleware.js';
 
 /**
  * Handle location-related API requests
  */
-export async function handleLocationRoutes(req, res) {
+export const handleLocationRoutes = withAuth(async (req, res) => {
   const { url, method } = req;
 
   // Enable CORS
@@ -260,4 +261,6 @@ export async function handleLocationRoutes(req, res) {
     res.setHeader('Content-Type', 'application/json');
     res.end(JSON.stringify({ error: 'Internal server error' }));
   }
-}
+}, {
+  roles: ["manager"]
+});

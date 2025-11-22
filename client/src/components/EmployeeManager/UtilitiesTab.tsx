@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { authenticatedFetch } from '../../utils/jwtAuth';
 import { UtilityForm } from './UtilityForm';
 import { UtilityList } from './UtilityList';
 import { ConfirmDialog } from './ConfirmDialog';
@@ -34,7 +35,7 @@ export const UtilitiesTab: React.FC = () => {
 
   const loadUtilities = async () => {
     try {
-      const response = await fetch('/api/utilities');
+      const response = await authenticatedFetch('/api/utilities');
       const data = await response.json();
       setUtilitiesList(data);
       
@@ -97,7 +98,7 @@ export const UtilitiesTab: React.FC = () => {
         ? `/api/utilities/${editingUtility.paymentId}` 
         : '/api/utilities';
 
-      const res = await fetch(url, {
+      const res = await authenticatedFetch(url, {
         method,
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload),
@@ -153,7 +154,7 @@ export const UtilitiesTab: React.FC = () => {
       message: `Are you sure you want to delete ${utilityName}? This action cannot be undone.`,
       onConfirm: async () => {
         try {
-          const res = await fetch(`/api/utilities/${paymentId}`, {
+          const res = await authenticatedFetch(`/api/utilities/${paymentId}`, {
             method: 'DELETE',
           });
 

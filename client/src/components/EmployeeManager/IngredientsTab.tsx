@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { authenticatedFetch } from '../../utils/jwtAuth';
 import { IngredientsForm } from './IngredientsForm.tsx';
 import { IngredientsList } from './IngredientsList.tsx';
 import { PlusIcon } from './Icons';
@@ -25,7 +26,7 @@ export const IngredientsTab: React.FC = () => {
   const loadIngredients = async () => {
     setIsLoading(true);
     try {
-      const response = await fetch('/api/ingredients');
+      const response = await authenticatedFetch('/api/ingredients');
       if (!response.ok) {
         throw new Error(`Failed to load ingredients: ${response.statusText}`);
       }
@@ -120,7 +121,7 @@ export const IngredientsTab: React.FC = () => {
     if (!confirm('Are you sure you want to delete this ingredient?')) return;
 
     try {
-      const response = await fetch(`/api/ingredients/${id}`, {
+      const response = await authenticatedFetch(`/api/ingredients/${id}`, {
         method: 'DELETE',
       });
 

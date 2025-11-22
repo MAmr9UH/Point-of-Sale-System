@@ -1,9 +1,10 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { TopNav } from '../components/TopNav';
 import LoadingSpinner from '../components/LoadingSpinner';
 import { useToaster } from '../contexts/ToastContext';
+import { authenticatedFetch } from '../utils/jwtAuth';
 import './EmployeeOrders.css';
 
 interface OrderItem {
@@ -55,13 +56,44 @@ export const EmployeeOrders: React.FC = () => {
     requestAnimationFrame(() => {
       setIsLoaded(true);
     });
+  }, []);
 
+  const fetchOrders = useCallback(async () => {
+    try {
+      setLoading(true);
+
+      // Fetch live orders (pending + in_progress)
+      const liveResponse = await authenticatedFetch('/api/orders/live');
+      if (liveResponse.ok) {
+        const liveData = await liveResponse.json();
+        setLiveOrders(liveData);
+      }
+
+      // Fetch past orders (completed + cancelled + refunded)
+      let pastResponse;
+      if (!startDate && !endDate)
+        pastResponse = await authenticatedFetch('/api/orders/past');
+      else
+        pastResponse = await authenticatedFetch(`/api/orders/past?startDate=${startDate}&endDate=${endDate}`);
+
+      if (pastResponse.ok) {
+        const pastData = await pastResponse.json();
+        setPastOrders(pastData);
+      }
+    } catch (err) {
+      addToast('Failed to load orders', 'error');
+    } finally {
+      setLoading(false);
+    }
+  }, [startDate, endDate, addToast]);
+
+  useEffect(() => {
     const poll = setInterval(() => {
       fetchOrders();
     }, 5000); // Poll every 5 seconds
 
     return () => clearInterval(poll);
-  }, []);
+  }, [fetchOrders]);
 
   useEffect(() => {
     if (userType !== 'employee' && userType !== 'manager') {
@@ -72,36 +104,14 @@ export const EmployeeOrders: React.FC = () => {
     fetchOrders();
   }, [user, userType, navigate]);
 
-  const fetchOrders = async () => {
-    try {
-      setLoading(true);
-      
-      // Fetch live orders (pending + in_progress)
-      const liveResponse = await fetch('/api/orders/live');
-      if (liveResponse.ok) {
-        const liveData = await liveResponse.json();
-        setLiveOrders(liveData);
-      }
 
-      // Fetch past orders (completed + cancelled + refunded)
-      const pastResponse = await fetch('/api/orders/past');
-      if (pastResponse.ok) {
-        const pastData = await pastResponse.json();
-        setPastOrders(pastData);
-      }
-    } catch (err) {
-      addToast('Failed to load orders', 'error');
-    } finally {
-      setLoading(false);
-    }
-  };
 
   const handleAcceptOrder = async (orderId: number) => {
     try {
       // Get staff ID from authenticated user
       const staffId = user && 'StaffID' in user ? user.StaffID : null;
-      
-      const response = await fetch(`/api/orders/${orderId}/accept`, {
+
+      const response = await authenticatedFetch(`/api/orders/${orderId}/accept`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ staffId })
@@ -118,10 +128,10 @@ export const EmployeeOrders: React.FC = () => {
 
   const handleMarkItemDone = async (orderItemId: number) => {
     try {
-      const response = await fetch(`/api/order-items/${orderItemId}/status`, {
+      const response = await authenticatedFetch(`/api/order-items/${orderItemId}/status`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ status: 'completed' })
+        body: JSON.stringify({ status: newStatus })
       });
 
       if (!response.ok) throw new Error('Failed to update item status');
@@ -135,7 +145,7 @@ export const EmployeeOrders: React.FC = () => {
 
   const handleCompleteOrder = async (orderId: number) => {
     try {
-      const response = await fetch(`/api/orders/${orderId}/complete`, {
+      const response = await authenticatedFetch(`/api/orders/${orderId}/complete`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' }
       });
@@ -151,7 +161,7 @@ export const EmployeeOrders: React.FC = () => {
 
   const handleCancelOrder = async (orderId: number) => {
     try {
-      const response = await fetch(`/api/orders/${orderId}/cancel`, {
+      const response = await authenticatedFetch(`/api/orders/${orderId}/cancel`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' }
       });
@@ -173,7 +183,7 @@ export const EmployeeOrders: React.FC = () => {
 
     try {
       setLoading(true);
-      const response = await fetch(`/api/orders/past?startDate=${startDate}&endDate=${endDate}`);
+      const response = await authenticatedFetch(`/api/orders/past?startDate=${startDate}&endDate=${endDate}`);
       if (response.ok) {
         const data = await response.json();
         setPastOrders(data);
@@ -261,7 +271,7 @@ export const EmployeeOrders: React.FC = () => {
                 </span>
                 <span className="receipt-item-price">${(item.price * item.quantity).toFixed(2)}</span>
               </div>
-              
+
               <div className="receipt-item-status">
                 <span className="status-badge" style={{ background: getStatusColor(item.status) }}>
                   {getStatusIcon(item.status)} {item.status.replace('_', ' ')}

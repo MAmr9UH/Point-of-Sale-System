@@ -1,6 +1,8 @@
-export const fetchWelcomePage = async () => {
+export const fetchWelcomeData = async () => {
     try {
-        const response = await fetch('/api/welcome/welcomeData');
+        const response = await fetch('/api/welcome/welcomeData', {
+            credentials: 'include'
+        });
 
         if (!response.ok) {
             throw new Error('Network response was not ok');

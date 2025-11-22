@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { NotificationDropdown } from './NotificationDropdown';
+import { authenticatedFetch } from '../../utils/jwtAuth';
 
 export const NotificationBell: React.FC = () => {
   const [isNotificationOpen, setIsNotificationOpen] = useState(false);
@@ -14,7 +15,7 @@ export const NotificationBell: React.FC = () => {
 
   const fetchUnreadCount = async () => {
     try {
-      const response = await fetch('/api/staff/notifications/unread-count');
+      const response = await authenticatedFetch('/api/staff/notifications/unread-count');
       const data = await response.json();
       setUnreadCount(data.count || 0);
     } catch (error) {

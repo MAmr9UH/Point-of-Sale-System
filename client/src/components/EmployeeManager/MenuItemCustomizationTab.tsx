@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useToaster } from '../../contexts/ToastContext';
+import { authenticatedFetch } from '../../utils/jwtAuth';
 import './MenuItemCustomizationTab.css';
 
 interface MenuItem {
@@ -82,7 +83,7 @@ export const MenuItemCustomizationTab: React.FC = () => {
 
   const loadMenuItems = async () => {
     try {
-      const response = await fetch('/api/menu/items');
+      const response = await authenticatedFetch('/api/menu/items');
       const data = await response.json();
       setMenuItems(data);
     } catch (error) {
@@ -93,7 +94,7 @@ export const MenuItemCustomizationTab: React.FC = () => {
 
   const loadIngredients = async () => {
     try {
-      const response = await fetch('/api/ingredients');
+      const response = await authenticatedFetch('/api/ingredients');
       const data = await response.json();
       setIngredients(data);
     } catch (error) {
@@ -104,7 +105,7 @@ export const MenuItemCustomizationTab: React.FC = () => {
 
   const loadExistingCustomizations = async (menuItemId: number) => {
     try {
-      const response = await fetch(`/api/menu/customizations/${menuItemId}`);
+      const response = await authenticatedFetch(`/api/menu/customizations/${menuItemId}`);
       const customizations: Customization[] = await response.json();
       
       // Group customizations by category
@@ -381,11 +382,11 @@ export const MenuItemCustomizationTab: React.FC = () => {
 
     try {
       // First, delete all existing customizations
-      const existingResponse = await fetch(`/api/menu/customizations/${selectedMenuItem}`);
+      const existingResponse = await authenticatedFetch(`/api/menu/customizations/${selectedMenuItem}`);
       const existingCustomizations: Customization[] = await existingResponse.json();
       
       for (const cust of existingCustomizations) {
-        await fetch(`/api/menu/customizations/${cust.UsedForID}`, {
+        await authenticatedFetch(`/api/menu/customizations/${cust.UsedForID}`, {
           method: 'DELETE',
         });
       }
@@ -406,7 +407,7 @@ export const MenuItemCustomizationTab: React.FC = () => {
             CanSubstitute: category.isSubstitutable,
           };
 
-          const res = await fetch('/api/menu/customizations', {
+          const res = await authenticatedFetch('/api/menu/customizations', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(payload),

@@ -4,6 +4,7 @@ import "./ReportsPage.css";
 import ProfitLocationChart from "../components/ProfitLocationChart";
 import PopularItemChart from "../components/PopularItemChart";
 import EmployeePerformanceChart from "../components/EmployeePerformanceChart";
+import { authenticatedFetch } from "../utils/jwtAuth";
 
 /* ========= Types from API ========= */
 type ReportType = "locations" | "items" | "employees";
@@ -157,7 +158,7 @@ export default function ReportsPage() {
       else if (type === "items") url = `${API_BASE}/api/reports/most-popular-items?${params}`;
       else url = `${API_BASE}/api/reports/employee-performance?${params}`;
 
-      const res = await fetch(url);
+      const res = await authenticatedFetch(url);
       if (!res.ok) {
         const t = await res.text().catch(() => "");
         throw new Error(`HTTP ${res.status}${t ? `: ${t}` : ""}`);

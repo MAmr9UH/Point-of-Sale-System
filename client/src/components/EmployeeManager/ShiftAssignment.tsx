@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { authenticatedFetch } from '../../utils/jwtAuth';
 import { CloseIcon } from './Icons';
 import type { Employee, Shift } from '../../types/Employee';
 import { useWelcomePage } from '../../contexts/WelcomePageContext';
@@ -40,7 +41,7 @@ export const ShiftAssignment: React.FC<ShiftAssignmentProps> = ({ employee, onCl
   const loadShifts = async () => {
     setIsLoading(true);
     try {
-      const response = await fetch(`/api/shifts/staff/${employee.StaffID}`);
+      const response = await authenticatedFetch(`/api/shifts/staff/${employee.StaffID}`);
       const data = await response.json();
       setShifts(data);
     } catch (error) {
@@ -128,7 +129,7 @@ export const ShiftAssignment: React.FC<ShiftAssignmentProps> = ({ employee, onCl
       message: `Are you sure you want to delete the shift on ${shiftDate} (${shiftTime})? This action cannot be undone.`,
       onConfirm: async () => {
         try {
-          const response = await fetch(`/api/shifts/${assignId}`, {
+          const response = await authenticatedFetch(`/api/shifts/${assignId}`, {
             method: 'DELETE',
           });
 

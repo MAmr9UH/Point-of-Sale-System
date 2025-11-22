@@ -4,6 +4,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { TopNav } from '../components/TopNav';
 import { useToaster } from '../contexts/ToastContext';
 import LoadingSpinner from '../components/LoadingSpinner';
+import { authenticatedFetch } from '../utils/jwtAuth';
 import './EmployeeTimecard.css';
 
 interface TimecardEntry {
@@ -59,7 +60,7 @@ export const EmployeeTimecard: React.FC = () => {
         return;
       }
 
-      const response = await fetch(`/api/timecard/staff/${staffId}`);
+      const response = await authenticatedFetch(`/api/timecard/staff/${staffId}`);
       const data = await response.json();
 
       if (response.ok) {
@@ -78,7 +79,7 @@ export const EmployeeTimecard: React.FC = () => {
   const handleClockIn = async () => {
     try {
       const staffId = (user as any)?.StaffID;
-      const response = await fetch('/api/timecard/clockin', {
+      const response = await authenticatedFetch('/api/timecard/clockin', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ staffId })
@@ -99,7 +100,7 @@ export const EmployeeTimecard: React.FC = () => {
 
   const handleClockOut = async () => {
     try {
-      const response = await fetch('/api/timecard/clockout', {
+      const response = await authenticatedFetch('/api/timecard/clockout', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ timecardId: activeTimecard?.TimecardID })

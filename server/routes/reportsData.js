@@ -19,7 +19,9 @@ const parseQuery = (req) => {
   };
 };
 
-export const handleReports = async (req, res) => {
+import { withAuth } from "../utils/authMiddleware.js";
+
+export const handleReports = withAuth(async (req, res) => {
   const { method } = req;
   const { pathname, q } = parseQuery(req);
 
@@ -64,6 +66,8 @@ export const handleReports = async (req, res) => {
     console.error("Reports route error:", err);
     sendJSON(res, 500, { error: err?.message || "Server error" });
   }
-};
+}, {
+  roles: ['manager']
+});
 
 export default handleReports;

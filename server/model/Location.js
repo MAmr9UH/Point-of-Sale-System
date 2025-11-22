@@ -356,13 +356,13 @@ export default Location;
 import { db } from '../db/connection.js';
 
 export const findLocationByName = async (name) => {
-    const query = 'SELECT * FROM Location WHERE Name = ?';
+    const query = 'SELECT * FROM pos.Location WHERE Name = ? AND is_active = TRUE LIMIT 1';
     const [rows] = await db.execute(query, [name]);
     return rows.length > 0 ? Location.fromDB(rows[0]) : null;
 }
 
 export const getCurrentLocation = async () => {
-    const query = 'SELECT * FROM Location';
+    const query = 'SELECT * FROM pos.Location WHERE is_active = TRUE';
     const [rows] = await db.execute(query);
     return rows.map(row => Location.fromDB(row));
 }

@@ -1,6 +1,5 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
-import { customerLogin, customerRegister } from '../utils/customerAuth';
-import { staffLogin } from '../utils/staffAuth';
+import { loginCustomer, loginEmployee, registerCustomer, storeToken, getToken, removeToken, getStoredUser, storeUser } from '../utils/jwtAuth';
 
 export interface Customer {
     CustomerID: number;
@@ -53,17 +52,16 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     useEffect(() => {
         const checkAuth = async () => {
             try {
-                const storedUser = localStorage.getItem('user');
-                const storedUserType = localStorage.getItem('userType');
+                const token = getToken();
+                const storedUser = getStoredUser();
 
-                if (storedUser && storedUserType) {
-                    setUser(JSON.parse(storedUser));
-                    setUserType(storedUserType as 'customer' | 'employee' | 'manager');
+                if (token && storedUser) {
+                    setUser(storedUser);
+                    setUserType(storedUser.role || storedUser.Role);
                 }
             } catch (error) {
                 console.error('Error checking auth:', error);
-                localStorage.removeItem('user');
-                localStorage.removeItem('userType');
+                removeToken();
             } finally {
                 setIsLoading(false);
             }
@@ -76,12 +74,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const login = async (email: string, password: string) => {
         setIsLoading(true);
         try {
-            const data = await customerLogin(email, password)
-
-            setUser(data.user);
+            const data = await loginCustomer({ email, password });
+            
+            // Store token and user
+            storeToken(data.token);
+            storeUser(data.user);
+            
+            setUser(data.user as any);
             setUserType("customer");
-            localStorage.setItem('user', JSON.stringify(data.user));
-            localStorage.setItem('userType', "customer");
         } catch (error) {
             console.error('Login error:', error);
             throw error;
@@ -94,12 +94,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const loginStaff = async (employeeId: string, password: string) => {
         setIsLoading(true);
         try {
-            const data = await staffLogin(employeeId, password);
+            const data = await loginEmployee({ email: employeeId, password });
+            
+            // Store token and user
+            storeToken(data.token);
+            storeUser(data.user);
 
-            setUser(data.user);
-            setUserType(data.user.Role);
-            localStorage.setItem('user', JSON.stringify(data.user));
-            localStorage.setItem('userType', data.user.Role);
+            setUser(data.user as any);
+            setUserType((data.user.role || 'employee') as 'employee' | 'manager');
         } catch (error) {
             console.error('Staff login error:', error);
             throw error;
@@ -112,14 +114,21 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const register = async (data: RegisterData) => {
         setIsLoading(true);
         try {
-            const responseData = await customerRegister(data.fname, data.lname, data.email, data.phoneNumber as string, data.password);
-
+            const responseData = await registerCustomer({
+                firstName: data.fname,
+                lastName: data.lname,
+                email: data.email,
+                phone: data.phoneNumber || '',
+                password: data.password
+            });
+            
+            // Store token and user
+            storeToken(responseData.token);
+            storeUser(responseData.user);
 
             // Auto-login after successful registration
-            setUser(responseData.user);
+            setUser(responseData.user as any);
             setUserType('customer');
-            localStorage.setItem('user', JSON.stringify(responseData.user));
-            localStorage.setItem('userType', 'customer');
         } catch (error) {
             console.error('Registration error:', error);
             throw error;
@@ -132,14 +141,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const logout = () => {
         setUser(null);
         setUserType(null);
-        localStorage.removeItem('user');
-        localStorage.removeItem('userType');
+        removeToken();
     };
 
     // Update user data
     const updateUser = (updatedUser: Customer | Staff) => {
         setUser(updatedUser);
-        localStorage.setItem('user', JSON.stringify(updatedUser));
+        storeUser(updatedUser);
     };
 
     const value: AuthContextType = {

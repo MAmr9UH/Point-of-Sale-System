@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { TopNav } from "../components/TopNav";
 import { useToaster } from '../contexts/ToastContext';
+import { authenticatedFetch } from '../utils/jwtAuth';
 import './Profile.css';
 
 // TypeScript interfaces
@@ -86,7 +87,7 @@ const CustomerProfile: React.FC = () => {
 
   const fetchProfile = async (customerId: number) => {
     try {
-      const response = await fetch(`/api/customers/profile/${customerId}`);
+      const response = await authenticatedFetch(`/api/customers/profile/${customerId}`);
       const data = await response.json();
       if (data.success) {
         setProfileData(data);
@@ -112,7 +113,7 @@ const CustomerProfile: React.FC = () => {
     const customerId = (user as Customer).CustomerID;
     
     try {
-      const response = await fetch(`/api/customers/profile/${customerId}/update`, {
+      const response = await authenticatedFetch(`/api/customers/profile/${customerId}/update`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(editForm)
@@ -150,7 +151,7 @@ const CustomerProfile: React.FC = () => {
     const customerId = (user as Customer).CustomerID;
 
     try {
-      const response = await fetch('/api/customers/feedback', {
+      const response = await authenticatedFetch('/api/customers/feedback', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

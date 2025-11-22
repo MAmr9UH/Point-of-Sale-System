@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { authenticatedFetch } from '../../utils/jwtAuth';
 
 interface Notification {
   NotificationID: number;
@@ -53,7 +54,7 @@ export const NotificationDropdown: React.FC<NotificationDropdownProps> = ({
   const fetchNotifications = async () => {
     setLoading(true);
     try {
-      const response = await fetch('/api/staff/notifications');
+      const response = await authenticatedFetch('/api/staff/notifications');
       const data = await response.json();
       setNotifications(data);
     } catch (error) {
@@ -65,7 +66,7 @@ export const NotificationDropdown: React.FC<NotificationDropdownProps> = ({
 
   const markAllAsRead = async () => {
     try {
-      await fetch('/api/staff/notifications/read-all', {
+      await authenticatedFetch('/api/staff/notifications/read-all', {
         method: 'PUT'
       });
       

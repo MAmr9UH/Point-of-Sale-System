@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { authenticatedFetch } from '../../utils/jwtAuth';
 import { InventoryForm } from './InventoryForm';
 import { InventoryList } from './InventoryList';
 import { ConfirmDialog } from './ConfirmDialog';
@@ -46,7 +47,7 @@ export const InventoryTab: React.FC = () => {
 
   const loadIngredients = async () => {
     try {
-      const response = await fetch('/api/ingredients');
+      const response = await authenticatedFetch('/api/ingredients');
       const data: Ingredient[] = await response.json();
       // Map costPerUnit to cost for compatibility with the form
       setIngredients(data.map(ing => ({ IngredientID: ing.IngredientID, Name: ing.Name, CostPerUnit: ing.CostPerUnit })));
@@ -57,7 +58,7 @@ export const InventoryTab: React.FC = () => {
 
   const loadInventory = async () => {
     try {
-      const response = await fetch('/api/inventory');
+      const response = await authenticatedFetch('/api/inventory');
       const data = await response.json();
       setInventoryList(data);
     } catch (error) {
@@ -94,7 +95,7 @@ export const InventoryTab: React.FC = () => {
         ? `/api/inventory/${editingOrder.id}` 
         : '/api/inventory';
 
-      const res = await fetch(url, {
+      const res = await authenticatedFetch(url, {
         method,
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload),
@@ -146,7 +147,7 @@ export const InventoryTab: React.FC = () => {
       message: `Are you sure you want to delete the order for "${order.ingredientItem}"? This action cannot be undone.`,
       onConfirm: async () => {
         try {
-          const res = await fetch(`/api/inventory/${order.id}`, {
+          const res = await authenticatedFetch(`/api/inventory/${order.id}`, {
             method: 'DELETE',
           });
 

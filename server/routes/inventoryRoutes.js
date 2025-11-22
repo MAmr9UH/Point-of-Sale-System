@@ -5,11 +5,12 @@ import {
   updateInventoryOrder,
   deleteInventoryOrder,
 } from '../model/EmployeeManagerModel.js';
+import { withAuth } from '../utils/authMiddleware.js';
 
 // server/routes/inventoryRoutes.js
 
 // --- Function to handle all /api/inventory routes ---
-export function handleInventoryRoutes(req, res) {
+export const handleInventoryRoutes = withAuth(async (req, res) => {
   const { url, method } = req;
 
   // ✅ GET all inventory orders from database
@@ -115,4 +116,6 @@ export function handleInventoryRoutes(req, res) {
 
     return false; // not handled
   }
-}
+}, {
+  roles: ['manager']
+});

@@ -218,10 +218,10 @@ import { db } from '../db/connection.js';
 export const getCurrentWorkingStaff = async (locationName) => {
     const query = `
         SELECT S.*
-        FROM Staff AS S
+        FROM pos.Staff AS S
         JOIN Assigns AS A ON S.StaffID = A.StaffID
         JOIN Active_Location AS AL ON A.ActiveLocationID = AL.ActiveLocationID
-        WHERE AL.LocationName = ? AND A.ScheduleStart <= NOW() AND (A.ScheduleEnd IS NULL OR A.ScheduleEnd >= NOW())
+        WHERE AL.LocationName = ? AND A.ScheduleStart <= NOW() AND (A.ScheduleEnd IS NULL OR A.ScheduleEnd >= NOW()) AND S.is_active = TRUE
         ORDER BY A.ScheduleStart DESC
         LIMIT 1;
     `;
@@ -230,13 +230,13 @@ export const getCurrentWorkingStaff = async (locationName) => {
 }
 
 export const findStaffByEmail = async (email) => {
-    const query = `SELECT * FROM Staff WHERE Email = ? LIMIT 1;`;
+    const query = `SELECT * FROM pos.Staff WHERE Email = ? AND is_active = TRUE LIMIT 1;`;
     const [results] = await db.query(query, [email]);
     return results.length > 0 ? Staff.fromDB(results[0]) : null;
 }
 
 export const getAllEmployees = async () => {
-    const query = `SELECT * FROM Staff WHERE Role = 'employee' ORDER BY Lname, Fname;`;
+    const query = `SELECT * FROM pos.Staff WHERE Role = 'employee' AND is_active = TRUE ORDER BY Lname, Fname;`;
     const [results] = await db.query(query);
     return results.map(row => Staff.fromDB(row));
 }
@@ -270,7 +270,7 @@ export const getEmployeeShifts = async (employeeId) => {
 
 export const assignStaffToShift = async (employeeId, locationId, shiftStart, shiftEnd) => {
     const query = `
-        INSERT INTO Assigns (ActiveLocationID, StaffID, ScheduleStart, ScheduleEnd)
+        INSERT INTO pos.Assigns (ActiveLocationID, StaffID, ScheduleStart, ScheduleEnd)
         VALUES (?, ?, ?, ?);
     `;
     const [result] = await db.query(query, [locationId, employeeId, shiftStart, shiftEnd]);
@@ -278,20 +278,20 @@ export const assignStaffToShift = async (employeeId, locationId, shiftStart, shi
 }
 
 export const deleteShift = async (assignId) => {
-    const query = `DELETE FROM Assigns WHERE AssignID = ?;`;
+    const query = `DELETE FROM pos.Assigns WHERE AssignID = ?;`;
     const [result] = await db.query(query, [assignId]);
     return result.affectedRows > 0;
 }
 
 export const removeEmployee = async (employeeId) => {
-    const query = `DELETE FROM Staff WHERE StaffID = ?;`;
+    const query = `UPDATE pos.Staff SET is_active = FALSE WHERE StaffID = ?;`;
     const [result] = await db.query(query, [employeeId]);
     return result.affectedRows > 0;
 }
 
 export const createEmployeeFromCustomer = async (customerId, payRate) => {
     // First get the customer data
-    const customerQuery = 'SELECT * FROM Customer WHERE CustomerID = ?';
+    const customerQuery = 'SELECT * FROM pos.Customer WHERE CustomerID = ?';
     const [customerRows] = await db.execute(customerQuery, [customerId]);
     
     if (customerRows.length === 0) {
@@ -300,10 +300,24 @@ export const createEmployeeFromCustomer = async (customerId, payRate) => {
     
     const customer = customerRows[0];
     
+
+    const checkStaffQuery = 'SELECT * FROM pos.Staff WHERE Email = ?';
+    const [founds] = await db.execute(checkStaffQuery, [customer.Email]);
+
+    if (founds.length > 0) {
+        const reactivatedQuery = `
+            UPDATE pos.Staff
+            SET is_active = TRUE, PayRate = ?, LastUpdatedAt = NOW()
+            WHERE StaffID = ?;
+        `;
+        await db.execute(reactivatedQuery, [payRate, founds[0].StaffID]);
+        return Staff.fromDB(founds[0]);
+    }
+
     // Create staff member with customer's information
     // Role defaults to 'employee' - cook/cashier distinction is only for shift assignments
     const staffQuery = `
-        INSERT INTO Staff (Role, Email, PasswordHash, PhoneNumber, Fname, Lname, PayRate, CreatedAt, LastUpdatedAt)
+        INSERT INTO pos.Staff (Role, Email, PasswordHash, PhoneNumber, Fname, Lname, PayRate, CreatedAt, LastUpdatedAt)
         VALUES (?, ?, ?, ?, ?, ?, ?, NOW(), NOW())
     `;
     
@@ -318,7 +332,7 @@ export const createEmployeeFromCustomer = async (customerId, payRate) => {
     ]);
     
     // Return the newly created staff member
-    const newStaffQuery = 'SELECT * FROM Staff WHERE StaffID = ?';
+    const newStaffQuery = 'SELECT * FROM pos.Staff WHERE StaffID = ?';
     const [staffRows] = await db.execute(newStaffQuery, [result.insertId]);
     
     return staffRows.length > 0 ? Staff.fromDB(staffRows[0]) : null;
@@ -326,7 +340,7 @@ export const createEmployeeFromCustomer = async (customerId, payRate) => {
 
 export const updateEmployeePayRate = async (employeeId, newPayRate) => {
     const query = `
-        UPDATE Staff
+        UPDATE pos.Staff
         SET PayRate = ?, LastUpdatedAt = NOW()
         WHERE StaffID = ?;
     `;

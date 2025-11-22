@@ -2,6 +2,7 @@ export const customerLogin = async (email: string, password: string) => {
     try {
         const response = await fetch('/api/auth/customer-login', {
             method: 'POST',
+            credentials: 'include',
             headers: {
                 'Content-Type': 'application/json',
             },
@@ -22,6 +23,7 @@ export const customerRegister = async (firstName: string, lastName: string, emai
     try {
         const response = await fetch('/api/auth/customer-register', {
             method: 'POST',
+            credentials: 'include',
             headers: {
                 'Content-Type': 'application/json',
             },

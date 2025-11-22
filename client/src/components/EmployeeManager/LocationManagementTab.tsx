@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useToaster } from '../../contexts/ToastContext';
 import { ConfirmDialog } from './ConfirmDialog';
+import { authenticatedFetch } from '../../utils/jwtAuth';
 
 interface Location {
   Name: string;
@@ -56,7 +57,7 @@ export const LocationManagementTab: React.FC = () => {
 
   const loadLocations = async () => {
     try {
-      const response = await fetch('/api/locations');
+      const response = await authenticatedFetch('/api/locations');
       const data = await response.json();
       setLocations(data);
     } catch (error) {
@@ -67,7 +68,7 @@ export const LocationManagementTab: React.FC = () => {
 
   const loadActiveLocations = async () => {
     try {
-      const response = await fetch('/api/locations/active');
+      const response = await authenticatedFetch('/api/locations/active');
       const data = await response.json();
       setActiveLocations(data);
     } catch (error) {
@@ -97,7 +98,7 @@ export const LocationManagementTab: React.FC = () => {
         ? `/api/locations/${encodeURIComponent(editingLocation.Name)}`
         : '/api/locations';
 
-      const res = await fetch(url, {
+      const res = await authenticatedFetch(url, {
         method,
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload),
@@ -143,7 +144,7 @@ export const LocationManagementTab: React.FC = () => {
       message: `Are you sure you want to delete "${locationName}"? This action cannot be undone.`,
       onConfirm: async () => {
         try {
-          const res = await fetch(`/api/locations/${encodeURIComponent(locationName)}`, {
+          const res = await authenticatedFetch(`/api/locations/${encodeURIComponent(locationName)}`, {
             method: 'DELETE',
           });
 
@@ -197,7 +198,7 @@ export const LocationManagementTab: React.FC = () => {
         ? `/api/locations/active/${editingActiveLocation.ActiveLocationID}`
         : '/api/locations/active';
 
-      const res = await fetch(url, {
+      const res = await authenticatedFetch(url, {
         method,
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload),
@@ -243,7 +244,7 @@ export const LocationManagementTab: React.FC = () => {
       message: `Are you sure you want to delete the contract for "${activeLocation?.LocationName}"? This action cannot be undone.`,
       onConfirm: async () => {
         try {
-          const res = await fetch(`/api/locations/active/${activeLocationId}`, {
+          const res = await authenticatedFetch(`/api/locations/active/${activeLocationId}`, {
             method: 'DELETE',
           });
 

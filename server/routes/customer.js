@@ -1,7 +1,8 @@
 import { searchCustomers } from "../model/Customer.js";
 import { getCustomerById, getOrdersByCustomerId, getMostOrderedItem, submitFeedback, updateCustomerInfo } from '../model/CustomerProfile.js';
+import { withAuth, getAuthCustomerId, isCustomer, verifyOwnership } from '../utils/authMiddleware.js';
 
-export const handleCustomer = async (req, res) => {
+const customerHandler = async (req, res) => {
     const { method, url } = req;
 
     const profileMatch = url.match(/^\/api\/customers\/profile\/(\d+)$/);
@@ -44,6 +45,11 @@ export const handleCustomer = async (req, res) => {
     } else if (method === 'GET' && profileMatch) {
         const customerId = profileMatch[1];
 
+        // Verify ownership - customers can only view their own profile
+        if (isCustomer(req) && !verifyOwnership(req, res, customerId)) {
+            return;
+        }
+
         try {
             const customer = await getCustomerById(customerId);
             if (!customer) {
@@ -75,6 +81,11 @@ export const handleCustomer = async (req, res) => {
             try {
                 const { customerId, orderId, rating, comments } = JSON.parse(body);
 
+                // Verify ownership - customers can only submit feedback for their own orders
+                if (isCustomer(req) && !verifyOwnership(req, res, customerId)) {
+                    return;
+                }
+
                 if (!customerId || !orderId || !rating) {
                     res.statusCode = 400;
                     res.setHeader('Content-Type', 'application/json');
@@ -104,6 +115,11 @@ export const handleCustomer = async (req, res) => {
     } else if (method === 'PUT' && updateMatch) {
         const customerId = updateMatch[1];
 
+        // Verify ownership - customers can only update their own profile
+        if (isCustomer(req) && !verifyOwnership(req, res, customerId)) {
+            return;
+        }
+
         let body = '';
         req.on('data', chunk => {
             body += chunk.toString();
@@ -129,3 +145,21 @@ export const handleCustomer = async (req, res) => {
         });
     }
 }
+
+// Export with JWT authentication
+// Search requires employee/manager role to search for customers
+export const handleCustomer = (req, res) => {
+    const { url } = req;
+    
+    // Customer search requires employee or manager role
+    if (url.startsWith('/api/customers/search')) {
+        return withAuth(customerHandler, {
+            roles: ['employee', 'manager']
+        })(req, res);
+    }
+    
+    // Profile, feedback, and update require customer role (with ownership checks inside handler)
+    return withAuth(customerHandler, {
+        roles: ['customer']
+    })(req, res);
+};

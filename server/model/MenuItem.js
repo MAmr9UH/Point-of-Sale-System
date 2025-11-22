@@ -155,7 +155,7 @@ export const getAllMenuItems = async (availableOnly = true) => {
         SELECT *, MI.name as MIName, MI.MenuItemID as MIID, I.name as IName, I.QuantityInStock as IQuantityInStock
         FROM pos.Menu_Item as MI LEFT JOIN pos.Used_For as UF on MI.MenuItemID = UF.MenuItemID
         LEFT JOIN pos.Ingredient as I ON UF.IngredientID = I.IngredientID
-        ${availableOnly ? "WHERE MI.Availability = TRUE" : ""}
+        WHERE MI.is_active = TRUE ${availableOnly ? "AND MI.Availability = TRUE" : ""}
         `;
     const [results] = await db.query(query);
     const items = results;
@@ -203,7 +203,7 @@ export const getMenuItemByIds = async (menuItemIds) => {
         SELECT *, MI.name as MIName, MI.MenuItemID as MIID, I.name as IName
         FROM pos.Menu_Item as MI LEFT JOIN pos.Used_For as UF on MI.MenuItemID = UF.MenuItemID
         LEFT JOIN pos.Ingredient as I ON UF.IngredientID = I.IngredientID
-        WHERE MI.MenuItemID IN (${placeholders});
+        WHERE MI.MenuItemID IN (${placeholders}) AND MI.is_active = TRUE;
     `;
 
     const [results] = await db.query(query, menuItemIds);
@@ -295,11 +295,17 @@ export const deleteMenuItem = async (menuItemId) => {
         throw new Error('MenuItemID is required for deletion');
     }
     const query = `
-        DELETE FROM Menu_Item
+        UPDATE pos.Menu_Item
+        SET is_active = FALSE
         WHERE MenuItemID = ?;
     `;
     const [results] = await db.query(query, [menuItemId]);
-    return results;
+
+    if (results.affectedRows === 0) {
+        throw new Error(`Menu item with ID ${menuItemId} not found`);
+    }
+
+    return true;
 }
 
 

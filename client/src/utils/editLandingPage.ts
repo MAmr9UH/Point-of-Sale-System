@@ -21,6 +21,7 @@ export const updateLandingPage = async (
   try {
     const response = await fetch('/api/editpage/', {
       method: 'POST',
+      credentials: 'include',
       headers: {
         'Content-Type': 'application/json',
       },

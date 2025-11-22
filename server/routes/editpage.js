@@ -135,8 +135,9 @@ async function handleFileUpload(req, res) {
 }
 
 import { editPage } from '../model/Truck.js';
+import { withAuth } from '../utils/authMiddleware.js';
 
-export async function handleEditPage(req, res) {
+export const handleEditPage = withAuth(async (req, res) => {
     const { url, method } = req;
 
     // Enable CORS
@@ -188,4 +189,6 @@ export async function handleEditPage(req, res) {
             }
         });
     }
-}
+}, {
+    roles: ['manager']
+})

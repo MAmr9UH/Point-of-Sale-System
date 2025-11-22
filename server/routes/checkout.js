@@ -1,11 +1,19 @@
 import { createOrder } from '../model/Order.js';
 import { getLocationToday } from '../model/ActiveLocation.js';
+import { withAuth, isManager, isEmployee, isCustomer } from '../utils/authMiddleware.js';
 
-export const handleCheckout = async (req, res) => {
+export const handleCheckout = withAuth(async (req, res) => {
   const { url, method } = req;
 
   // Handle staff order creation (in-store)
   if (method === 'POST' && url === '/api/checkout/staffCreateOrder') {
+    if (!isEmployee(req) && !isManager(req)) {
+      res.statusCode = 403;
+      res.setHeader('Content-Type', 'application/json');
+      res.end(JSON.stringify({ success: false, error: 'Access denied' }));
+      return;
+    }
+
     let body = '';
 
     req.on('data', chunk => {
@@ -63,6 +71,13 @@ export const handleCheckout = async (req, res) => {
   else if (method === 'POST' && url === '/api/checkout/userCreateOrder') {
     let body = '';
 
+    if (!isCustomer(req)) {
+      res.statusCode = 403;
+      res.setHeader('Content-Type', 'application/json');
+      res.end(JSON.stringify({ success: false, error: 'Access denied' }));
+      return;
+    }
+
     // Collect data chunks
     req.on('data', chunk => {
       body += chunk.toString();
@@ -73,7 +88,7 @@ export const handleCheckout = async (req, res) => {
       try {
 
         const { userId, orderItems, formData } = JSON.parse(body);
-        
+
         const order = await createOrder(
           orderItems,
           null,
@@ -99,6 +114,13 @@ export const handleCheckout = async (req, res) => {
       }
     });
   } else if (method === 'GET' && url === '/api/checkout/getPickupLocations') {
+    if (!isCustomer(req)) {
+      res.statusCode = 403;
+      res.setHeader('Content-Type', 'application/json');
+      res.end(JSON.stringify({ success: false, error: 'Access denied' }));
+      return;
+    }
+
     try {
       const locations = await getLocationToday();
 
@@ -117,4 +139,8 @@ export const handleCheckout = async (req, res) => {
     res.setHeader('Content-Type', 'application/json');
     res.end(JSON.stringify({ error: 'Not found' }));
   }
-};
+},
+  {
+    "roles": ["employee", "manager", "customer"]
+  }
+);

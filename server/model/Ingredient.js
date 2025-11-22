@@ -142,7 +142,8 @@ import { db } from '../db/connection.js';
 export const getAllIngredients = async () => {
     const query = `
         SELECT IngredientID, Name, QuantityInStock, CostPerUnit, CreatedAt, LastUpdatedAt
-        FROM pos.Ingredient
+        FROM pos.Ingredient 
+        WHERE is_active = TRUE
         ORDER BY Name ASC
     `;
     const [results] = await db.query(query);
@@ -158,7 +159,7 @@ export const getIngredientById = async (ingredientId) => {
     const query = `
         SELECT IngredientID, Name, QuantityInStock, CostPerUnit, CreatedAt, LastUpdatedAt
         FROM pos.Ingredient
-        WHERE IngredientID = ?
+        WHERE IngredientID = ? AND is_active = TRUE
     `;
     const [results] = await db.query(query, [ingredientId]);
     
@@ -183,7 +184,7 @@ export const getIngredientsByIds = async (ingredientIds) => {
     const query = `
         SELECT IngredientID, Name, QuantityInStock, CostPerUnit, CreatedAt, LastUpdatedAt
         FROM pos.Ingredient
-        WHERE IngredientID IN (${placeholders})
+        WHERE IngredientID IN (${placeholders}) AND is_active = TRUE
         ORDER BY Name ASC
     `;
     
@@ -200,7 +201,7 @@ export const getLowStockIngredients = async (threshold = 10) => {
     const query = `
         SELECT IngredientID, Name, QuantityInStock, CostPerUnit, CreatedAt, LastUpdatedAt
         FROM pos.Ingredient
-        WHERE QuantityInStock <= ?
+        WHERE QuantityInStock <= ? AND is_active = TRUE
         ORDER BY QuantityInStock ASC, Name ASC
     `;
     const [results] = await db.query(query, [threshold]);
@@ -287,12 +288,16 @@ export const updateIngredientStock = async (ingredientId, quantityChange) => {
  */
 export const deleteIngredient = async (ingredientId) => {
     const query = `
-        DELETE FROM pos.Ingredient
+        UPDATE pos.Ingredient
+        SET is_active = FALSE
         WHERE IngredientID = ?
     `;
     
     const [result] = await db.query(query, [ingredientId]);
-    return result.affectedRows > 0;
+    if (result.affectedRows === 0) {
+        throw new Error(`Ingredient with ID ${ingredientId} not found`);
+    }
+    return true;
 };
 
 /**

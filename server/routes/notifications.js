@@ -1,6 +1,7 @@
 import { getAllNotifications, getUnreadCount, markAllAsRead } from '../model/Notifications.js';
+import { withAuth } from '../utils/authMiddleware.js';
 
-export const handleNotificationRoutes = async (req, res) => {
+export const handleNotificationRoutes = withAuth(async (req, res) => {
   const { url, method } = req;
 
   // GET /api/staff/notifications - Get all notifications
@@ -50,4 +51,6 @@ export const handleNotificationRoutes = async (req, res) => {
     res.setHeader('Content-Type', 'application/json');
     res.end(JSON.stringify({ error: "Not Found" }));
   }
-};
+}, {
+  roles: ["manager"]
+});

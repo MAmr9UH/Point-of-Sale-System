@@ -1,6 +1,9 @@
-export const fetchMenuEm = async () => {
+import { authenticatedFetch } from "./jwtAuth";
+export const fetchMenu = async () => {
     try {
-        const response = await fetch('/api/menu/items');
+        const response = await authenticatedFetch('/api/menu/items', {
+            credentials: 'include'
+        });
         if (!response.ok) {
             throw new Error('Network response was not ok');
         }
@@ -15,7 +18,7 @@ export const fetchMenuEm = async () => {
 
 export const fetchMenuCustomer = async () => {
     try {
-        const response = await fetch('/api/menu/items/available');
+        const response = await authenticatedFetch('/api/menu/items/available');
         if (!response.ok) {
             throw new Error('Network response was not ok');
         }
@@ -30,7 +33,7 @@ export const fetchMenuCustomer = async () => {
 
 export const updateMenuItem = async (itemData: any) => {    
     try {
-        const response = await fetch(`/api/menu/updateItem/`, {
+        const response = await authenticatedFetch(`/api/menu/updateItem/`, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',

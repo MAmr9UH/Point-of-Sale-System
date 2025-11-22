@@ -6,6 +6,7 @@ import { ConfirmDialog } from './ConfirmDialog.tsx';
 import { PlusIcon } from './Icons';
 import { useToaster } from '../../contexts/ToastContext';
 import type { Employee } from '../../types/Employee';
+import { authenticatedFetch } from '../../utils/jwtAuth.ts';
 
 interface Customer {
   CustomerID: number;
@@ -42,7 +43,7 @@ export const EmployeeManagementTab: React.FC = () => {
   const loadEmployees = async () => {
     setIsLoading(true);
     try {
-      const response = await fetch('/api/employees');
+      const response = await authenticatedFetch('/api/employees');
       const data = await response.json();
       setEmployees(data);
     } catch (error) {
@@ -96,7 +97,7 @@ export const EmployeeManagementTab: React.FC = () => {
         ? `/api/employees/${editingEmployee.StaffID}` 
         : '/api/employees';
 
-      const response = await fetch(url, {
+      const response = await authenticatedFetch(url, {
         method,
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload),
@@ -136,7 +137,7 @@ export const EmployeeManagementTab: React.FC = () => {
       message: `Are you sure you want to delete ${employeeName}? This action cannot be undone.`,
       onConfirm: async () => {
         try {
-          const response = await fetch(`/api/employees/${id}`, {
+          const response = await authenticatedFetch(`/api/employees/${id}`, {
             method: 'DELETE',
           });
 

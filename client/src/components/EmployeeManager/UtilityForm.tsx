@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { authenticatedFetch } from '../../utils/jwtAuth';
 
 interface Location {
   Name: number;
@@ -37,7 +38,7 @@ export const UtilityForm: React.FC<UtilityFormProps> = ({
   const loadLocations = async () => {
     setIsLoadingLocations(true);
     try {
-      const response = await fetch('/api/utilities/locations');
+      const response = await authenticatedFetch('/api/utilities/locations');
       const data = await response.json();
       setLocations(data);
     } catch (error) {

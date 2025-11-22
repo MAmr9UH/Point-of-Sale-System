@@ -1,8 +1,9 @@
 import { getAllEmployees } from "../model/Staff.js";
 import { removeEmployee } from "../model/Staff.js";
 import { createEmployeeFromCustomer, updateEmployeePayRate } from "../model/Staff.js";
+import { withAuth } from '../utils/authMiddleware.js';
 
-export const handleEmployee = async (req, res) => {
+const employeeHandler = async (req, res) => {
     const { method, url } = req;
     if (method === 'GET' && url === '/api/employees') {
         try {
@@ -105,3 +106,8 @@ export const handleEmployee = async (req, res) => {
         });
     }
 }
+
+// Export with JWT authentication - manager only
+export const handleEmployee = withAuth(employeeHandler, {
+    roles: ['manager']
+});

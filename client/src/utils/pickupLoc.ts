@@ -1,6 +1,10 @@
+import { authenticatedFetch } from './jwtAuth';
+
 export const fetchPickupLocations = async () => {
     try {
-        const response = await fetch('/api/checkout/getPickupLocations');
+        const response = await authenticatedFetch('/api/checkout/getPickupLocations', {
+            requireAuth: true // Pickup locations might be public
+        });
         if (!response.ok) {
             throw new Error('Network response was not ok');
         }

@@ -269,14 +269,16 @@ export const createOrder = async (orderItems, phoneNumber = null, userId = null,
         for (let i = 0; i < orderItems.length; i++) {
             const menuItem = menuItems[orderItems[i].id];
             if (menuItem) {
-                calculatedTotal += parseFloat(menuItem.Price);
+                calculatedTotal += parseFloat(menuItem.Price) * (orderItems[i].quantity || 1);
             }
             if (orderItems[i].customizations && orderItems[i].customizations.length > 0) {
+                let sum = 0;
                 for (const customization of orderItems[i].customizations) {
                     if (customization.priceAdjustment) {
-                        calculatedTotal += parseFloat(customization.priceAdjustment) * (customization.quantityDelta || 1);
+                        sum += parseFloat(customization.priceAdjustment) * (customization.quantityDelta || 1);
                     }
                 }
+                calculatedTotal += sum * (orderItems[i].quantity || 1);
             }
         }
 
@@ -285,7 +287,6 @@ export const createOrder = async (orderItems, phoneNumber = null, userId = null,
         totalAmount = parseFloat(totalAmount);
     }
     orderData.totalAmount = totalAmount;
-
 
     const order = new Order(orderData);
 

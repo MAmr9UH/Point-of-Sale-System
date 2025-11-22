@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import './CustomerSearch.css';
+import { authenticatedFetch } from '../../utils/jwtAuth';
 
 interface Customer {
   CustomerID: number;
@@ -51,7 +52,7 @@ export const CustomerSearch: React.FC<CustomerSearchProps> = ({ onSelect, select
       setError('');
 
       try {
-        const response = await fetch(`/api/customers/search?q=${encodeURIComponent(searchTerm)}`);
+        const response = await authenticatedFetch(`/api/customers/search?q=${encodeURIComponent(searchTerm)}`);
         
         if (!response.ok) {
           throw new Error('Failed to search customers');

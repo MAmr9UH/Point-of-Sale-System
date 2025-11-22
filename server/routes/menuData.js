@@ -2,22 +2,31 @@
 import { getAllMenuItems, updateMenuItem, deleteMenuItem } from "../model/MenuItem.js";
 
 import { createMenuItem } from "../model/EmployeeManagerModel.js";
+import { withAuth, isManager, isCustomer, isEmployee } from "../utils/authMiddleware.js";
 
-export const handleMenu = async (req, res) => {
+export const authMenuHandler = withAuth(async (req, res) => {
     const { method, url } = req;
 
     if (method === 'GET' && url === '/api/menu/items') {
+        if (!isEmployee(req) && !isManager(req)) {
+            res.statusCode = 403;
+            res.setHeader('Content-Type', 'application/json');
+            res.end(JSON.stringify({ error: 'Access denied' }));
+            return;
+        }
         res.statusCode = 200;
         res.setHeader('Content-Type', 'application/json');
         const menuItems = await getAllMenuItems(false);
         res.end(JSON.stringify(menuItems));
-    } else if (method === 'GET' && url === '/api/menu/items/available') {
-        res.statusCode = 200;
-        res.setHeader('Content-Type', 'application/json');
-        const menuItems = await getAllMenuItems(true);
-        console.log(menuItems)
-        res.end(JSON.stringify(menuItems));
+    
     } else if (method === 'POST' && url === '/api/menu/updateItem/') {
+        if (!isManager(req)) {
+            res.statusCode = 403;
+            res.setHeader('Content-Type', 'application/json');
+            res.end(JSON.stringify({ error: 'Access denied' }));
+            return;
+        }
+
         let body = '';
 
         req.on('data', chunk => {
@@ -48,6 +57,13 @@ export const handleMenu = async (req, res) => {
 
         return;
     } else if (method === 'DELETE' && url.startsWith('/api/menu/')) {
+        if (!isManager(req)) {
+            res.statusCode = 403;
+            res.setHeader('Content-Type', 'application/json');
+            res.end(JSON.stringify({ error: 'Access denied' }));
+            return;
+        }
+
         const id = url.split('/').pop();
 
         try {
@@ -63,6 +79,13 @@ export const handleMenu = async (req, res) => {
         }
 
     } else if (method === 'GET' && url === '/api/menu/viewOrders') {
+        if (!isManager(req) && !isEmployee(req)) {
+            res.statusCode = 403;
+            res.setHeader('Content-Type', 'application/json');
+            res.end(JSON.stringify({ error: 'Access denied' }));
+            return;
+        }
+
         res.statusCode = 200;
         res.setHeader('Content-Type', 'application/json');
         res.end(JSON.stringify({ message: "Test endpoint reached" }));
@@ -71,4 +94,21 @@ export const handleMenu = async (req, res) => {
         res.setHeader('Content-Type', 'application/json');
         res.end(JSON.stringify({ error: "Not Found" }));
     }
-};
+}, {
+    roles: ["customer", "employee", "manager"]
+});
+
+export const handleMenu = async (req, res) => {
+    const { method, url } = req;
+
+    if (method === 'GET' && url === '/api/menu/items/available') {
+        res.statusCode = 200;
+        res.setHeader('Content-Type', 'application/json');
+        const menuItems = await getAllMenuItems(true);
+        console.log(menuItems)
+        res.end(JSON.stringify(menuItems));
+        return;
+    } else {
+        return authMenuHandler(req, res);
+    }
+}

@@ -1,6 +1,7 @@
 export const staffLogin = async (email: string, password: string) => {
     const response = await fetch('/api/auth/employee-login', {
       method: 'POST',
+      credentials: 'include',
       headers: {
         'Content-Type': 'application/json',
       },

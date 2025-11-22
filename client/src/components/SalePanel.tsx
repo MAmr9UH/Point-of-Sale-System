@@ -5,6 +5,7 @@ import type { ItemCustomization } from '../contexts/ShoppingCart';
 import { useToaster } from '../contexts/ToastContext';
 import { useAuth } from '../contexts/AuthContext';
 import type { MenuItem } from '../types/MenuItem';
+import { authenticatedFetch } from '../utils/jwtAuth';
 
 interface CartItem extends MenuItem {
     quantity: number;
@@ -97,7 +98,7 @@ const SalePanel = () => {
                 customizations: item.customizations || []
             }));
 
-            const response = await fetch('/api/checkout/staffCreateOrder', {
+            const response = await authenticatedFetch('/api/checkout/staffCreateOrder', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',

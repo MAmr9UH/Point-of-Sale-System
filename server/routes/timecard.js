@@ -1,11 +1,17 @@
 import {db} from '../db/connection.js';
+import { withAuth, getAuthStaffId, isEmployee, verifyOwnership } from '../utils/authMiddleware.js';
 
-export const handleTimecard = async (req, res) => {
+const timecardHandler = async (req, res) => {
   const { url, method } = req;
 
   // Get timecard data for a staff member
   if (method === 'GET' && url.match(/^\/api\/timecard\/staff\/\d+$/)) {
     const staffId = url.split('/').pop();
+
+    // Employees can only view their own timecard, managers can view any
+    if (isEmployee(req) && !verifyOwnership(req, res, staffId)) {
+      return;
+    }
 
     try {
       // Get active timecard (not clocked out)
@@ -48,6 +54,11 @@ export const handleTimecard = async (req, res) => {
           res.statusCode = 400;
           res.setHeader('Content-Type', 'application/json');
           res.end(JSON.stringify({ error: 'Staff ID is required' }));
+          return;
+        }
+
+        // Employees can only clock in for themselves, managers can clock in for any staff
+        if (isEmployee(req) && !verifyOwnership(req, res, staffId)) {
           return;
         }
 
@@ -126,7 +137,7 @@ export const handleTimecard = async (req, res) => {
           return;
         }
 
-        // Get timecard
+        // Get timecard to verify ownership
         const [timecardResults] = await db.execute(
           'SELECT * FROM Timecard WHERE TimecardID = ?',
           [timecardId]
@@ -140,6 +151,11 @@ export const handleTimecard = async (req, res) => {
         }
 
         const timecard = timecardResults[0];
+
+        // Employees can only clock out their own timecard, managers can clock out any
+        if (isEmployee(req) && !verifyOwnership(req, res, timecard.StaffID)) {
+          return;
+        }
 
         if (timecard.ClockOutTime) {
           res.statusCode = 400;
@@ -179,3 +195,8 @@ export const handleTimecard = async (req, res) => {
     res.end(JSON.stringify({ error: 'Not found' }));
   }
 };
+
+// Export with JWT authentication - employees and managers only
+export const handleTimecard = withAuth(timecardHandler, {
+  roles: ['employee', 'manager']
+});

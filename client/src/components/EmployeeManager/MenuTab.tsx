@@ -1,10 +1,11 @@
 import React, { useState, useEffect } from 'react';
-import { fetchMenuEm, updateMenuItem } from '../../utils/fetchMenu';
+import { fetchMenu, updateMenuItem } from '../../utils/fetchMenu';
 import type { MenuItem } from '../../types/MenuItem';
 import { MenuItemCard } from './MenuItemCard';
 import { MenuItemForm } from './MenuItemForm';
 import { PlusIcon } from './Icons';
 import { useToaster } from '../../contexts/ToastContext';
+import { authenticatedFetch } from '../../utils/jwtAuth';
 
 export const MenuTab: React.FC = () => {
   const { addToast } = useToaster();
@@ -31,7 +32,7 @@ export const MenuTab: React.FC = () => {
   const loadMenuItems = async () => {
     setIsLoadingMenu(true);
     try {
-      const items = await fetchMenuEm();
+      const items = await fetchMenu();
       setMenuItems(items);
     } catch (err) {
       console.error('❌ Error loading menu items:', err);
@@ -105,7 +106,7 @@ export const MenuTab: React.FC = () => {
       } else {
         // Add new item (fetch to get the new ID from server)
         setIsRefetching(true);
-        const items = await fetchMenuEm();
+        const items = await fetchMenu();
         setMenuItems(items);
         setIsRefetching(false);
       }
@@ -138,7 +139,7 @@ export const MenuTab: React.FC = () => {
     setSaveMessage('');
 
     try {
-      const response = await fetch(`/api/menu/${editingItem.MenuItemID}`, {
+      const response = await authenticatedFetch(`/api/menu/${editingItem.MenuItemID}`, {
         method: 'DELETE',
       });
 

@@ -2,13 +2,14 @@ import { Link } from "react-router-dom";
 
 import { useWelcomePage } from "../contexts/WelcomePageContext";
 import { useAuth } from "../contexts/AuthContext";
+import { useNavigate } from "react-router-dom";
 import "./TopNav.css";
 
 export function TopNav() {
 
   const { pageData: welcomeData } = useWelcomePage();
   const { user, userType, logout } = useAuth();
-
+  const navigate = useNavigate();
   return (
     <header className="topnav">
       <div className="nav-left">
@@ -30,7 +31,10 @@ export function TopNav() {
             {userType === "employee" && (
               <Link to="/employee" className="btn btn-ghost">Dashboard</Link>
             )}
-            <button onClick={logout} className="btn btn-primary-nav">Log out</button>
+            <button onClick={() => {
+              logout();
+              navigate("/");
+            }} className="btn btn-primary-nav">Log out</button>
           </>
         ) : (
           <>

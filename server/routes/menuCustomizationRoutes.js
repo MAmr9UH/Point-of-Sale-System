@@ -1,9 +1,10 @@
 import { db } from '../db/connection.js';
 
+import { withAuth } from '../utils/authMiddleware.js';
 /**
  * Handle menu customization-related API requests
  */
-export async function handleMenuCustomizationRoutes(req, res) {
+export const handleMenuCustomizationRoutes = withAuth(async (req, res) => {
   const { url, method } = req;
 
   // Enable CORS
@@ -209,4 +210,6 @@ export async function handleMenuCustomizationRoutes(req, res) {
     res.setHeader('Content-Type', 'application/json');
     res.end(JSON.stringify({ error: 'Internal server error' }));
   }
-}
+}, {
+  roles: ["manager"]
+});

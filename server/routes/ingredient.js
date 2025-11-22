@@ -1,6 +1,7 @@
-import { getAllIngredients, updateIngredient, createIngredient } from '../model/Ingredient.js';
+import { getAllIngredients, updateIngredient, createIngredient, deleteIngredient } from '../model/Ingredient.js';
+import { withAuth } from '../utils/authMiddleware.js';
 
-export const handleIngredient = async (req, res) => {
+const ingredientHandler = async (req, res) => {
     const { method, url } = req;
     if (method === 'GET' && url === '/api/ingredients') {
         try {
@@ -54,9 +55,25 @@ export const handleIngredient = async (req, res) => {
                 res.end(JSON.stringify({ error: "Invalid JSON", details: error.message }));
             }
         });
+    } else if (method === "DELETE" && url.startsWith('/api/ingredients') && url.split('/').length === 4) {
+        const id = url.split('/').pop();
+        try {
+            await deleteIngredient(id);
+            res.statusCode = 200;
+            res.setHeader('Content-Type', 'application/json');
+            res.end(JSON.stringify({ message: `Ingredient with ID ${id} deleted successfully.` }));
+        } catch (error) {
+            res.statusCode = 500;
+            res.setHeader('Content-Type', 'application/json');
+            res.end(JSON.stringify({ error: "Failed to delete ingredient", details: error.message }));
+        }
     } else {
         res.statusCode = 404;
         res.setHeader('Content-Type', 'application/json');
         res.end(JSON.stringify({ error: "Not Found" }));
     }
 };
+// Export with JWT authentication - manager only
+export const handleIngredient = withAuth(ingredientHandler, {
+    roles: ['manager']
+});

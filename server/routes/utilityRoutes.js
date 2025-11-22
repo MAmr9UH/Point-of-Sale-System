@@ -5,9 +5,10 @@ import {
   deleteUtilityPayment
 } from '../model/EmployeeManagerModel.js';
 import { getAllLocations } from '../model/ActiveLocation.js';
+import { withAuth } from '../utils/authMiddleware.js';
 
 // routes/utilityRoutes.js
-export function handleUtilityRoutes(req, res) {
+export const handleUtilityRoutes = withAuth(async (req, res) => {
   const { url, method } = req;
 
   // GET /api/utilities/locations -> fetch all active locations
@@ -146,4 +147,6 @@ export function handleUtilityRoutes(req, res) {
 
   // Not handled here
   return false;
-}
+}, {
+  roles: ['manager']
+})

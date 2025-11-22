@@ -6,10 +6,12 @@ import {
     updateOrderItemStatus 
 } from '../model/Order.js';
 
+import { withAuth } from '../utils/authMiddleware.js';
+
 /**
  * Handle employee order management routes
  */
-export const handleOrderRoutes = async (req, res) => {
+const orderRoutesHandler = async (req, res) => {
     const { method, url } = req;
     const urlParts = url.split('?');
     const path = urlParts[0];
@@ -172,3 +174,7 @@ export const handleOrderRoutes = async (req, res) => {
         }));
     }
 };
+
+export const handleOrderRoutes = withAuth(orderRoutesHandler, {
+    roles: ['manager', 'employee']
+});
