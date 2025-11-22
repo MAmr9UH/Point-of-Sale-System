@@ -3,6 +3,9 @@ import {
   profitPerLocation,
   mostPopularItems,
   employeePerformance,
+  rawTransactionsLocations,
+  rawTransactionsItems,
+  rawTransactionsEmployees,
 } from "../model/reports.js";
 
 const sendJSON = (res, code, payload) => {
@@ -56,6 +59,30 @@ export const handleReports = async (req, res) => {
       if (requireDates) return sendJSON(res, 400, { error: "startDate and endDate are required (YYYY-MM-DD)" });
       const rows = await employeePerformance(startDate, endDate, desc);
       return sendJSON(res, 200, rows);
+    }
+
+    if (method === "GET" && pathname === "/api/reports/raw-transactions-locations") {
+      if (requireDates) return sendJSON(res, 400, { error: "startDate and endDate are required (YYYY-MM-DD)" });
+      const page = parseInt(q.page) || 1;
+      const limit = 100;
+      const result = await rawTransactionsLocations(startDate, endDate, page, limit);
+      return sendJSON(res, 200, result);
+    }
+
+    if (method === "GET" && pathname === "/api/reports/raw-transactions-items") {
+      if (requireDates) return sendJSON(res, 400, { error: "startDate and endDate are required (YYYY-MM-DD)" });
+      const page = parseInt(q.page) || 1;
+      const limit = 100;
+      const result = await rawTransactionsItems(startDate, endDate, page, limit);
+      return sendJSON(res, 200, result);
+    }
+
+    if (method === "GET" && pathname === "/api/reports/raw-transactions-employees") {
+      if (requireDates) return sendJSON(res, 400, { error: "startDate and endDate are required (YYYY-MM-DD)" });
+      const page = parseInt(q.page) || 1;
+      const limit = 100;
+      const result = await rawTransactionsEmployees(startDate, endDate, page, limit);
+      return sendJSON(res, 200, result);
     }
 
     // Not handled here → let caller continue or 404

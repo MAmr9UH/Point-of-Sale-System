@@ -113,6 +113,27 @@ export default function ReportsPage() {
   const [rows, setRows] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
   const [err, setErr] = useState<string | null>(null);
+  const [showRawData, setShowRawData] = useState(false);
+  
+  /* ---- Raw transaction data for Locations ---- */
+  const [rawData, setRawData] = useState<any[]>([]);
+  const [rawDataLoading, setRawDataLoading] = useState(false);
+  const [rawDataError, setRawDataError] = useState<string | null>(null);
+  const [rawDataPagination, setRawDataPagination] = useState({ total: 0, page: 1, pages: 0, limit: 100 });
+
+  /* ---- Raw transaction data for Items ---- */
+  const [rawDataItems, setRawDataItems] = useState<any[]>([]);
+  const [rawDataItemsLoading, setRawDataItemsLoading] = useState(false);
+  const [rawDataItemsError, setRawDataItemsError] = useState<string | null>(null);
+  const [rawDataItemsPagination, setRawDataItemsPagination] = useState({ total: 0, page: 1, pages: 0, limit: 100 });
+  const [showRawDataItems, setShowRawDataItems] = useState(false);
+
+  /* ---- Raw transaction data for Employees ---- */
+  const [rawDataEmployees, setRawDataEmployees] = useState<any[]>([]);
+  const [rawDataEmployeesLoading, setRawDataEmployeesLoading] = useState(false);
+  const [rawDataEmployeesError, setRawDataEmployeesError] = useState<string | null>(null);
+  const [rawDataEmployeesPagination, setRawDataEmployeesPagination] = useState({ total: 0, page: 1, pages: 0, limit: 100 });
+  const [showRawDataEmployees, setShowRawDataEmployees] = useState(false);
 
   /* ---- Keep sort field sensible per report type (useEffect, not useMemo) ---- */
   useEffect(() => {
@@ -124,6 +145,9 @@ export default function ReportsPage() {
     setErr(null);
     setLoading(false);
     setKeyword(""); // Clear search bar when switching tabs
+    setShowRawData(false); // Close raw data section when switching tabs
+    setShowRawDataItems(false); // Close items raw data section when switching tabs
+    setShowRawDataEmployees(false); // Close employees raw data section when switching tabs
     
     console.log(`✅ State reset complete for ${type} tab`);
 
@@ -187,6 +211,157 @@ export default function ReportsPage() {
 
   const onSavePDF = () => window.print();
 
+  /* ---- Fetch raw transaction data ---- */
+  const fetchRawData = async (page = 1) => {
+    if (type !== "locations") return; // Only for locations for now
+    
+    console.log("🔍 Fetching raw data with params:", { startDate: range.from, endDate: range.to, page });
+    
+    setRawDataLoading(true);
+    setRawDataError(null);
+    try {
+      const params = new URLSearchParams({
+        startDate: range.from,
+        endDate: range.to,
+        page: String(page)
+      });
+      
+      const url = `${API_BASE}/api/reports/raw-transactions-locations?${params}`;
+      console.log("📡 Fetching from URL:", url);
+      
+      const res = await fetch(url);
+      console.log("📨 Response status:", res.status);
+      
+      if (!res.ok) {
+        const errorText = await res.text();
+        console.error("❌ Error response:", errorText);
+        throw new Error(`HTTP ${res.status}: ${errorText}`);
+      }
+      const result = await res.json();
+      console.log("✅ Received raw data:", result);
+      
+      setRawData(result.data || []);
+      setRawDataPagination(result.pagination || { total: 0, page: 1, pages: 0, limit: 100 });
+    } catch (e: any) {
+      console.error("❌ Failed to load raw data:", e);
+      setRawDataError(e?.message || "Failed to load transactions");
+      setRawData([]);
+    } finally {
+      setRawDataLoading(false);
+    }
+  };
+
+  /* ---- Toggle raw data and fetch on first show ---- */
+  const toggleRawData = async () => {
+    const newState = !showRawData;
+    setShowRawData(newState);
+    
+    if (newState) {
+      // Fetch data whenever opening (ensures fresh data with current date range)
+      await fetchRawData(1);
+    }
+  };
+
+  /* ---- Fetch raw transaction data for Items ---- */
+  const fetchRawDataItems = async (page = 1) => {
+    if (type !== "items") return;
+    
+    console.log("🔍 Fetching raw items data with params:", { startDate: range.from, endDate: range.to, page });
+    
+    setRawDataItemsLoading(true);
+    setRawDataItemsError(null);
+    try {
+      const params = new URLSearchParams({
+        startDate: range.from,
+        endDate: range.to,
+        page: String(page)
+      });
+      
+      const url = `${API_BASE}/api/reports/raw-transactions-items?${params}`;
+      console.log("📡 Fetching from URL:", url);
+      
+      const res = await fetch(url);
+      console.log("📨 Response status:", res.status);
+      
+      if (!res.ok) {
+        const errorText = await res.text();
+        console.error("❌ Error response:", errorText);
+        throw new Error(`HTTP ${res.status}: ${errorText}`);
+      }
+      const result = await res.json();
+      console.log("✅ Received raw items data:", result);
+      
+      setRawDataItems(result.data || []);
+      setRawDataItemsPagination(result.pagination || { total: 0, page: 1, pages: 0, limit: 100 });
+    } catch (e: any) {
+      console.error("❌ Failed to load raw items data:", e);
+      setRawDataItemsError(e?.message || "Failed to load transactions");
+      setRawDataItems([]);
+    } finally {
+      setRawDataItemsLoading(false);
+    }
+  };
+
+  /* ---- Toggle raw data items and fetch on show ---- */
+  const toggleRawDataItems = async () => {
+    const newState = !showRawDataItems;
+    setShowRawDataItems(newState);
+    
+    if (newState) {
+      await fetchRawDataItems(1);
+    }
+  };
+
+  /* ---- Fetch raw transaction data for Employees ---- */
+  const fetchRawDataEmployees = async (page = 1) => {
+    if (type !== "employees") return;
+    
+    console.log("🔍 Fetching raw employees data with params:", { startDate: range.from, endDate: range.to, page });
+    
+    setRawDataEmployeesLoading(true);
+    setRawDataEmployeesError(null);
+    try {
+      const params = new URLSearchParams({
+        startDate: range.from,
+        endDate: range.to,
+        page: String(page)
+      });
+      
+      const url = `${API_BASE}/api/reports/raw-transactions-employees?${params}`;
+      console.log("📡 Fetching from URL:", url);
+      
+      const res = await fetch(url);
+      console.log("📨 Response status:", res.status);
+      
+      if (!res.ok) {
+        const errorText = await res.text();
+        console.error("❌ Error response:", errorText);
+        throw new Error(`HTTP ${res.status}: ${errorText}`);
+      }
+      const result = await res.json();
+      console.log("✅ Received raw employees data:", result);
+      
+      setRawDataEmployees(result.data || []);
+      setRawDataEmployeesPagination(result.pagination || { total: 0, page: 1, pages: 0, limit: 100 });
+    } catch (e: any) {
+      console.error("❌ Failed to load raw employees data:", e);
+      setRawDataEmployeesError(e?.message || "Failed to load timecards");
+      setRawDataEmployees([]);
+    } finally {
+      setRawDataEmployeesLoading(false);
+    }
+  };
+
+  /* ---- Toggle raw data employees and fetch on show ---- */
+  const toggleRawDataEmployees = async () => {
+    const newState = !showRawDataEmployees;
+    setShowRawDataEmployees(newState);
+    
+    if (newState) {
+      await fetchRawDataEmployees(1);
+    }
+  };
+
   /* ---- Keyword filter, then sort ---- */
   const filtered = useMemo(() => {
     const q = keyword.trim().toLowerCase();
@@ -201,6 +376,70 @@ export default function ReportsPage() {
       return keywords.some(kw => haystack.includes(kw));
     });
   }, [rows, keyword, type]);
+
+  /* ---- Filter raw data by keyword ---- */
+  const filteredRawData = useMemo(() => {
+    const q = keyword.trim().toLowerCase();
+    if (!q || rawData.length === 0) return rawData;
+    
+    // Split by comma or space, remove empty strings
+    const keywords = q.split(/[,\s]+/).filter(k => k.length > 0);
+    
+    // Filter raw transaction rows
+    return rawData.filter((r) => {
+      const haystack = `${r.OrderID ?? ''} ${r.OrderDate ?? ''} ${r.LocationName ?? ''} ${r.PaymentMethod ?? ''} ${r.StaffName ?? ''}`.toLowerCase();
+      return keywords.some(kw => haystack.includes(kw));
+    });
+  }, [rawData, keyword]);
+
+  /* ---- Filter raw items data by keyword ---- */
+  const filteredRawDataItems = useMemo(() => {
+    const q = keyword.trim().toLowerCase();
+    if (!q || rawDataItems.length === 0) return rawDataItems;
+    
+    // Split by comma or space, remove empty strings
+    const keywords = q.split(/[,\s]+/).filter(k => k.length > 0);
+    
+    // Filter raw item rows
+    return rawDataItems.filter((r) => {
+      const haystack = `${r.OrderItemID ?? ''} ${r.OrderID ?? ''} ${r.ItemName ?? ''} ${r.Category ?? ''} ${r.LocationName ?? ''} ${r.StaffName ?? ''}`.toLowerCase();
+      return keywords.some(kw => haystack.includes(kw));
+    });
+  }, [rawDataItems, keyword]);
+
+  /* ---- Filter raw employees data by keyword ---- */
+  const filteredRawDataEmployees = useMemo(() => {
+    const q = keyword.trim().toLowerCase();
+    if (!q || rawDataEmployees.length === 0) return rawDataEmployees;
+    
+    // Split by comma or space, remove empty strings
+    const keywords = q.split(/[,\s]+/).filter(k => k.length > 0);
+    
+    // Filter raw employee rows
+    return rawDataEmployees.filter((r) => {
+      const haystack = `${r.TimecardID ?? ''} ${r.EmployeeID ?? ''} ${r.EmployeeName ?? ''} ${r.Role ?? ''} ${r.LocationName ?? ''}`.toLowerCase();
+      return keywords.some(kw => haystack.includes(kw));
+    });
+  }, [rawDataEmployees, keyword]);
+
+  /* ---- Refetch raw data when date range changes (if section is open) ---- */
+  useEffect(() => {
+    if (showRawData && type === "locations" && viewed) {
+      fetchRawData(1);
+    }
+  }, [range.from, range.to]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  useEffect(() => {
+    if (showRawDataItems && type === "items" && viewed) {
+      fetchRawDataItems(1);
+    }
+  }, [range.from, range.to]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  useEffect(() => {
+    if (showRawDataEmployees && type === "employees" && viewed) {
+      fetchRawDataEmployees(1);
+    }
+  }, [range.from, range.to]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const result = useMemo(() => {
     const arr = [...filtered];
@@ -430,6 +669,286 @@ export default function ReportsPage() {
                   </tr>
                 </tbody>
               </table>
+
+              {/* Raw Data Source Section */}
+              <div style={{ marginTop: '2rem', borderTop: '2px solid #e5e7eb', paddingTop: '1.5rem' }}>
+                <button 
+                  onClick={toggleRawData}
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '8px',
+                    padding: '10px 20px',
+                    backgroundColor: '#f3f4f6',
+                    border: '1px solid #d1d5db',
+                    borderRadius: '8px',
+                    fontSize: '14px',
+                    fontWeight: 600,
+                    color: '#374151',
+                    cursor: 'pointer',
+                    transition: 'all 0.2s',
+                    marginBottom: '1rem'
+                  }}
+                  onMouseOver={(e) => {
+                    e.currentTarget.style.backgroundColor = '#e5e7eb';
+                    e.currentTarget.style.borderColor = '#9ca3af';
+                  }}
+                  onMouseOut={(e) => {
+                    e.currentTarget.style.backgroundColor = '#f3f4f6';
+                    e.currentTarget.style.borderColor = '#d1d5db';
+                  }}
+                >
+                  <span style={{ fontSize: '16px' }}>{showRawData ? '🔼' : '🔽'}</span>
+                  {showRawData ? 'Hide' : 'Show'} Database Source Records
+                  {showRawData && rawDataPagination.total > 0 && (
+                    <span style={{ 
+                      marginLeft: '8px', 
+                      padding: '2px 8px', 
+                      backgroundColor: '#dbeafe', 
+                      color: '#1e40af', 
+                      borderRadius: '12px',
+                      fontSize: '12px',
+                      fontWeight: 700
+                    }}>
+                      {rawDataPagination.total} total
+                    </span>
+                  )}
+                </button>
+
+                {showRawData && (
+                  <div style={{ 
+                    backgroundColor: '#fafafa', 
+                    padding: '1rem', 
+                    borderRadius: '8px',
+                    border: '1px solid #e5e7eb'
+                  }}>
+                    <h4 style={{ 
+                      margin: '0 0 1rem 0', 
+                      fontSize: '16px', 
+                      fontWeight: 600,
+                      color: '#1f2937',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '8px'
+                    }}>
+                      📊 Raw Database Transactions
+                      <span style={{ 
+                        fontSize: '13px', 
+                        fontWeight: 400, 
+                        color: '#6b7280' 
+                      }}>
+                        (Individual orders from database)
+                      </span>
+                    </h4>
+                    
+                    {/* Technical Details */}
+                    <div style={{ 
+                      marginBottom: '1rem', 
+                      padding: '12px', 
+                      backgroundColor: '#f0f9ff', 
+                      border: '1px solid #bae6fd',
+                      borderRadius: '6px',
+                      fontSize: '12px',
+                      lineHeight: '1.6'
+                    }}>
+                      <div style={{ fontWeight: 600, color: '#0369a1', marginBottom: '6px' }}>
+                        🗄️ Data Source:
+                      </div>
+                      <div style={{ color: '#0c4a6e', fontFamily: 'monospace' }}>
+                        This data is extracted from the <strong>`order`</strong> table, joined with the <strong>`staff`</strong> table 
+                        to show employee attribution, and the <strong>`order_item`</strong> table to calculate total item quantities. 
+                        Each row represents a single customer transaction with its timestamp, location, item count, payment method, total amount, and staff attribution.
+                      </div>
+                      <div style={{ marginTop: '8px', color: '#64748b', fontSize: '11px', fontStyle: 'italic' }}>
+                        💡 The summary table above aggregates these individual transactions by location to calculate totals and metrics.
+                      </div>
+                    </div>
+                    
+                    {rawDataLoading ? (
+                      <div style={{ padding: '2rem', textAlign: 'center', color: '#6b7280' }}>
+                        Loading transactions...
+                      </div>
+                    ) : rawDataError ? (
+                      <div style={{ padding: '2rem', textAlign: 'center', color: '#dc2626', backgroundColor: '#fee2e2', borderRadius: '8px' }}>
+                        <strong>Error:</strong> {rawDataError}
+                      </div>
+                    ) : filteredRawData.length === 0 ? (
+                      <div style={{ padding: '2rem', textAlign: 'center', color: '#6b7280' }}>
+                        {keyword ? 'No transactions match your search criteria' : 'No transactions found for this date range'}
+                      </div>
+                    ) : (
+                      <>
+                        {keyword && (
+                          <div style={{ 
+                            marginBottom: '1rem', 
+                            padding: '8px 12px', 
+                            backgroundColor: '#dbeafe', 
+                            color: '#1e40af',
+                            borderRadius: '6px',
+                            fontSize: '13px',
+                            fontWeight: 500
+                          }}>
+                            📌 Showing {filteredRawData.length} of {rawData.length} transactions matching "{keyword}"
+                          </div>
+                        )}
+                        
+                        <div style={{ overflowX: 'auto' }}>
+                          <table className="rtable" style={{ fontSize: '13px' }}>
+                            <thead>
+                              <tr style={{ backgroundColor: '#f9fafb' }}>
+                                <th>Order ID</th>
+                                <th>Order Date</th>
+                                <th>Location</th>
+                                <th style={{ textAlign: 'center' }}>Items</th>
+                                <th style={{ textAlign: 'right' }}>Total Order Amount ($)</th>
+                                <th>Payment Method</th>
+                                <th>Staff Member</th>
+                              </tr>
+                            </thead>
+                            <tbody>
+                              {filteredRawData.map((row, i) => (
+                                <tr key={`raw-${row.OrderID}-${i}`} style={{ backgroundColor: i % 2 === 0 ? '#fff' : '#f9fafb' }}>
+                                  <td>#{row.OrderID}</td>
+                                  <td>{new Date(row.OrderDate).toLocaleString()}</td>
+                                  <td>{row.LocationName || 'N/A'}</td>
+                                  <td style={{ textAlign: 'center' }}>
+                                    <span style={{ 
+                                      padding: '2px 8px',
+                                      borderRadius: '4px',
+                                      fontSize: '12px',
+                                      fontWeight: 600,
+                                      backgroundColor: '#f3f4f6',
+                                      color: '#374151'
+                                    }}>
+                                      {row.ItemCount || 0}
+                                    </span>
+                                  </td>
+                                  <td style={{ textAlign: 'right' }}>{money(Number(row.TotalAmount ?? 0))}</td>
+                                  <td>
+                                    {row.PaymentMethod 
+                                      ? row.PaymentMethod.charAt(0).toUpperCase() + row.PaymentMethod.slice(1).toLowerCase()
+                                      : 'Null'}
+                                  </td>
+                                  <td>
+                                    <span style={{ 
+                                      padding: '2px 8px',
+                                      borderRadius: '4px',
+                                      fontSize: '12px',
+                                      fontWeight: 600,
+                                      backgroundColor: row.StaffName === 'Online' ? '#dbeafe' : '#d1fae5',
+                                      color: row.StaffName === 'Online' ? '#1e40af' : '#065f46'
+                                    }}>
+                                      {row.StaffName}
+                                    </span>
+                                  </td>
+                                </tr>
+                              ))}
+                            </tbody>
+                          </table>
+                        </div>
+
+                        {/* Pagination */}
+                        {rawDataPagination.pages > 1 && (
+                          <div style={{ 
+                            marginTop: '1rem', 
+                            display: 'flex', 
+                            justifyContent: 'center', 
+                            alignItems: 'center',
+                            gap: '8px',
+                            flexWrap: 'wrap'
+                          }}>
+                            <button
+                              onClick={() => fetchRawData(rawDataPagination.page - 1)}
+                              disabled={rawDataPagination.page === 1}
+                              style={{
+                                padding: '6px 12px',
+                                border: '1px solid #d1d5db',
+                                borderRadius: '6px',
+                                backgroundColor: rawDataPagination.page === 1 ? '#f3f4f6' : 'white',
+                                color: rawDataPagination.page === 1 ? '#9ca3af' : '#374151',
+                                cursor: rawDataPagination.page === 1 ? 'not-allowed' : 'pointer',
+                                fontSize: '14px',
+                                fontWeight: 500
+                              }}
+                            >
+                              ← Previous
+                            </button>
+
+                            {/* Page numbers */}
+                            {Array.from({ length: Math.min(rawDataPagination.pages, 10) }, (_, i) => {
+                              let pageNum;
+                              if (rawDataPagination.pages <= 10) {
+                                pageNum = i + 1;
+                              } else if (rawDataPagination.page <= 6) {
+                                pageNum = i + 1;
+                              } else if (rawDataPagination.page >= rawDataPagination.pages - 5) {
+                                pageNum = rawDataPagination.pages - 9 + i;
+                              } else {
+                                pageNum = rawDataPagination.page - 5 + i;
+                              }
+                              
+                              return (
+                                <button
+                                  key={pageNum}
+                                  onClick={() => fetchRawData(pageNum)}
+                                  style={{
+                                    padding: '6px 12px',
+                                    border: '1px solid #d1d5db',
+                                    borderRadius: '6px',
+                                    backgroundColor: rawDataPagination.page === pageNum ? '#2563eb' : 'white',
+                                    color: rawDataPagination.page === pageNum ? 'white' : '#374151',
+                                    cursor: 'pointer',
+                                    fontSize: '14px',
+                                    fontWeight: rawDataPagination.page === pageNum ? 700 : 500,
+                                    minWidth: '40px'
+                                  }}
+                                >
+                                  {pageNum}
+                                </button>
+                              );
+                            })}
+
+                            <button
+                              onClick={() => fetchRawData(rawDataPagination.page + 1)}
+                              disabled={rawDataPagination.page === rawDataPagination.pages}
+                              style={{
+                                padding: '6px 12px',
+                                border: '1px solid #d1d5db',
+                                borderRadius: '6px',
+                                backgroundColor: rawDataPagination.page === rawDataPagination.pages ? '#f3f4f6' : 'white',
+                                color: rawDataPagination.page === rawDataPagination.pages ? '#9ca3af' : '#374151',
+                                cursor: rawDataPagination.page === rawDataPagination.pages ? 'not-allowed' : 'pointer',
+                                fontSize: '14px',
+                                fontWeight: 500
+                              }}
+                            >
+                              Next →
+                            </button>
+
+                            <span style={{ 
+                              marginLeft: '12px', 
+                              fontSize: '13px', 
+                              color: '#6b7280' 
+                            }}>
+                              Page {rawDataPagination.page} of {rawDataPagination.pages}
+                            </span>
+                          </div>
+                        )}
+
+                        <p style={{ 
+                          marginTop: '1rem', 
+                          fontSize: '12px', 
+                          color: '#6b7280',
+                          fontStyle: 'italic'
+                        }}>
+                          💡 These are actual individual orders from the database for the selected date range. 
+                          Each row represents one customer transaction. The summary table above aggregates these orders by location.
+                        </p>
+                      </>
+                    )}
+                  </div>
+                )}
+              </div>
             </>
           )}
 
@@ -482,6 +1001,288 @@ export default function ReportsPage() {
                   </tr>
                 </tbody>
               </table>
+
+              {/* Raw Data Source Section for Items */}
+              <div style={{ marginTop: '2rem', borderTop: '2px solid #e5e7eb', paddingTop: '1.5rem' }}>
+                <button 
+                  onClick={toggleRawDataItems}
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '8px',
+                    padding: '10px 20px',
+                    backgroundColor: '#f3f4f6',
+                    border: '1px solid #d1d5db',
+                    borderRadius: '8px',
+                    fontSize: '14px',
+                    fontWeight: 600,
+                    color: '#374151',
+                    cursor: 'pointer',
+                    transition: 'all 0.2s',
+                    marginBottom: '1rem'
+                  }}
+                  onMouseOver={(e) => {
+                    e.currentTarget.style.backgroundColor = '#e5e7eb';
+                    e.currentTarget.style.borderColor = '#9ca3af';
+                  }}
+                  onMouseOut={(e) => {
+                    e.currentTarget.style.backgroundColor = '#f3f4f6';
+                    e.currentTarget.style.borderColor = '#d1d5db';
+                  }}
+                >
+                  <span style={{ fontSize: '16px' }}>{showRawDataItems ? '🔼' : '🔽'}</span>
+                  {showRawDataItems ? 'Hide' : 'Show'} Database Source Records
+                  {showRawDataItems && rawDataItemsPagination.total > 0 && (
+                    <span style={{ 
+                      marginLeft: '8px', 
+                      padding: '2px 8px', 
+                      backgroundColor: '#dbeafe', 
+                      color: '#1e40af', 
+                      borderRadius: '12px',
+                      fontSize: '12px',
+                      fontWeight: 700
+                    }}>
+                      {rawDataItemsPagination.total} total
+                    </span>
+                  )}
+                </button>
+
+                {showRawDataItems && (
+                  <div style={{ 
+                    backgroundColor: '#fafafa', 
+                    padding: '1rem', 
+                    borderRadius: '8px',
+                    border: '1px solid #e5e7eb'
+                  }}>
+                    <h4 style={{ 
+                      margin: '0 0 1rem 0', 
+                      fontSize: '16px', 
+                      fontWeight: 600,
+                      color: '#1f2937',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '8px'
+                    }}>
+                      📊 Raw Database Item Transactions
+                      <span style={{ 
+                        fontSize: '13px', 
+                        fontWeight: 400, 
+                        color: '#6b7280' 
+                      }}>
+                        (Individual order items from database)
+                      </span>
+                    </h4>
+                    
+                    {/* Technical Details */}
+                    <div style={{ 
+                      marginBottom: '1rem', 
+                      padding: '12px', 
+                      backgroundColor: '#f0f9ff', 
+                      border: '1px solid #bae6fd',
+                      borderRadius: '6px',
+                      fontSize: '12px',
+                      lineHeight: '1.6'
+                    }}>
+                      <div style={{ fontWeight: 600, color: '#0369a1', marginBottom: '6px' }}>
+                        🗄️ Data Source:
+                      </div>
+                      <div style={{ color: '#0c4a6e', fontFamily: 'monospace' }}>
+                        This data is extracted from the <strong>`order_item`</strong> table, joined with the <strong>`order`</strong> table 
+                        for order details, <strong>`menu_item`</strong> table for item information, and <strong>`staff`</strong> table 
+                        for employee attribution. Each row represents a single menu item from a customer order with its quantity, pricing, and context.
+                      </div>
+                      <div style={{ marginTop: '8px', color: '#64748b', fontSize: '11px', fontStyle: 'italic' }}>
+                        💡 The summary table above aggregates these individual item transactions by menu item to calculate totals and metrics.
+                      </div>
+                    </div>
+                    
+                    {rawDataItemsLoading ? (
+                      <div style={{ padding: '2rem', textAlign: 'center', color: '#6b7280' }}>
+                        Loading item transactions...
+                      </div>
+                    ) : rawDataItemsError ? (
+                      <div style={{ padding: '2rem', textAlign: 'center', color: '#dc2626', backgroundColor: '#fee2e2', borderRadius: '8px' }}>
+                        <strong>Error:</strong> {rawDataItemsError}
+                      </div>
+                    ) : filteredRawDataItems.length === 0 ? (
+                      <div style={{ padding: '2rem', textAlign: 'center', color: '#6b7280' }}>
+                        {keyword ? 'No item transactions match your search criteria' : 'No item transactions found for this date range'}
+                      </div>
+                    ) : (
+                      <>
+                        {keyword && (
+                          <div style={{ 
+                            marginBottom: '1rem', 
+                            padding: '8px 12px', 
+                            backgroundColor: '#dbeafe', 
+                            color: '#1e40af',
+                            borderRadius: '6px',
+                            fontSize: '13px',
+                            fontWeight: 500
+                          }}>
+                            📌 Showing {filteredRawDataItems.length} of {rawDataItems.length} item transactions matching "{keyword}"
+                          </div>
+                        )}
+                        
+                        <div style={{ overflowX: 'auto' }}>
+                          <table className="rtable" style={{ fontSize: '13px' }}>
+                            <thead>
+                              <tr style={{ backgroundColor: '#f9fafb' }}>
+                                <th>Item ID</th>
+                                <th>Order ID</th>
+                                <th>Order Date</th>
+                                <th>Item Name</th>
+                                <th>Category</th>
+                                <th style={{ textAlign: 'center' }}>Qty</th>
+                                <th style={{ textAlign: 'right' }}>Unit Price ($)</th>
+                                <th style={{ textAlign: 'right' }}>Line Total ($)</th>
+                                <th>Location</th>
+                                <th>Staff/Online</th>
+                              </tr>
+                            </thead>
+                            <tbody>
+                              {filteredRawDataItems.map((row, i) => (
+                                <tr key={`raw-item-${row.OrderItemID}-${i}`} style={{ backgroundColor: i % 2 === 0 ? '#fff' : '#f9fafb' }}>
+                                  <td>#{row.OrderItemID}</td>
+                                  <td>#{row.OrderID}</td>
+                                  <td>{new Date(row.OrderDate).toLocaleString()}</td>
+                                  <td>{row.ItemName || 'N/A'}</td>
+                                  <td>{row.Category || 'N/A'}</td>
+                                  <td style={{ textAlign: 'center' }}>
+                                    <span style={{ 
+                                      padding: '2px 8px',
+                                      borderRadius: '4px',
+                                      fontSize: '12px',
+                                      fontWeight: 600,
+                                      backgroundColor: '#f3f4f6',
+                                      color: '#374151'
+                                    }}>
+                                      {row.Quantity || 0}
+                                    </span>
+                                  </td>
+                                  <td style={{ textAlign: 'right' }}>{money(Number(row.UnitPrice ?? 0))}</td>
+                                  <td style={{ textAlign: 'right' }}>{money(Number(row.LineTotal ?? 0))}</td>
+                                  <td>{row.LocationName || 'N/A'}</td>
+                                  <td>
+                                    <span style={{ 
+                                      padding: '2px 8px',
+                                      borderRadius: '4px',
+                                      fontSize: '12px',
+                                      fontWeight: 600,
+                                      backgroundColor: row.StaffName === 'Online' ? '#dbeafe' : '#d1fae5',
+                                      color: row.StaffName === 'Online' ? '#1e40af' : '#065f46'
+                                    }}>
+                                      {row.StaffName}
+                                    </span>
+                                  </td>
+                                </tr>
+                              ))}
+                            </tbody>
+                          </table>
+                        </div>
+
+                        {/* Pagination */}
+                        {rawDataItemsPagination.pages > 1 && (
+                          <div style={{ 
+                            marginTop: '1rem', 
+                            display: 'flex', 
+                            justifyContent: 'center', 
+                            alignItems: 'center',
+                            gap: '8px',
+                            flexWrap: 'wrap'
+                          }}>
+                            <button
+                              onClick={() => fetchRawDataItems(rawDataItemsPagination.page - 1)}
+                              disabled={rawDataItemsPagination.page === 1}
+                              style={{
+                                padding: '6px 12px',
+                                border: '1px solid #d1d5db',
+                                borderRadius: '6px',
+                                backgroundColor: rawDataItemsPagination.page === 1 ? '#f3f4f6' : 'white',
+                                color: rawDataItemsPagination.page === 1 ? '#9ca3af' : '#374151',
+                                cursor: rawDataItemsPagination.page === 1 ? 'not-allowed' : 'pointer',
+                                fontSize: '14px',
+                                fontWeight: 500
+                              }}
+                            >
+                              ← Previous
+                            </button>
+
+                            {/* Page numbers */}
+                            {Array.from({ length: Math.min(rawDataItemsPagination.pages, 10) }, (_, i) => {
+                              let pageNum;
+                              if (rawDataItemsPagination.pages <= 10) {
+                                pageNum = i + 1;
+                              } else if (rawDataItemsPagination.page <= 6) {
+                                pageNum = i + 1;
+                              } else if (rawDataItemsPagination.page >= rawDataItemsPagination.pages - 5) {
+                                pageNum = rawDataItemsPagination.pages - 9 + i;
+                              } else {
+                                pageNum = rawDataItemsPagination.page - 5 + i;
+                              }
+                              
+                              return (
+                                <button
+                                  key={pageNum}
+                                  onClick={() => fetchRawDataItems(pageNum)}
+                                  style={{
+                                    padding: '6px 12px',
+                                    border: '1px solid #d1d5db',
+                                    borderRadius: '6px',
+                                    backgroundColor: rawDataItemsPagination.page === pageNum ? '#2563eb' : 'white',
+                                    color: rawDataItemsPagination.page === pageNum ? 'white' : '#374151',
+                                    cursor: 'pointer',
+                                    fontSize: '14px',
+                                    fontWeight: rawDataItemsPagination.page === pageNum ? 700 : 500,
+                                    minWidth: '40px'
+                                  }}
+                                >
+                                  {pageNum}
+                                </button>
+                              );
+                            })}
+
+                            <button
+                              onClick={() => fetchRawDataItems(rawDataItemsPagination.page + 1)}
+                              disabled={rawDataItemsPagination.page === rawDataItemsPagination.pages}
+                              style={{
+                                padding: '6px 12px',
+                                border: '1px solid #d1d5db',
+                                borderRadius: '6px',
+                                backgroundColor: rawDataItemsPagination.page === rawDataItemsPagination.pages ? '#f3f4f6' : 'white',
+                                color: rawDataItemsPagination.page === rawDataItemsPagination.pages ? '#9ca3af' : '#374151',
+                                cursor: rawDataItemsPagination.page === rawDataItemsPagination.pages ? 'not-allowed' : 'pointer',
+                                fontSize: '14px',
+                                fontWeight: 500
+                              }}
+                            >
+                              Next →
+                            </button>
+
+                            <span style={{ 
+                              marginLeft: '12px', 
+                              fontSize: '13px', 
+                              color: '#6b7280' 
+                            }}>
+                              Page {rawDataItemsPagination.page} of {rawDataItemsPagination.pages}
+                            </span>
+                          </div>
+                        )}
+
+                        <p style={{ 
+                          marginTop: '1rem', 
+                          fontSize: '12px', 
+                          color: '#6b7280',
+                          fontStyle: 'italic'
+                        }}>
+                          💡 These are actual individual order items from the database for the selected date range. 
+                          Each row represents one menu item from a customer order. The summary table above aggregates these items by menu item name.
+                        </p>
+                      </>
+                    )}
+                  </div>
+                )}
+              </div>
             </>
           )}
 
@@ -522,6 +1323,281 @@ export default function ReportsPage() {
                   ))}
                 </tbody>
               </table>
+
+              {/* Raw Data Source Section for Employees */}
+              <div style={{ marginTop: '2rem', borderTop: '2px solid #e5e7eb', paddingTop: '1.5rem' }}>
+                <button 
+                  onClick={toggleRawDataEmployees}
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '8px',
+                    padding: '10px 20px',
+                    backgroundColor: '#f3f4f6',
+                    border: '1px solid #d1d5db',
+                    borderRadius: '8px',
+                    fontSize: '14px',
+                    fontWeight: 600,
+                    color: '#374151',
+                    cursor: 'pointer',
+                    transition: 'all 0.2s',
+                    marginBottom: '1rem'
+                  }}
+                  onMouseOver={(e) => {
+                    e.currentTarget.style.backgroundColor = '#e5e7eb';
+                    e.currentTarget.style.borderColor = '#9ca3af';
+                  }}
+                  onMouseOut={(e) => {
+                    e.currentTarget.style.backgroundColor = '#f3f4f6';
+                    e.currentTarget.style.borderColor = '#d1d5db';
+                  }}
+                >
+                  <span style={{ fontSize: '16px' }}>{showRawDataEmployees ? '🔼' : '🔽'}</span>
+                  {showRawDataEmployees ? 'Hide' : 'Show'} Database Source Records
+                  {showRawDataEmployees && rawDataEmployeesPagination.total > 0 && (
+                    <span style={{ 
+                      marginLeft: '8px', 
+                      padding: '2px 8px', 
+                      backgroundColor: '#dbeafe', 
+                      color: '#1e40af', 
+                      borderRadius: '12px',
+                      fontSize: '12px',
+                      fontWeight: 700
+                    }}>
+                      {rawDataEmployeesPagination.total} total
+                    </span>
+                  )}
+                </button>
+
+                {showRawDataEmployees && (
+                  <div style={{ 
+                    backgroundColor: '#fafafa', 
+                    padding: '1rem', 
+                    borderRadius: '8px',
+                    border: '1px solid #e5e7eb'
+                  }}>
+                    <h4 style={{ 
+                      margin: '0 0 1rem 0', 
+                      fontSize: '16px', 
+                      fontWeight: 600,
+                      color: '#1f2937',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '8px'
+                    }}>
+                      📊 Raw Database Timecard Records
+                      <span style={{ 
+                        fontSize: '13px', 
+                        fontWeight: 400, 
+                        color: '#6b7280' 
+                      }}>
+                        (Individual employee shifts from database)
+                      </span>
+                    </h4>
+                    
+                    {/* Technical Details */}
+                    <div style={{ 
+                      marginBottom: '1rem', 
+                      padding: '12px', 
+                      backgroundColor: '#f0f9ff', 
+                      border: '1px solid #bae6fd',
+                      borderRadius: '6px',
+                      fontSize: '12px',
+                      lineHeight: '1.6'
+                    }}>
+                      <div style={{ fontWeight: 600, color: '#0369a1', marginBottom: '6px' }}>
+                        🗄️ Data Source:
+                      </div>
+                      <div style={{ color: '#0c4a6e', fontFamily: 'monospace' }}>
+                        This data is extracted from the <strong>`timecard`</strong> table, joined with the <strong>`staff`</strong> table 
+                        for employee details, and aggregated with the <strong>`order`</strong> table to count orders and sales handled during each shift. 
+                        Each row represents one employee shift with clock in/out times and performance metrics during that shift.
+                      </div>
+                      <div style={{ marginTop: '8px', color: '#64748b', fontSize: '11px', fontStyle: 'italic' }}>
+                        💡 The summary table above aggregates these individual shifts by employee to calculate total orders, sales, hours, and sales per hour.
+                      </div>
+                    </div>
+                    
+                    {rawDataEmployeesLoading ? (
+                      <div style={{ padding: '2rem', textAlign: 'center', color: '#6b7280' }}>
+                        Loading timecard records...
+                      </div>
+                    ) : rawDataEmployeesError ? (
+                      <div style={{ padding: '2rem', textAlign: 'center', color: '#dc2626', backgroundColor: '#fee2e2', borderRadius: '8px' }}>
+                        <strong>Error:</strong> {rawDataEmployeesError}
+                      </div>
+                    ) : filteredRawDataEmployees.length === 0 ? (
+                      <div style={{ padding: '2rem', textAlign: 'center', color: '#6b7280' }}>
+                        {keyword ? 'No timecard records match your search criteria' : 'No timecard records found for this date range'}
+                      </div>
+                    ) : (
+                      <>
+                        {keyword && (
+                          <div style={{ 
+                            marginBottom: '1rem', 
+                            padding: '8px 12px', 
+                            backgroundColor: '#dbeafe', 
+                            color: '#1e40af',
+                            borderRadius: '6px',
+                            fontSize: '13px',
+                            fontWeight: 500
+                          }}>
+                            📌 Showing {filteredRawDataEmployees.length} of {rawDataEmployees.length} timecard records matching "{keyword}"
+                          </div>
+                        )}
+                        
+                        <div style={{ overflowX: 'auto' }}>
+                          <table className="rtable" style={{ fontSize: '13px' }}>
+                            <thead>
+                              <tr style={{ backgroundColor: '#f9fafb' }}>
+                                <th>Timecard ID</th>
+                                <th>Employee ID</th>
+                                <th>Employee Name</th>
+                                <th>Role</th>
+                                <th>Date</th>
+                                <th>Clock In</th>
+                                <th>Clock Out</th>
+                                <th style={{ textAlign: 'right' }}>Hours Worked</th>
+                                <th>Location</th>
+                                <th style={{ textAlign: 'center' }}>Orders</th>
+                                <th style={{ textAlign: 'right' }}>Total Sales ($)</th>
+                              </tr>
+                            </thead>
+                            <tbody>
+                              {filteredRawDataEmployees.map((row, i) => (
+                                <tr key={`raw-emp-${row.TimecardID}-${i}`} style={{ backgroundColor: i % 2 === 0 ? '#fff' : '#f9fafb' }}>
+                                  <td>#{row.TimecardID}</td>
+                                  <td>#{row.EmployeeID}</td>
+                                  <td>{row.EmployeeName || 'N/A'}</td>
+                                  <td>{row.Role || 'N/A'}</td>
+                                  <td>{row.ShiftDate ? new Date(row.ShiftDate).toLocaleDateString() : 'N/A'}</td>
+                                  <td>{row.ClockInTime ? new Date(row.ClockInTime).toLocaleTimeString() : 'N/A'}</td>
+                                  <td>{row.ClockOutTime ? new Date(row.ClockOutTime).toLocaleTimeString() : 'Not Clocked Out'}</td>
+                                  <td style={{ textAlign: 'right' }}>
+                                    {row.HoursWorked ? Number(row.HoursWorked).toFixed(2) : '0.00'}
+                                  </td>
+                                  <td>{row.LocationName || 'N/A'}</td>
+                                  <td style={{ textAlign: 'center' }}>
+                                    <span style={{ 
+                                      padding: '2px 8px',
+                                      borderRadius: '4px',
+                                      fontSize: '12px',
+                                      fontWeight: 600,
+                                      backgroundColor: '#f3f4f6',
+                                      color: '#374151'
+                                    }}>
+                                      {row.OrdersHandled || 0}
+                                    </span>
+                                  </td>
+                                  <td style={{ textAlign: 'right' }}>{money(Number(row.TotalSales ?? 0))}</td>
+                                </tr>
+                              ))}
+                            </tbody>
+                          </table>
+                        </div>
+
+                        {/* Pagination */}
+                        {rawDataEmployeesPagination.pages > 1 && (
+                          <div style={{ 
+                            marginTop: '1rem', 
+                            display: 'flex', 
+                            justifyContent: 'center', 
+                            alignItems: 'center',
+                            gap: '8px',
+                            flexWrap: 'wrap'
+                          }}>
+                            <button
+                              onClick={() => fetchRawDataEmployees(rawDataEmployeesPagination.page - 1)}
+                              disabled={rawDataEmployeesPagination.page === 1}
+                              style={{
+                                padding: '6px 12px',
+                                border: '1px solid #d1d5db',
+                                borderRadius: '6px',
+                                backgroundColor: rawDataEmployeesPagination.page === 1 ? '#f3f4f6' : 'white',
+                                color: rawDataEmployeesPagination.page === 1 ? '#9ca3af' : '#374151',
+                                cursor: rawDataEmployeesPagination.page === 1 ? 'not-allowed' : 'pointer',
+                                fontSize: '14px',
+                                fontWeight: 500
+                              }}
+                            >
+                              ← Previous
+                            </button>
+
+                            {/* Page numbers */}
+                            {Array.from({ length: Math.min(rawDataEmployeesPagination.pages, 10) }, (_, i) => {
+                              let pageNum;
+                              if (rawDataEmployeesPagination.pages <= 10) {
+                                pageNum = i + 1;
+                              } else if (rawDataEmployeesPagination.page <= 6) {
+                                pageNum = i + 1;
+                              } else if (rawDataEmployeesPagination.page >= rawDataEmployeesPagination.pages - 5) {
+                                pageNum = rawDataEmployeesPagination.pages - 9 + i;
+                              } else {
+                                pageNum = rawDataEmployeesPagination.page - 5 + i;
+                              }
+                              
+                              return (
+                                <button
+                                  key={pageNum}
+                                  onClick={() => fetchRawDataEmployees(pageNum)}
+                                  style={{
+                                    padding: '6px 12px',
+                                    border: '1px solid #d1d5db',
+                                    borderRadius: '6px',
+                                    backgroundColor: rawDataEmployeesPagination.page === pageNum ? '#2563eb' : 'white',
+                                    color: rawDataEmployeesPagination.page === pageNum ? 'white' : '#374151',
+                                    cursor: 'pointer',
+                                    fontSize: '14px',
+                                    fontWeight: rawDataEmployeesPagination.page === pageNum ? 700 : 500,
+                                    minWidth: '40px'
+                                  }}
+                                >
+                                  {pageNum}
+                                </button>
+                              );
+                            })}
+
+                            <button
+                              onClick={() => fetchRawDataEmployees(rawDataEmployeesPagination.page + 1)}
+                              disabled={rawDataEmployeesPagination.page === rawDataEmployeesPagination.pages}
+                              style={{
+                                padding: '6px 12px',
+                                border: '1px solid #d1d5db',
+                                borderRadius: '6px',
+                                backgroundColor: rawDataEmployeesPagination.page === rawDataEmployeesPagination.pages ? '#f3f4f6' : 'white',
+                                color: rawDataEmployeesPagination.page === rawDataEmployeesPagination.pages ? '#9ca3af' : '#374151',
+                                cursor: rawDataEmployeesPagination.page === rawDataEmployeesPagination.pages ? 'not-allowed' : 'pointer',
+                                fontSize: '14px',
+                                fontWeight: 500
+                              }}
+                            >
+                              Next →
+                            </button>
+
+                            <span style={{ 
+                              marginLeft: '12px', 
+                              fontSize: '13px', 
+                              color: '#6b7280' 
+                            }}>
+                              Page {rawDataEmployeesPagination.page} of {rawDataEmployeesPagination.pages}
+                            </span>
+                          </div>
+                        )}
+
+                        <p style={{ 
+                          marginTop: '1rem', 
+                          fontSize: '12px', 
+                          color: '#6b7280',
+                          fontStyle: 'italic'
+                        }}>
+                          💡 These are actual individual employee shifts from the database for the selected date range. 
+                          Each row represents one timecard with clock in/out times and orders/sales handled during that shift. The summary table above aggregates these shifts by employee.
+                        </p>
+                      </>
+                    )}
+                  </div>
+                )}
+              </div>
             </>
           )}
 
