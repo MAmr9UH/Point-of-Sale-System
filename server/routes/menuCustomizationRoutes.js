@@ -64,7 +64,6 @@ export const handleMenuCustomizationRoutes = withAuth(async (req, res) => {
             MaximumQuantity,
             IsDefault,
             PriceAdjustment,
-            IsRemovable,
             IsRequired,
             CanSubstitute
           } = JSON.parse(body);
