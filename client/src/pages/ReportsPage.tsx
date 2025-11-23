@@ -230,7 +230,7 @@ export default function ReportsPage() {
       const url = `${API_BASE}/api/reports/raw-transactions-locations?${params}`;
       console.log("📡 Fetching from URL:", url);
       
-      const res = await fetch(url);
+      const res = await authenticatedFetch(url);
       console.log("📨 Response status:", res.status);
       
       if (!res.ok) {
@@ -281,7 +281,7 @@ export default function ReportsPage() {
       const url = `${API_BASE}/api/reports/raw-transactions-items?${params}`;
       console.log("📡 Fetching from URL:", url);
       
-      const res = await fetch(url);
+      const res = await authenticatedFetch(url);
       console.log("📨 Response status:", res.status);
       
       if (!res.ok) {
@@ -331,7 +331,7 @@ export default function ReportsPage() {
       const url = `${API_BASE}/api/reports/raw-transactions-employees?${params}`;
       console.log("📡 Fetching from URL:", url);
       
-      const res = await fetch(url);
+      const res = await authenticatedFetch(url);
       console.log("📨 Response status:", res.status);
       
       if (!res.ok) {
