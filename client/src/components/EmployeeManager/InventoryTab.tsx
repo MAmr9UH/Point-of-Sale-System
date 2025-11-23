@@ -245,7 +245,7 @@ export const InventoryTab: React.FC = () => {
     style={{
       padding: '10px 20px',
       backgroundColor: '#6366f1',
-      color: 'white',
+      color: 'black',
       border: 'none',
       borderRadius: '8px',
       cursor: 'pointer',
@@ -293,7 +293,8 @@ export const InventoryTab: React.FC = () => {
         fontSize: '16px',
         border: '1px solid #d1d5db',
         borderRadius: '8px',
-        marginBottom: '20px'
+        marginBottom: '20px',
+        boxSizing: 'border-box'
       }}
     />
       <div style={{ display: 'flex', gap: '10px', justifyContent: 'flex-end' }}>
