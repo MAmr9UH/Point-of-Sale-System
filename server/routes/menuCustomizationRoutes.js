@@ -28,7 +28,6 @@ export const handleMenuCustomizationRoutes = withAuth(async (req, res) => {
           uf.MaximumQuantity,
           uf.IsDefault,
           uf.PriceAdjustment,
-          uf.IsRemovable,
           uf.IsRequired,
           uf.CanSubstitute
         FROM Used_For uf
@@ -86,10 +85,9 @@ export const handleMenuCustomizationRoutes = withAuth(async (req, res) => {
               MaximumQuantity, 
               IsDefault, 
               PriceAdjustment, 
-              IsRemovable, 
               IsRequired, 
               CanSubstitute
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
             [
               MenuItemID,
               IngredientID,
@@ -98,7 +96,6 @@ export const handleMenuCustomizationRoutes = withAuth(async (req, res) => {
               MaximumQuantity || 10,
               IsDefault || false,
               PriceAdjustment || 0,
-              IsRemovable !== undefined ? IsRemovable : true,
               IsRequired || false,
               CanSubstitute || false
             ]
@@ -150,7 +147,6 @@ export const handleMenuCustomizationRoutes = withAuth(async (req, res) => {
                  MaximumQuantity = ?, 
                  IsDefault = ?, 
                  PriceAdjustment = ?, 
-                 IsRemovable = ?, 
                  IsRequired = ?, 
                  CanSubstitute = ?
              WHERE UsedForID = ?`,
@@ -160,7 +156,6 @@ export const handleMenuCustomizationRoutes = withAuth(async (req, res) => {
               MaximumQuantity || 10,
               IsDefault || false,
               PriceAdjustment || 0,
-              IsRemovable !== undefined ? IsRemovable : true,
               IsRequired || false,
               CanSubstitute || false,
               usedForId
