@@ -99,11 +99,17 @@ interface LoginResponse {
   success?: boolean;
   message: string;
   user: {
-    id: number;
-    email: string;
-    firstName?: string;
-    lastName?: string;
-    role?: string;
+    StaffID?: number;
+    CustomerID?: number;
+    Email: string;
+    Fname?: string;
+    Lname?: string;
+    Role?: string;
+    PhoneNumber?: string;
+    PayRate?: string;
+    PasswordHash?: string;
+    CreatedAt?: string;
+    LastUpdatedAt?: string;
   };
   token: string;
 }

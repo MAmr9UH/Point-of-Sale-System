@@ -57,7 +57,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
                 if (token && storedUser) {
                     setUser(storedUser);
-                    setUserType(storedUser.role || storedUser.Role);
+
+                    if ('Role' in storedUser || 'role' in storedUser) {
+                        setUserType(storedUser.role || storedUser.Role);
+                    } else {
+                        setUserType('customer');
+                    }
                 }
             } catch (error) {
                 console.error('Error checking auth:', error);
@@ -96,12 +101,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         try {
             const data = await loginEmployee({ email: employeeId, password });
             
+            console.log(data)
+
             // Store token and user
             storeToken(data.token);
             storeUser(data.user);
 
             setUser(data.user as any);
-            setUserType((data.user.role || 'employee') as 'employee' | 'manager');
+            setUserType((data.user.Role || 'employee') as 'employee' | 'manager');
         } catch (error) {
             console.error('Staff login error:', error);
             throw error;
@@ -168,6 +175,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 // Custom hook to use auth context
 export const useAuth = () => {
     const context = useContext(AuthContext);
+    console.log('AuthContext:', context);
     if (context === undefined) {
         throw new Error('useAuth must be used within an AuthProvider');
     }

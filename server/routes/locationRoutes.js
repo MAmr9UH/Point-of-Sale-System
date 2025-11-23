@@ -32,6 +32,7 @@ export const handleLocationRoutes = withAuth(async (req, res) => {
           al.EndOperationOn,
           al.DaysOfWeek
         FROM Active_Location al
+        WHERE al.is_deleted = FALSE
         ORDER BY al.BeginOperationOn DESC
       `);
       
@@ -191,7 +192,7 @@ export const handleLocationRoutes = withAuth(async (req, res) => {
           await db.query(
             `UPDATE Active_Location 
              SET LocationName = ?, BeginOperationOn = ?, EndOperationOn = ?, DaysOfWeek = ?
-             WHERE ActiveLocationID = ?`,
+             WHERE ActiveLocationID = ? AND is_deleted = FALSE`,
             [LocationName, BeginOperationOn, EndOperationOn || null, daysString, activeLocationId]
           );
 
@@ -236,7 +237,7 @@ export const handleLocationRoutes = withAuth(async (req, res) => {
       const activeLocationId = url.split('/api/locations/active/')[1];
 
       try {
-        await db.query('DELETE FROM Active_Location WHERE ActiveLocationID = ?', [activeLocationId]);
+        await db.query('UPDATE Active_Location SET is_deleted = TRUE WHERE ActiveLocationID = ?', [activeLocationId]);
 
         res.statusCode = 200;
         res.setHeader('Content-Type', 'application/json');

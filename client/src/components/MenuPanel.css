@@ -12,6 +12,10 @@
     -ms-overflow-style: none; /* IE and Edge */
 }
 
+.menu > #menu-panel {
+    padding-top: 80px;
+}
+
 /* For WebKit-based browsers (Chrome, Safari, newer Edge) */
 #menu-panel::-webkit-scrollbar {
     display: none;

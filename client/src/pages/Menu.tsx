@@ -12,7 +12,7 @@ const Menu =  () => {
                 className="back-to-dashboard-btn"
                 onClick={() => navigate('/employee')}
             >
-                ← Back to Dashboard
+                ←
             </button>
             <div className="menu">
                 <MenuPanel />

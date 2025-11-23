@@ -25,8 +25,6 @@ export function withAuth(handler, options = {}) {
         const user = authenticate(req, res);
         if (!user) return;
 
-        console.log(user)
-
         // If roles are specified, check authorization
         if (roles.length > 0) {
             const authorized = checkRole(req, res, ...roles);
