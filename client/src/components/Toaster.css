@@ -103,6 +103,11 @@
     word-break: break-word;
 }
 
+.toast-alert {
+    background-color: #800000; /* Maroon */
+    border-left: 4px solid #600000; /* Darker maroon border */
+}
+
 .toast-close-btn {
     background: transparent;
     border: none;

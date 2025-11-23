@@ -18,6 +18,8 @@ import { handleTimecard } from './routes/timecard.js';
 import { handleCustomer } from './routes/customer.js';
 import { handleLocationRoutes } from './routes/locationRoutes.js';
 import { handleOrderRoutes } from './routes/orderRoutes.js';
+import { handleAlerts } from './routes/alert.js';
+import { handleSettings } from './routes/settings.js';
 
 import './db/connection.js';
 
@@ -118,6 +120,9 @@ export const app = async (req, res) => {
         res.setHeader('Content-Type', 'text/html');
         res.end('<h1>Welcome to the Homepage!</h1><p>This is a plain Node.js server.</p>');
     }
+    else if (url.startsWith('/api/settings')) {
+        handleSettings(req, res);
+    }
     else if (url.startsWith('/api/staff/notifications')) {
         handleNotificationRoutes(req, res);
     } else if (url.startsWith('/api/editpage')) {
@@ -158,6 +163,9 @@ export const app = async (req, res) => {
         handleLocationRoutes(req, res);
     } else if (url.startsWith('/api/busy-status')) {
         handleBusyStatus(req, res);
+    }
+    else if (url.startsWith('/api/alerts')) {
+        handleAlerts(req, res);
     }
     // Serve React app
     else {

@@ -9,7 +9,7 @@ export const NotificationBell: React.FC = () => {
 
   useEffect(() => {
     fetchUnreadCount();
-    const interval = setInterval(fetchUnreadCount, 1000); // Poll every minute
+    const interval = setInterval(fetchUnreadCount, 5000); 
     return () => clearInterval(interval);
   }, []);
 
@@ -30,11 +30,11 @@ export const NotificationBell: React.FC = () => {
         onClick={() => setIsNotificationOpen(!isNotificationOpen)}
         style={{
           position: 'relative',
-          background: '#2f2f2f',
-          border: '2px solid #444',
+          background: '#092a8fff',
+          border: '2px solid #1e035fff',
           borderRadius: '50%',
-          width: '50px',
-          height: '50px',
+          width: '60px',
+          height: '60px',
           cursor: 'pointer',
           display: 'flex',
           alignItems: 'center',
@@ -43,15 +43,15 @@ export const NotificationBell: React.FC = () => {
           boxShadow: '0 4px 12px rgba(0,0,0,0.3)'
         }}
         onMouseEnter={(e) => {
-          e.currentTarget.style.background = '#3a3a3a';
-          e.currentTarget.style.borderColor = 'var(--color1)';
+          e.currentTarget.style.background = '#190d94ff';
+          e.currentTarget.style.borderColor = '#6fd3f1ff';
         }}
         onMouseLeave={(e) => {
-          e.currentTarget.style.background = '#2f2f2f';
-          e.currentTarget.style.borderColor = '#444';
+          e.currentTarget.style.background = '#092a8fff';
+          e.currentTarget.style.borderColor = '#1e035fff';
         }}
       >
-        <svg width="24" height="24" fill="none" stroke="white" viewBox="0 0 24 24">
+        <svg width="80" height="80" fill="none" stroke="white" viewBox="0 0 24 24">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
         </svg>
         

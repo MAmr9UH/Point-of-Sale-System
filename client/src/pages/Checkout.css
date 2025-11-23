@@ -31,3 +31,7 @@
 #pickupLocation {
   color: black;
 }
+input::placeholder {
+  color: #abaab5;
+  opacity: 1;
+}
