@@ -31,6 +31,8 @@ export const InventoryTab: React.FC = () => {
   const [inventoryList, setInventoryList] = useState<InventoryOrder[]>([]);
   const [ingredients, setIngredients] = useState<{ IngredientID: number; Name: string; CostPerUnit: number }[]>([]);
   const [editingOrder, setEditingOrder] = useState<InventoryOrder | null>(null);
+  const [showThresholdModal, setShowThresholdModal] = useState(false);
+  const [threshold, setThreshold] = useState(10);
   const [selectedStatuses, setSelectedStatuses] = useState<string[]>(['pending', 'received', 'delayed']);
   const [confirmDialog, setConfirmDialog] = useState<{
     show: boolean;
@@ -64,6 +66,41 @@ export const InventoryTab: React.FC = () => {
       console.error('Error loading inventory:', error);
     }
   };
+
+  const loadThreshold = async () => {
+    try {
+      const response = await fetch('/api/settings/low-stock-threshold');
+      const data = await response.json();
+      setThreshold(data.LowStockThreshold); // Changed to match your column name
+    } catch (error) {
+      console.error('Error loading threshold:', error);
+    }
+  };
+
+  const saveThreshold = async () => {
+  const thresholdNum = parseInt(threshold.toString()) || 1;
+  
+  if (thresholdNum < 1 || thresholdNum > 30) {
+    addToast('Threshold must be between 1 and 30', 'error', 3000);
+    return;
+  }
+
+  try {
+    const response = await fetch('/api/settings/low-stock-threshold', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ threshold: thresholdNum })
+    });
+
+    if (response.ok) {
+      addToast('Stock threshold updated successfully!', 'success', 3000);
+      setShowThresholdModal(false);
+    }
+  } catch (error) {
+    console.error('Error updating threshold:', error);
+    addToast('Failed to update threshold', 'error', 3000);
+  }
+};
 
   const handleSaveInventoryOrder = async () => {
     try {
@@ -199,7 +236,100 @@ export const InventoryTab: React.FC = () => {
         <h1 className="page-title">Inventory Management</h1>
         <p className="page-subtitle">Manage inventory orders and track stock levels</p>
       </div>
-
+  <button
+    onClick={() => {
+      loadThreshold();
+      setShowThresholdModal(true);
+    }}
+    style={{
+      padding: '10px 20px',
+      backgroundColor: '#6366f1',
+      color: 'white',
+      border: 'none',
+      borderRadius: '8px',
+      cursor: 'pointer',
+      fontSize: '14px',
+      fontWeight: 500,
+      marginBottom: '20px'
+    }}
+  >
+    Edit Stock Quantity Notifications
+  </button>
+      {showThresholdModal && (
+  <div style={{
+    position: 'fixed',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    zIndex: 1000
+  }}>
+    <div style={{
+      backgroundColor: 'white',
+      padding: '30px',
+      borderRadius: '12px',
+      boxShadow: '0 4px 20px rgba(0, 0, 0, 0.15)',
+      minWidth: '400px'
+    }}>
+      <h3 style={{ marginTop: 0 }}>Low Stock Alert Threshold</h3>
+      <p style={{ color: '#6b7280', fontSize: '14px' }}>
+        Alert when ingredient stock falls below:
+      </p>
+      
+     <input
+      type="number"
+      value={threshold}
+      onChange={(e) => setThreshold(parseInt(e.target.value))}
+      min="1"
+      max="30"
+      style={{
+        width: '100%',
+        padding: '12px',
+        fontSize: '16px',
+        border: '1px solid #d1d5db',
+        borderRadius: '8px',
+        marginBottom: '20px'
+      }}
+    />
+      <div style={{ display: 'flex', gap: '10px', justifyContent: 'flex-end' }}>
+        <button
+          onClick={() => setShowThresholdModal(false)}
+          style={{
+            padding: '10px 20px',
+            backgroundColor: '#e5e7eb',
+            color: '#374151',
+            border: 'none',
+            borderRadius: '8px',
+            cursor: 'pointer',
+            fontSize: '14px',
+            fontWeight: 500
+          }}
+        >
+          Cancel
+        </button>
+        <button
+          onClick={saveThreshold}
+          style={{
+            padding: '10px 20px',
+            backgroundColor: '#10b981',
+            color: 'white',
+            border: 'none',
+            borderRadius: '8px',
+            cursor: 'pointer',
+            fontSize: '14px',
+            fontWeight: 500
+          }}
+        >
+          Save
+        </button>
+      </div>
+    </div>
+  </div>
+)}
       <div className="content-card">
         {editingOrder && (
           <div style={{
