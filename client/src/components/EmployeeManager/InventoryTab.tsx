@@ -245,7 +245,6 @@ export const InventoryTab: React.FC = () => {
     style={{
       padding: '10px 20px',
       backgroundColor: '#6366f1',
-      color: 'black',
       border: 'none',
       borderRadius: '8px',
       cursor: 'pointer',
@@ -276,7 +275,7 @@ export const InventoryTab: React.FC = () => {
       boxShadow: '0 4px 20px rgba(0, 0, 0, 0.15)',
       minWidth: '400px'
     }}>
-      <h3 style={{ marginTop: 0 }}>Low Stock Alert Threshold</h3>
+      <h3 style={{ marginTop: 0, color: 'black' }}>Low Stock Alert Threshold</h3>
       <p style={{ color: '#6b7280', fontSize: '14px' }}>
         Alert when ingredient stock falls below:
       </p>
