@@ -164,40 +164,42 @@ const employeePerformance = async (startDate, endDate, desc = false) => {
     SELECT
       CONCAT(staff.Fname, ' ', staff.Lname)                     AS EmployeeName,
       staff.Role                                                AS Role,
-      IFNULL(orders_year.total_orders, 0)                       AS TotalOrdersHandled,
-      IFNULL(orders_year.total_sales, 0.00)                     AS TotalSales,
-      IFNULL(timecards_year.total_hours, 0.00)                  AS TotalHoursWorked,
+      IFNULL(orders_filtered.total_orders, 0)                   AS TotalOrdersHandled,
+      IFNULL(orders_filtered.total_sales, 0.00)                 AS TotalSales,
+      IFNULL(timecards_filtered.total_hours, 0.00)              AS TotalHoursWorked,
       ROUND(
         CASE 
-          WHEN IFNULL(timecards_year.total_hours, 0) > 0
-            THEN IFNULL(orders_year.total_sales, 0) / timecards_year.total_hours
+          WHEN IFNULL(timecards_filtered.total_hours, 0) > 0
+            THEN IFNULL(orders_filtered.total_sales, 0) / timecards_filtered.total_hours
           ELSE 0
         END
       , 2)                                                      AS SalesPerHour
     FROM staff AS staff
 
-    /* per-staff orders aggregation for the current year */
+    /* per-staff orders aggregation for the selected date range */
     LEFT JOIN (
       SELECT
         o.StaffID,
         COUNT(*)                             AS total_orders,
         SUM(IFNULL(o.TotalAmount, 0))        AS total_sales
       FROM \`order\` AS o
-      WHERE YEAR(o.OrderDate) = YEAR(CURDATE())
+      WHERE o.OrderDate BETWEEN ? AND ?
       GROUP BY o.StaffID
-    ) AS orders_year
-      ON orders_year.StaffID = staff.StaffID
+    ) AS orders_filtered
+      ON orders_filtered.StaffID = staff.StaffID
 
-    /* per-staff timecards aggregation (hours) for the current year */
+    /* per-staff timecards aggregation (hours) for the selected date range */
     LEFT JOIN (
       SELECT
         t.StaffID,
-        SUM(IFNULL(t.TotalHours, 0))         AS total_hours
+        SUM(
+          ROUND(TIMESTAMPDIFF(MINUTE, t.ClockInTime, t.ClockOutTime) / 60.0, 2)
+        ) AS total_hours
       FROM timecard AS t
-      WHERE YEAR(t.ClockInTime) = YEAR(CURDATE())
+      WHERE DATE(t.ClockInTime) BETWEEN ? AND ?
       GROUP BY t.StaffID
-    ) AS timecards_year
-      ON timecards_year.StaffID = staff.StaffID
+    ) AS timecards_filtered
+      ON timecards_filtered.StaffID = staff.StaffID
 
     /* optional rule: exclude admin users from the report */
     WHERE staff.Role <> 'Admin'
@@ -205,8 +207,185 @@ const employeePerformance = async (startDate, endDate, desc = false) => {
     ORDER BY SalesPerHour ${order}, TotalSales ${order};
   `;
 
-  const [results] = await db.query(query);
+  const [results] = await db.query(query, [startDate, endDate, startDate, endDate]);
   return results;
 }
 
-export { profitPerLocation, mostPopularItems, employeePerformance };
+/**
+ * Raw transactions for locations report
+ * - Returns individual orders (not aggregated) for the date range
+ * - Shows: OrderID, OrderDate, LocationName, TotalAmount, TotalCost, StaffName (or "Online")
+ * - Includes pagination with limit and offset
+ * - Returns: { data: [...], total: count, page: current, pages: total_pages }
+ */
+const rawTransactionsLocations = async (startDate, endDate, page = 1, limit = 100) => {
+  const offset = (page - 1) * limit;
+  
+  // Query to get paginated orders with item count and payment method
+  const dataQuery = `
+    SELECT
+      o.OrderID,
+      o.OrderDate,
+      o.LocationName,
+      IFNULL(SUM(oi.Quantity * oi.Price), 0) AS TotalAmount,
+      IFNULL(SUM(oi.Quantity), 0) AS ItemCount,
+      o.PaymentMethod,
+      CASE
+        WHEN o.StaffID IS NOT NULL THEN CONCAT(s.Fname, ' ', s.Lname)
+        ELSE 'Online'
+      END AS StaffName
+    FROM \`order\` o
+    LEFT JOIN staff s ON s.StaffID = o.StaffID
+    LEFT JOIN order_item oi ON oi.OrderID = o.OrderID
+    WHERE o.OrderDate BETWEEN ? AND ?
+    GROUP BY o.OrderID
+    ORDER BY o.OrderDate DESC
+    LIMIT ? OFFSET ?
+  `;
+  
+  // Query to get total count
+  const countQuery = `
+    SELECT COUNT(*) as total
+    FROM \`order\` o
+    WHERE o.OrderDate BETWEEN ? AND ?
+  `;
+  
+  const [dataResults] = await db.query(dataQuery, [startDate, endDate, limit, offset]);
+  const [countResults] = await db.query(countQuery, [startDate, endDate]);
+  
+  // Debug: Log first few results to check data
+  console.log("Raw transactions sample:", dataResults.slice(0, 3));
+  
+  const total = countResults[0].total;
+  const totalPages = Math.ceil(total / limit);
+  
+  return {
+    data: dataResults,
+    pagination: {
+      total: total,
+      page: page,
+      pages: totalPages,
+      limit: limit
+    }
+  };
+}
+
+/**
+ * Raw transactions for Menu Items report
+ * Shows individual order items with details
+ */
+const rawTransactionsItems = async (startDate, endDate, page = 1, limit = 100) => {
+  const offset = (page - 1) * limit;
+  
+  // Query to get paginated order items
+  const dataQuery = `
+    SELECT
+      oi.OrderItemID,
+      oi.OrderID,
+      o.OrderDate,
+      mi.Name AS ItemName,
+      mi.Category,
+      oi.Quantity,
+      oi.Price AS UnitPrice,
+      (oi.Quantity * oi.Price) AS LineTotal,
+      o.LocationName,
+      CASE
+        WHEN o.StaffID IS NOT NULL THEN CONCAT(s.Fname, ' ', s.Lname)
+        ELSE 'Online'
+      END AS StaffName
+    FROM order_item oi
+    JOIN \`order\` o ON o.OrderID = oi.OrderID
+    LEFT JOIN staff s ON s.StaffID = o.StaffID
+    LEFT JOIN menu_item mi ON mi.MenuItemID = oi.MenuItemID
+    WHERE o.OrderDate BETWEEN ? AND ?
+    ORDER BY o.OrderDate DESC, oi.OrderItemID DESC
+    LIMIT ? OFFSET ?
+  `;
+  
+  // Query to get total count
+  const countQuery = `
+    SELECT COUNT(*) as total
+    FROM order_item oi
+    JOIN \`order\` o ON o.OrderID = oi.OrderID
+    WHERE o.OrderDate BETWEEN ? AND ?
+  `;
+  
+  const [dataResults] = await db.query(dataQuery, [startDate, endDate, limit, offset]);
+  const [countResults] = await db.query(countQuery, [startDate, endDate]);
+  
+  // Debug: Log first few results
+  console.log("Raw transactions items sample:", dataResults.slice(0, 3));
+  
+  const total = countResults[0].total;
+  const totalPages = Math.ceil(total / limit);
+  
+  return {
+    data: dataResults,
+    pagination: {
+      total: total,
+      page: page,
+      pages: totalPages,
+      limit: limit
+    }
+  };
+}
+
+/**
+ * Raw transactions for Employee Performance report
+ * Shows individual timecards with order activity during shifts
+ */
+const rawTransactionsEmployees = async (startDate, endDate, page = 1, limit = 100) => {
+  const offset = (page - 1) * limit;
+  
+  // Query to get paginated timecards with order activity
+  const dataQuery = `
+    SELECT
+      t.TimecardID,
+      t.StaffID AS EmployeeID,
+      CONCAT(s.Fname, ' ', s.Lname) AS EmployeeName,
+      s.Role,
+      DATE(t.ClockInTime) AS ShiftDate,
+      t.ClockInTime,
+      t.ClockOutTime,
+      ROUND(TIMESTAMPDIFF(MINUTE, t.ClockInTime, t.ClockOutTime) / 60.0, 2) AS HoursWorked,
+      t.LocationName,
+      COUNT(o.OrderID) AS OrdersHandled,
+      IFNULL(SUM(o.TotalAmount), 0) AS TotalSales
+    FROM timecard t
+    JOIN staff s ON s.StaffID = t.StaffID
+    LEFT JOIN \`order\` o ON o.StaffID = t.StaffID 
+      AND DATE(o.OrderDate) = DATE(t.ClockInTime)
+    WHERE DATE(t.ClockInTime) BETWEEN ? AND ?
+    GROUP BY t.TimecardID, t.StaffID, s.Fname, s.Lname, s.Role, t.ClockInTime, t.ClockOutTime, t.LocationName
+    ORDER BY t.ClockInTime DESC
+    LIMIT ? OFFSET ?
+  `;
+  
+  // Query to get total count
+  const countQuery = `
+    SELECT COUNT(*) as total
+    FROM timecard t
+    WHERE DATE(t.ClockInTime) BETWEEN ? AND ?
+  `;
+  
+  const [dataResults] = await db.query(dataQuery, [startDate, endDate, limit, offset]);
+  const [countResults] = await db.query(countQuery, [startDate, endDate]);
+  
+  // Debug: Log first few results
+  console.log("Raw transactions employees sample:", dataResults.slice(0, 3));
+  
+  const total = countResults[0].total;
+  const totalPages = Math.ceil(total / limit);
+  
+  return {
+    data: dataResults,
+    pagination: {
+      total: total,
+      page: page,
+      pages: totalPages,
+      limit: limit
+    }
+  };
+}
+
+export { profitPerLocation, mostPopularItems, employeePerformance, rawTransactionsLocations, rawTransactionsItems, rawTransactionsEmployees };
