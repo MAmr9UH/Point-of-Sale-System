@@ -2,7 +2,7 @@
   "version": 2,
   "buildCommand": "npm run build --prefix client",
   "outputDirectory": "client/dist",
-  "installCommand": "npm install --prefix server",
+  "installCommand": "npm install --prefix api",
   "rewrites": [
     {
       "source": "/api/(.*)",
