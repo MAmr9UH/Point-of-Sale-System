@@ -89,7 +89,7 @@ export const IngredientsTab: React.FC = () => {
         ? `/api/ingredients/${editingIngredient.IngredientID}` 
         : '/api/ingredients';
 
-      const response = await fetch(url, {
+      const response = await authenticatedFetch(url, {
         method,
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload),

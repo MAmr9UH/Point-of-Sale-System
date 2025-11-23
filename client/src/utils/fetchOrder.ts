@@ -1,8 +1,10 @@
+import { authenticatedFetch } from "./jwtAuth";
+
 export const createOrder = async (orderData: any) => {
     try {
         console.log('Creating order with data:', orderData);
 
-        const response = await fetch('/api/checkout/userCreateOrder', {
+        const response = await authenticatedFetch('/api/checkout/userCreateOrder', {
             method: 'POST',
             credentials: 'include',
             headers: {

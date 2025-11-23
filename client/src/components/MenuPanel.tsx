@@ -10,14 +10,14 @@ import type { ItemCustomization } from '../contexts/ShoppingCart';
 import { useToaster } from '../contexts/ToastContext';
 
 const MenuPanel = () => {
-    
+
     const [menuItems, setMenuItems] = useState<MenuItemType[]>([]);
     const [selectedItem, setSelectedItem] = useState<MenuItemType | null>(null);
     const [isCustomizationOpen, setIsCustomizationOpen] = useState(false);
     const { addItem } = useShoppingCart();
     const { addToast } = useToaster();
 
-        useEffect(() => {
+    useEffect(() => {
         // Fetch menu items
         fetchMenuUtils.fetchMenuCustomer().then(items => {
             setMenuItems(items);
@@ -28,7 +28,7 @@ const MenuPanel = () => {
             try {
                 const response = await fetch('/api/busy-status');
                 const data = await response.json();
-                
+
                 if (data.success && data.isBusy) {
                     addToast(
                         `⚠️ We're busy! Orders may take longer than usual. Thank you for your patience!`,
@@ -65,10 +65,10 @@ const MenuPanel = () => {
                 priceAdjustment: parseFloat(ingredient?.PriceAdjustment || '0')
             };
         });
-        
+
         // Add item to cart with customizations
         addItem(item, itemCustomizations.length > 0 ? itemCustomizations : undefined);
-        
+
         // Log customizations for debugging
         if (itemCustomizations.length > 0) {
             console.log('Item customizations:', itemCustomizations);
@@ -98,9 +98,9 @@ const MenuPanel = () => {
                         <h3 className="category-title">{category.charAt(0).toUpperCase() + category.slice(1)}</h3>
                         <div className="menu-grid">
                             {groupedItems[category].map(item => (
-                                <MenuItem 
-                                    key={item.MenuItemID} 
-                                    item={item} 
+                                <MenuItem
+                                    key={item.MenuItemID}
+                                    item={item}
                                     onOpenCustomization={handleOpenCustomization}
                                 />
                             ))}
@@ -108,7 +108,7 @@ const MenuPanel = () => {
                     </div>
                 ))}
             </div>
-            
+
             <CustomizationModal
                 item={selectedItem}
                 isOpen={isCustomizationOpen}

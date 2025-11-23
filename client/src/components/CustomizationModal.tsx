@@ -120,12 +120,14 @@ const CustomizationModal = ({ item, isOpen, onClose, onAddToCart }: Customizatio
         const newCustomizations = new Map(customizations);
         
         if (customizations.has(ingredient.IngredientID)) {
+            // Currently added, so remove it (uncheck)
             newCustomizations.delete(ingredient.IngredientID);
         } else {
+            // Not added yet, so add it (check)
             newCustomizations.set(ingredient.IngredientID, {
                 ingredientId: ingredient.IngredientID,
-                changeType: 'removed',
-                quantityDelta: -ingredient.QuantityRequired,
+                changeType: 'added',
+                quantityDelta: ingredient.QuantityRequired,
             });
         }
         
@@ -176,15 +178,36 @@ const CustomizationModal = ({ item, isOpen, onClose, onAddToCart }: Customizatio
         const newCustomizations = new Map(customizations);
         const current = customizations.get(ingredient.IngredientID);
         
-        const currentQuantity = current ? ingredient.QuantityRequired + current.quantityDelta : ingredient.QuantityRequired;
+        // Calculate current quantity differently based on whether ingredient is required
+        let currentQuantity: number;
+        let minQuantity: number;
+        
+        if (ingredient.IsRequired === 1) {
+            // Required ingredients: start from QuantityRequired
+            currentQuantity = current ? ingredient.QuantityRequired + current.quantityDelta : ingredient.QuantityRequired;
+            minQuantity = ingredient.QuantityRequired;
+        } else {
+            // Non-required ingredients: start from 0, or current added amount
+            currentQuantity = current ? current.quantityDelta : 0;
+            minQuantity = 0;
+        }
+        
         const newQuantity = currentQuantity + delta;
         
-        // Validate against max quantity
-        if (newQuantity > ingredient.MaximumQuantity || newQuantity < ingredient.QuantityRequired) {
+        // Validate against max quantity and min quantity
+        if (newQuantity > ingredient.MaximumQuantity || newQuantity < minQuantity) {
             return;
         }
         
-        const totalDelta = newQuantity - ingredient.QuantityRequired;
+        // Calculate delta based on ingredient type
+        let totalDelta: number;
+        if (ingredient.IsRequired === 1) {
+            // For required: delta is from QuantityRequired
+            totalDelta = newQuantity - ingredient.QuantityRequired;
+        } else {
+            // For non-required: delta is the absolute quantity to add
+            totalDelta = newQuantity;
+        }
         
         if (totalDelta === 0) {
             newCustomizations.delete(ingredient.IngredientID);
@@ -401,22 +424,35 @@ const CustomizationModal = ({ item, isOpen, onClose, onAddToCart }: Customizatio
                                                     .filter(ing => ing.CanSubstitute === 0 && (ing.IsRequired === 0 || ing.MaximumQuantity > ing.QuantityRequired))
                                                     .map(ingredient => {
                                                         const customization = customizations.get(ingredient.IngredientID);
-                                                        const isRemoved = customization?.changeType === 'removed';
+                                                        // For non-required ingredients, they are unchecked by default
+                                                        // isAdded = true when user checks the box
+                                                        const isAdded = customization?.changeType === 'added';
                                                         
                                                         // Calculate current quantity
-                                                        let currentQty = ingredient.QuantityRequired;
-                                                        if (isRemoved) {
-                                                            currentQty = 0;
-                                                        } else if (customization?.changeType === 'added') {
-                                                            currentQty = ingredient.QuantityRequired + customization.quantityDelta;
+                                                        let currentQty = 0; // Start at 0 for non-required ingredients
+                                                        if (ingredient.IsRequired === 1) {
+                                                            // Required ingredients always start at QuantityRequired
+                                                            currentQty = ingredient.QuantityRequired;
+                                                            if (customization?.changeType === 'added') {
+                                                                currentQty += customization.quantityDelta;
+                                                            }
+                                                        } else {
+                                                            // Non-required ingredients start unchecked (0)
+                                                            if (isAdded) {
+                                                                currentQty = customization.quantityDelta;
+                                                            }
                                                         }
                                                         
-                                                        const isAddable = ingredient.MaximumQuantity > ingredient.QuantityRequired;
+                                                        // For non-required ingredients, they're addable if MaximumQuantity > 0
+                                                        // For required ingredients, they're addable if MaximumQuantity > QuantityRequired
+                                                        const isAddable = ingredient.IsRequired === 1 
+                                                            ? ingredient.MaximumQuantity > ingredient.QuantityRequired
+                                                            : ingredient.MaximumQuantity > 0;
                                                         // Removable = NOT required (IsRequired === 0)
                                                         const isRemovable = ingredient.IsRequired === 0;
                                                         const priceAdj = parseFloat(ingredient.PriceAdjustment) || 0;
                                                         // Only grey out completely if base required quantity is out of stock
-                                                        const outOfStock = hasInsufficientStock(ingredient, isRemoved ? 0 : ingredient.QuantityRequired);
+                                                        const outOfStock = hasInsufficientStock(ingredient, isRemovable && !isAdded ? 0 : ingredient.QuantityRequired);
                                                         
                                                         return (
                                                             <div key={ingredient.IngredientID} className={`ingredient-option ${outOfStock ? 'out-of-stock' : ''}`}>
@@ -425,13 +461,14 @@ const CustomizationModal = ({ item, isOpen, onClose, onAddToCart }: Customizatio
                                                                         <label className="checkbox-option">
                                                                             <input
                                                                                 type="checkbox"
-                                                                                checked={!isRemoved}
+                                                                                checked={isAdded}
                                                                                 onChange={() => handleToggleIngredient(ingredient)}
-                                                                                disabled={outOfStock && !isRemoved}
+                                                                                disabled={outOfStock && !isAdded}
                                                                             />
                                                                             <span>
                                                                                 {ingredient.Name}
-                                                                                {outOfStock && !isRemoved && <span className="stock-badge"> (Out of Stock)</span>}
+                                                                                {outOfStock && !isAdded && <span className="stock-badge"> (Out of Stock)</span>}
+                                                                                {!outOfStock && priceAdj > 0 && <span className="price-badge"> +${priceAdj.toFixed(2)}</span>}
                                                                             </span>
                                                                         </label>
                                                                     ) : (
@@ -448,11 +485,11 @@ const CustomizationModal = ({ item, isOpen, onClose, onAddToCart }: Customizatio
                                                                     )}
                                                                 </div>
                                                                 
-                                                                {!isRemoved && isAddable && !outOfStock && (
+                                                                {((ingredient.IsRequired === 1 && isAddable) || (ingredient.IsRequired === 0 && isAdded && isAddable)) && !outOfStock && (
                                                                     <div className="quantity-controls">
                                                                         <button 
                                                                             onClick={() => handleQuantityChange(ingredient, -1)}
-                                                                            disabled={currentQty <= ingredient.QuantityRequired}
+                                                                            disabled={currentQty <= (ingredient.IsRequired === 1 ? ingredient.QuantityRequired : 1)}
                                                                         >
                                                                             -
                                                                         </button>

@@ -142,7 +142,6 @@ CREATE TABLE IF NOT EXISTS Used_For (
 
     IsRemovable BOOLEAN DEFAULT TRUE, 
     IsRequired BOOLEAN DEFAULT FALSE, 
-    CanSubstitute BOOLEAN DEFAULT FALSE,     
     
     UNIQUE (MenuItemID, IngredientID),
 

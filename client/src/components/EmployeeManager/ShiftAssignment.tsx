@@ -92,7 +92,7 @@ export const ShiftAssignment: React.FC<ShiftAssignmentProps> = ({ employee, onCl
         scheduleEnd: scheduleEnd,
       };
 
-      const response = await fetch('/api/shifts', {
+      const response = await authenticatedFetch('/api/shifts', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload),

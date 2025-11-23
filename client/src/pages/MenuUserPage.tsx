@@ -180,6 +180,8 @@ const MenuUserPage = () => {
     const itemCount = Object.values(items).reduce((sum, item) => sum + item.quantity, 0);
 
     useEffect(() => {
+        
+
         if (itemCount > 0) {
             setIsItemAdded(true);
             const timer = setTimeout(() => setIsItemAdded(false), 300); // Animation duration

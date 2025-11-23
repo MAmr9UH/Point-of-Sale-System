@@ -318,7 +318,7 @@ export const createOrder = async (orderItems, phoneNumber = null, userId = null,
     for (let i = 0; i < orderItems.length; i++) {
         const menuItem = menuItems[orderItems[i].id];
         const customizations = orderItems[i].customizations || {};
-
+        
         const orderItemData = {
             orderID: orderID,
             menuItemID: menuItem ? menuItem.MenuItemID : null,
@@ -327,10 +327,14 @@ export const createOrder = async (orderItems, phoneNumber = null, userId = null,
         }
 
         const neworderitem = new OrderItem(orderItemData);
-
+        
         if (!neworderitem.validate().isValid) {
             throw new Error(`Order item validation failed: ${neworderitem.validate().errors.join(', ')}`);
         }
+
+        let [temp] = await db.query(`SELECT i.Name, i.quantityinstock, uf.* FROM ingredient i, used_for uf WHERE uf.MenuItemID = ? and i.IngredientID = uf.ingredientID;`, [orderItemData.menuItemID]);
+        console.log("BEFORE oi, ");
+        console.log(temp);
 
         const insertOrderItemQuery = `
             INSERT INTO pos.Order_Item (OrderID, MenuItemID, Price, Quantity)
@@ -343,6 +347,9 @@ export const createOrder = async (orderItems, phoneNumber = null, userId = null,
             orderItemData.quantity
         ];
         const [results] = await db.query(insertOrderItemQuery, orderItemParams);
+        [temp] = await db.query(`SELECT i.Name, i.quantityinstock, uf.* FROM ingredient i, used_for uf WHERE uf.MenuItemID = ? and i.IngredientID = uf.ingredientID;`, [orderItemData.menuItemID]);
+        console.log("AFTER oi, ");
+        console.log(temp);
 
         const orderItemId = results.insertId;
 

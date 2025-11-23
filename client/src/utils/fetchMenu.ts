@@ -18,7 +18,7 @@ export const fetchMenu = async () => {
 
 export const fetchMenuCustomer = async () => {
     try {
-        const response = await authenticatedFetch('/api/menu/items/available');
+        const response = await fetch('/api/menu/items/available');
         if (!response.ok) {
             throw new Error('Network response was not ok');
         }

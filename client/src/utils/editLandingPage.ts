@@ -1,3 +1,5 @@
+import { authenticatedFetch } from "./jwtAuth";
+
 /**
  * Updates the landing page/welcome page data
  * @param data Object containing the updated landing page fields
@@ -19,7 +21,7 @@ export const updateLandingPage = async (
   data: UpdateLandingPageData
 ): Promise<UpdateLandingPageResponse> => {
   try {
-    const response = await fetch('/api/editpage/', {
+    const response = await authenticatedFetch('/api/editpage/', {
       method: 'POST',
       credentials: 'include',
       headers: {

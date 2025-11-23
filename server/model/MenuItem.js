@@ -245,7 +245,6 @@ export const updateMenuItem = async (menuItemId, updateData) => {
     if (!menuItemId) {
         throw new Error('MenuItemID is required for update');
     }
-    console.log(updateData);
 
     const [ res ] = await db.query('SELECT * FROM Menu_Item WHERE MenuItemID = ?', [menuItemId]);
     const oldmenuItem = res.length > 0 ? MenuItem.fromDB(res[0]) : null;
