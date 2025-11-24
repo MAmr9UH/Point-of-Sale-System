@@ -6,7 +6,7 @@
 - Hosted webapp: https://possys.vercel.app/
 - Project Document: https://docs.google.com/document/d/1UOP-uzjgax5Gt0HuEcGxOgvFvu0pxk0QiYBmBcNcKcg/edit?usp=sharing
 ## How to run (Node.js v22.14.0 & MySQL v8.0.43):
-#### 1. Client:
+### 1. Client
 - Go to the ```client``` folder using 
 ```bash
   cd ./client
@@ -31,7 +31,7 @@ export default defineConfig({
 
 ```
 
-#### 2. Database:
+### 2. Database
 - The project uses [MySQL](https://www.mysql.com/). For development, the project runs on the local MySQL instance, after loading the schema at ```./server/db/db.sql```
 
 - By default, the local credentials is:
@@ -47,7 +47,7 @@ which can be change (refer to the example .env)
 
 - Use the Azure credentials submitted for the production database (or the populated dump file) to view the complete database with triggers and mock data.
 
-#### 3. Server:
+### 3. Server
 
 - Go to the ```./server``` folder
 ```bash
@@ -63,7 +63,7 @@ cd ./server
 
 - The API is hosted by default at ```http://localhost:3000```
 
-#### 4. Hosting
+### 4. Hosting
 - The repo includes a vercel workflow to host with your credentials ```vercel.json```
 - Follow the instructions on [Vercel](https://vercel.com/) to install Vercel CLI.
 - Run ```vercel``` in the command line and follow instruction and set up environment.
