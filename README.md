@@ -48,7 +48,7 @@ DB_DATABASE=pos
 ```
 which can be change (refer to the example .env)
 
-- Use the Azure credentials submitted for the production database (or the populated dump file) to view the complete database with triggers and mock data.
+- Use the Azure credentials submitted for the production database (or the populated dump file, located in ```./dbDump```) to view the complete database with triggers and mock data.
 
 ### 3. Server
 
