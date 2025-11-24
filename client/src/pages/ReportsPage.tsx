@@ -40,6 +40,30 @@ const API_BASE = "";
 const money = (n: number) =>
   Number(n ?? 0).toLocaleString(undefined, { style: "currency", currency: "USD" });
 
+// Format datetime as stored in database without timezone conversion
+const formatDateTime = (dateStr: string) => {
+  if (!dateStr) return 'N/A';
+  
+  // Remove 'Z' suffix and 'T' separator if present (ISO format)
+  let cleanStr = dateStr.replace('T', ' ').replace('Z', '').replace('.000', '');
+  
+  // MySQL datetime format: "YYYY-MM-DD HH:MM:SS"
+  const parts = cleanStr.split(' ');
+  const datePart = parts[0]; // YYYY-MM-DD
+  const timePart = parts[1]; // HH:MM:SS
+  
+  if (!datePart || !timePart) return dateStr;
+  
+  const [year, month, day] = datePart.split('-');
+  const [hours, minutes, seconds] = timePart.split(':');
+  
+  const hour = parseInt(hours);
+  const ampm = hour >= 12 ? 'PM' : 'AM';
+  const displayHour = hour % 12 || 12;
+  
+  return `${month}/${day}/${year}, ${displayHour}:${minutes}:${seconds} ${ampm}`;
+};
+
 const sortFieldsByType: Record<ReportType, { key: string; label: string }[]> = {
   locations: [
     { key: "LocationName", label: "Location" },
@@ -1354,7 +1378,7 @@ export default function ReportsPage() {
                               {filteredRawData.map((row, i) => (
                                 <tr key={`raw-${row.OrderID}-${i}`} style={{ backgroundColor: i % 2 === 0 ? '#fff' : '#f9fafb' }}>
                                   <td>#{row.OrderID}</td>
-                                  <td>{new Date(row.OrderDate).toLocaleString()}</td>
+                                  <td>{formatDateTime(row.OrderDate)}</td>
                                   <td>{row.LocationName || 'N/A'}</td>
                                   <td style={{ textAlign: 'center' }}>
                                     <span style={{ 
@@ -1518,7 +1542,7 @@ export default function ReportsPage() {
                     <th style={{ textAlign: 'right' }}>Quantity</th>
                     <th style={{ textAlign: 'right' }}>Total sales ($)</th>
                     <th style={{ textAlign: 'right' }}>Avg Item Price</th>
-                    <th style={{ textAlign: 'right' }}>Porcentage of total sales</th>
+                    <th style={{ textAlign: 'right' }}>Percentage of total sales</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -1690,7 +1714,7 @@ export default function ReportsPage() {
                                 <tr key={`raw-item-${row.OrderItemID}-${i}`} style={{ backgroundColor: i % 2 === 0 ? '#fff' : '#f9fafb' }}>
                                   <td>#{row.OrderItemID}</td>
                                   <td>#{row.OrderID}</td>
-                                  <td>{new Date(row.OrderDate).toLocaleString()}</td>
+                                  <td>{formatDateTime(row.OrderDate)}</td>
                                   <td>{row.ItemName || 'N/A'}</td>
                                   <td>{row.Category || 'N/A'}</td>
                                   <td style={{ textAlign: 'center' }}>

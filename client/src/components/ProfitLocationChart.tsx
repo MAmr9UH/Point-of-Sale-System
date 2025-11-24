@@ -109,6 +109,71 @@ export default function ProfitLocationChart({ data, metric = 'TotalProfit' }: Pr
   if (isPieChart) {
     // Calculate total sales for percentage calculation
     const totalSales = chartData.reduce((sum, d) => sum + d.sales, 0);
+    
+    // Special case: single location = full circle
+    if (chartData.length === 1) {
+      const item = chartData[0];
+      return (
+        <div className="location-chart-container">
+          <h3 className="location-chart-title">{config.title}</h3>
+          <div className="location-chart-wrapper">
+            <svg 
+              width="100%" 
+              height="400"
+              viewBox="0 0 800 400"
+              preserveAspectRatio="xMidYMid meet"
+            >
+              {/* Full circle for single location */}
+              <circle
+                cx={pieCenterX}
+                cy={pieCenterY}
+                r={pieRadius}
+                fill={config.color}
+                stroke="white"
+                strokeWidth="2"
+                className="location-chart-bar"
+              >
+                <title>{item.name}: 100%</title>
+              </circle>
+              
+              {/* Center label */}
+              <text
+                x={pieCenterX}
+                y={pieCenterY}
+                textAnchor="middle"
+                fontSize="24"
+                fill="white"
+                fontWeight="600"
+              >
+                100%
+              </text>
+              
+              {/* Legend */}
+              <g transform="translate(450, 50)">
+                <rect
+                  x="0"
+                  y="0"
+                  width="20"
+                  height="20"
+                  fill={config.color}
+                  rx="3"
+                />
+                <text
+                  x="30"
+                  y="15"
+                  fontSize="13"
+                  fill="#374151"
+                >
+                  {item.name} (100%)
+                </text>
+              </g>
+            </svg>
+          </div>
+        </div>
+      );
+    }
+    
+    // Multiple locations: regular pie chart
     let currentAngle = -90; // Start from top
     
     return (
