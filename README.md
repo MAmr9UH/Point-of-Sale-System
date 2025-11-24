@@ -1,7 +1,7 @@
 # Team 4: Foodtruck POS
 ## Members:
 - Quang Hung Bui
-- Arphitha Ashokan
+- Arpitha Ashokan
 - Diego Dominguez
 - Mohamed Amr
 - Chuka Nwobu
