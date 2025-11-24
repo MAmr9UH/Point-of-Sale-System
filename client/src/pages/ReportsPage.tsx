@@ -104,6 +104,18 @@ export default function ReportsPage() {
   const [keyword, setKeyword] = useState<string>(""); // now used to filter rows
   const [range, setRange] = useState<Range>({ from, to });
   const [viewed, setViewed] = useState(false);
+  
+  /* ---- Location filter ---- */
+  const [selectedLocations, setSelectedLocations] = useState<string[]>([]);
+  const [availableLocations, setAvailableLocations] = useState<string[]>([]);
+  
+  /* ---- Menu Items filter ---- */
+  const [selectedItems, setSelectedItems] = useState<string[]>([]);
+  const [availableItems, setAvailableItems] = useState<string[]>([]);
+  
+  /* ---- Employees filter ---- */
+  const [selectedEmployees, setSelectedEmployees] = useState<string[]>([]);
+  const [availableEmployees, setAvailableEmployees] = useState<string[]>([]);
 
   /* ---- Sorting ---- */
   const [sortField, setSortField] = useState<string>("TotalProfit");
@@ -152,16 +164,110 @@ export default function ReportsPage() {
     console.log(`✅ State reset complete for ${type} tab`);
 
     if (type === "locations") {
-      setSortField((f) => (["LocationName","TotalOrders","TotalSales","TotalCost","TotalProfit","ProfitMarginPct"].includes(f) ? f : "TotalProfit"));
+      setSortField((f: string) => (["LocationName","TotalOrders","TotalSales","TotalCost","TotalProfit","ProfitMarginPct"].includes(f) ? f : "TotalProfit"));
     } else if (type === "items") {
-      setSortField((f) => (["ItemName","Category","TotalQuantity","TotalSales","AvgPricePerItem","SalesSharePct"].includes(f) ? f : "TotalSales"));
+      setSortField((f: string) => (["ItemName","Category","TotalQuantity","TotalSales","AvgPricePerItem","SalesSharePct"].includes(f) ? f : "TotalSales"));
     } else {
-      setSortField((f) =>
+      setSortField((f: string) =>
         ["EmployeeName", "Role", "TotalOrdersHandled", "TotalSales", "TotalHoursWorked", "SalesPerHour"].includes(f)
           ? f
           : "SalesPerHour"
       );
     }
+  }, [type]);
+
+  /* ---- Fetch available locations on mount ---- */
+  useEffect(() => {
+    const fetchAvailableLocations = async () => {
+      try {
+        const params = new URLSearchParams({
+          startDate: range.from,
+          endDate: range.to,
+          desc: "false",
+        });
+        const url = `${API_BASE}/api/reports/profit-per-location?${params}`;
+        const res = await fetch(url);
+        if (res.ok) {
+          const data = await res.json();
+          if (data && data.length > 0) {
+            const locations = [...new Set(data.map((row: any) => row.LocationName).filter(Boolean))] as string[];
+            setAvailableLocations(locations.sort());
+          }
+        }
+      } catch (e) {
+        console.error("Failed to fetch available locations:", e);
+      }
+    };
+
+    if (type === "locations") {
+      fetchAvailableLocations();
+    }
+  }, [type, range.from, range.to]);
+
+  /* ---- Fetch available menu items on mount ---- */
+  useEffect(() => {
+    const fetchAvailableItems = async () => {
+      try {
+        const params = new URLSearchParams({
+          startDate: range.from,
+          endDate: range.to,
+          desc: "false",
+        });
+        const url = `${API_BASE}/api/reports/most-popular-items?${params}`;
+        const res = await fetch(url);
+        if (res.ok) {
+          const data = await res.json();
+          if (data && data.length > 0) {
+            const items = [...new Set(data.map((row: any) => row.ItemName).filter(Boolean))] as string[];
+            setAvailableItems(items.sort());
+          }
+        }
+      } catch (e) {
+        console.error("Failed to fetch available items:", e);
+      }
+    };
+
+    if (type === "items") {
+      fetchAvailableItems();
+    }
+  }, [type, range.from, range.to]);
+  
+  /* ---- Fetch available employees for filtering ---- */
+  useEffect(() => {
+    const fetchAvailableEmployees = async () => {
+      try {
+        const params = new URLSearchParams({
+          startDate: range.from,
+          endDate: range.to,
+        });
+        const url = `${API_BASE}/api/reports/employee-performance?${params}`;
+        const res = await fetch(url);
+        if (res.ok) {
+          const data = await res.json();
+          if (data && data.length > 0) {
+            const employees = data.map((row: any) => 
+              row.EmployeeName ?? `${row.FName ?? ""} ${row.LName ?? row.Lname ?? ""}`.trim()
+            ).filter(Boolean);
+            const uniqueEmployees = [...new Set(employees)] as string[];
+            setAvailableEmployees(uniqueEmployees.sort());
+          }
+        }
+      } catch (e) {
+        console.error("Failed to fetch available employees:", e);
+      }
+    };
+
+    if (type === "employees") {
+      fetchAvailableEmployees();
+    }
+  }, [type, range.from, range.to]);
+  
+  /* ---- Reset filters when changing tabs ---- */
+  useEffect(() => {
+    setSelectedLocations([]);
+    setSelectedItems([]);
+    setSelectedEmployees([]);
+    setKeyword("");
   }, [type]);
 
   /* ---- Fetch ---- */
@@ -200,6 +306,12 @@ export default function ReportsPage() {
         setRows(normalized);
       } else {
         setRows(data);
+      }
+      
+      // Extract unique locations from data for the filter dropdown
+      if (type === "locations" && data && data.length > 0) {
+        const locations = [...new Set(data.map((row: any) => row.LocationName).filter(Boolean))] as string[];
+        setAvailableLocations(locations);
       }
     } catch (e: any) {
       setErr(e?.message || "Failed to load report");
@@ -364,63 +476,102 @@ export default function ReportsPage() {
 
   /* ---- Keyword filter, then sort ---- */
   const filtered = useMemo(() => {
+    let result = rows;
+    
+    // Apply location filter for locations report
+    if (type === "locations" && selectedLocations.length > 0) {
+      result = result.filter(r => selectedLocations.includes(r.LocationName));
+    }
+    
+    // Apply items filter for items report
+    if (type === "items" && selectedItems.length > 0) {
+      result = result.filter(r => selectedItems.includes(r.ItemName || r.Name));
+    }
+    
+    // Apply employees filter for employees report
+    if (type === "employees" && selectedEmployees.length > 0) {
+      result = result.filter(r => selectedEmployees.includes(r.EmployeeName));
+    }
+    
+    // Apply keyword filter
     const q = keyword.trim().toLowerCase();
-    if (!q) return rows;
+    if (q) {
+      const keywords = q.split(/[,\s]+/).filter(k => k.length > 0);
+      result = result.filter((r) => {
+        const haystack = haystackForRow(r, type).toLowerCase();
+        return keywords.some(kw => haystack.includes(kw));
+      });
+    }
     
-    // Split by comma or space, remove empty strings
-    const keywords = q.split(/[,\s]+/).filter(k => k.length > 0);
-    
-    // Filter rows that match ANY of the keywords (OR logic)
-    return rows.filter((r) => {
-      const haystack = haystackForRow(r, type).toLowerCase();
-      return keywords.some(kw => haystack.includes(kw));
-    });
-  }, [rows, keyword, type]);
+    return result;
+  }, [rows, keyword, type, selectedLocations, selectedItems, selectedEmployees]);
 
   /* ---- Filter raw data by keyword ---- */
   const filteredRawData = useMemo(() => {
+    let result = rawData;
+    
+    // Apply location filter
+    if (type === "locations" && selectedLocations.length > 0) {
+      result = result.filter(r => selectedLocations.includes(r.LocationName));
+    }
+    
+    // Apply keyword filter
     const q = keyword.trim().toLowerCase();
-    if (!q || rawData.length === 0) return rawData;
+    if (q && result.length > 0) {
+      const keywords = q.split(/[,\s]+/).filter(k => k.length > 0);
+      result = result.filter((r) => {
+        const haystack = `${r.OrderID ?? ''} ${r.OrderDate ?? ''} ${r.LocationName ?? ''} ${r.PaymentMethod ?? ''} ${r.StaffName ?? ''}`.toLowerCase();
+        return keywords.some(kw => haystack.includes(kw));
+      });
+    }
     
-    // Split by comma or space, remove empty strings
-    const keywords = q.split(/[,\s]+/).filter(k => k.length > 0);
-    
-    // Filter raw transaction rows
-    return rawData.filter((r) => {
-      const haystack = `${r.OrderID ?? ''} ${r.OrderDate ?? ''} ${r.LocationName ?? ''} ${r.PaymentMethod ?? ''} ${r.StaffName ?? ''}`.toLowerCase();
-      return keywords.some(kw => haystack.includes(kw));
-    });
-  }, [rawData, keyword]);
+    return result;
+  }, [rawData, keyword, type, selectedLocations]);
 
   /* ---- Filter raw items data by keyword ---- */
   const filteredRawDataItems = useMemo(() => {
+    let result = rawDataItems;
+    
+    // Apply items filter
+    if (type === "items" && selectedItems.length > 0) {
+      result = result.filter(r => selectedItems.includes(r.ItemName));
+    }
+    
+    // Apply keyword filter
     const q = keyword.trim().toLowerCase();
-    if (!q || rawDataItems.length === 0) return rawDataItems;
+    if (q && result.length > 0) {
+      const keywords = q.split(/[,\s]+/).filter(k => k.length > 0);
+      result = result.filter((r) => {
+        const haystack = `${r.OrderItemID ?? ''} ${r.OrderID ?? ''} ${r.ItemName ?? ''} ${r.Category ?? ''} ${r.LocationName ?? ''} ${r.StaffName ?? ''}`.toLowerCase();
+        return keywords.some(kw => haystack.includes(kw));
+      });
+    }
     
-    // Split by comma or space, remove empty strings
-    const keywords = q.split(/[,\s]+/).filter(k => k.length > 0);
-    
-    // Filter raw item rows
-    return rawDataItems.filter((r) => {
-      const haystack = `${r.OrderItemID ?? ''} ${r.OrderID ?? ''} ${r.ItemName ?? ''} ${r.Category ?? ''} ${r.LocationName ?? ''} ${r.StaffName ?? ''}`.toLowerCase();
-      return keywords.some(kw => haystack.includes(kw));
-    });
-  }, [rawDataItems, keyword]);
+    return result;
+  }, [rawDataItems, keyword, type, selectedItems]);
 
   /* ---- Filter raw employees data by keyword ---- */
   const filteredRawDataEmployees = useMemo(() => {
+    let result = rawDataEmployees;
+    
+    // Apply employees filter
+    if (type === "employees" && selectedEmployees.length > 0) {
+      result = result.filter(r => selectedEmployees.includes(r.EmployeeName));
+    }
+    
+    // Apply keyword filter
     const q = keyword.trim().toLowerCase();
-    if (!q || rawDataEmployees.length === 0) return rawDataEmployees;
+    if (!q || result.length === 0) return result;
     
     // Split by comma or space, remove empty strings
     const keywords = q.split(/[,\s]+/).filter(k => k.length > 0);
     
     // Filter raw employee rows
-    return rawDataEmployees.filter((r) => {
+    return result.filter((r) => {
       const haystack = `${r.TimecardID ?? ''} ${r.EmployeeID ?? ''} ${r.EmployeeName ?? ''} ${r.Role ?? ''} ${r.LocationName ?? ''}`.toLowerCase();
       return keywords.some(kw => haystack.includes(kw));
     });
-  }, [rawDataEmployees, keyword]);
+  }, [rawDataEmployees, keyword, type, selectedEmployees]);
 
   /* ---- Refetch raw data when date range changes (if section is open) ---- */
   useEffect(() => {
@@ -547,6 +698,286 @@ export default function ReportsPage() {
               onChange={(e) => setKeyword(e.target.value)}
             />
           </label>
+          
+          {/* Location Filter - Show for Locations report once locations are loaded */}
+          {type === "locations" && availableLocations.length > 0 && (
+            <label className="field span-2">
+              <span>Filter by Location(s) - {selectedLocations.length > 0 ? `${selectedLocations.length} selected` : 'All locations'}</span>
+              <div style={{ 
+                display: 'flex', 
+                flexWrap: 'wrap', 
+                gap: '8px', 
+                padding: '8px', 
+                border: '1px solid #d1d5db', 
+                borderRadius: '6px',
+                backgroundColor: '#f9fafb',
+                minHeight: '42px'
+              }}>
+                {availableLocations.map(location => (
+                  <label 
+                    key={location}
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '6px',
+                      padding: '6px 12px',
+                      backgroundColor: selectedLocations.includes(location) ? '#3b82f6' : 'white',
+                      color: selectedLocations.includes(location) ? 'white' : '#374151',
+                      border: '1px solid',
+                      borderColor: selectedLocations.includes(location) ? '#3b82f6' : '#d1d5db',
+                      borderRadius: '6px',
+                      cursor: 'pointer',
+                      fontSize: '13px',
+                      fontWeight: 500,
+                      transition: 'all 0.2s'
+                    }}
+                  >
+                    <input
+                      type="checkbox"
+                      checked={selectedLocations.includes(location)}
+                      onChange={(e) => {
+                        if (e.target.checked) {
+                          setSelectedLocations([...selectedLocations, location]);
+                        } else {
+                          setSelectedLocations(selectedLocations.filter(l => l !== location));
+                        }
+                      }}
+                      style={{ cursor: 'pointer' }}
+                    />
+                    {location}
+                  </label>
+                ))}
+                {selectedLocations.length > 0 && (
+                  <button
+                    type="button"
+                    onClick={() => setSelectedLocations([])}
+                    style={{
+                      padding: '6px 12px',
+                      backgroundColor: '#fee2e2',
+                      color: '#dc2626',
+                      border: '1px solid #fecaca',
+                      borderRadius: '6px',
+                      cursor: 'pointer',
+                      fontSize: '13px',
+                      fontWeight: 500
+                    }}
+                  >
+                    Clear All
+                  </button>
+                )}
+              </div>
+            </label>
+          )}
+          
+          {/* Menu Items Filter - Show for Items report once items are loaded */}
+          {type === "items" && availableItems.length > 0 && (
+            <label className="field span-2">
+              <span>Filter by Menu Item(s) - {selectedItems.length > 0 ? `${selectedItems.length} selected` : 'All items'}</span>
+              <div style={{ 
+                display: 'flex',
+                flexDirection: 'column',
+                gap: '8px'
+              }}>
+                <div style={{ position: 'relative' }}>
+                  <select
+                    size={1}
+                    value=""
+                    onChange={(e) => {
+                      const item = e.target.value;
+                      if (item && !selectedItems.includes(item)) {
+                        setSelectedItems([...selectedItems, item]);
+                      }
+                    }}
+                    style={{
+                      width: '100%',
+                      padding: '8px',
+                      border: '1px solid #d1d5db',
+                      borderRadius: '6px',
+                      fontSize: '13px',
+                      backgroundColor: 'white',
+                      cursor: 'pointer'
+                    }}
+                  >
+                    <option value="">Select an item to add...</option>
+                    {availableItems.map(item => (
+                      <option key={item} value={item}>
+                        {item}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                
+                {/* Selected items display */}
+                {selectedItems.length > 0 && (
+                  <div style={{
+                    display: 'flex',
+                    flexWrap: 'wrap',
+                    gap: '8px',
+                    padding: '8px',
+                    backgroundColor: '#f9fafb',
+                    border: '1px solid #d1d5db',
+                    borderRadius: '6px'
+                  }}>
+                    {selectedItems.map(item => (
+                      <span
+                        key={item}
+                        style={{
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '6px',
+                          padding: '4px 10px',
+                          backgroundColor: '#3b82f6',
+                          color: 'white',
+                          borderRadius: '6px',
+                          fontSize: '13px',
+                          fontWeight: 500
+                        }}
+                      >
+                        {item}
+                        <button
+                          type="button"
+                          onClick={() => setSelectedItems(selectedItems.filter(i => i !== item))}
+                          style={{
+                            background: 'none',
+                            border: 'none',
+                            color: 'white',
+                            cursor: 'pointer',
+                            fontSize: '16px',
+                            padding: '0',
+                            marginLeft: '2px',
+                            lineHeight: '1'
+                          }}
+                        >
+                          ×
+                        </button>
+                      </span>
+                    ))}
+                    <button
+                      type="button"
+                      onClick={() => setSelectedItems([])}
+                      style={{
+                        padding: '4px 10px',
+                        backgroundColor: '#fee2e2',
+                        color: '#dc2626',
+                        border: '1px solid #fecaca',
+                        borderRadius: '6px',
+                        cursor: 'pointer',
+                        fontSize: '12px',
+                        fontWeight: 500
+                      }}
+                    >
+                      Clear All
+                    </button>
+                  </div>
+                )}
+              </div>
+            </label>
+          )}
+          
+          {/* Employees Filter - Show for Employees report once employees are loaded */}
+          {type === "employees" && availableEmployees.length > 0 && (
+            <label className="field span-2">
+              <span>Filter by Employee(s) - {selectedEmployees.length > 0 ? `${selectedEmployees.length} selected` : 'All employees'}</span>
+              <div style={{ 
+                display: 'flex',
+                flexDirection: 'column',
+                gap: '8px'
+              }}>
+                <div style={{ position: 'relative' }}>
+                  <select
+                    size={1}
+                    value=""
+                    onChange={(e) => {
+                      const employee = e.target.value;
+                      if (employee && !selectedEmployees.includes(employee)) {
+                        setSelectedEmployees([...selectedEmployees, employee]);
+                      }
+                    }}
+                    style={{
+                      width: '100%',
+                      padding: '8px',
+                      border: '1px solid #d1d5db',
+                      borderRadius: '6px',
+                      fontSize: '13px',
+                      backgroundColor: 'white',
+                      cursor: 'pointer'
+                    }}
+                  >
+                    <option value="">Select an employee to add...</option>
+                    {availableEmployees.map(employee => (
+                      <option key={employee} value={employee}>
+                        {employee}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                
+                {/* Selected employees display */}
+                {selectedEmployees.length > 0 && (
+                  <div style={{
+                    display: 'flex',
+                    flexWrap: 'wrap',
+                    gap: '8px',
+                    padding: '8px',
+                    backgroundColor: '#f9fafb',
+                    border: '1px solid #d1d5db',
+                    borderRadius: '6px'
+                  }}>
+                    {selectedEmployees.map(employee => (
+                      <span
+                        key={employee}
+                        style={{
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '6px',
+                          padding: '4px 10px',
+                          backgroundColor: '#3b82f6',
+                          color: 'white',
+                          borderRadius: '6px',
+                          fontSize: '13px',
+                          fontWeight: 500
+                        }}
+                      >
+                        {employee}
+                        <button
+                          type="button"
+                          onClick={() => setSelectedEmployees(selectedEmployees.filter(e => e !== employee))}
+                          style={{
+                            background: 'none',
+                            border: 'none',
+                            color: 'white',
+                            cursor: 'pointer',
+                            fontSize: '16px',
+                            padding: '0',
+                            marginLeft: '2px',
+                            lineHeight: '1'
+                          }}
+                        >
+                          ×
+                        </button>
+                      </span>
+                    ))}
+                    <button
+                      type="button"
+                      onClick={() => setSelectedEmployees([])}
+                      style={{
+                        padding: '4px 10px',
+                        backgroundColor: '#fee2e2',
+                        color: '#dc2626',
+                        border: '1px solid #fecaca',
+                        borderRadius: '6px',
+                        cursor: 'pointer',
+                        fontSize: '12px',
+                        fontWeight: 500
+                      }}
+                    >
+                      Clear All
+                    </button>
+                  </div>
+                )}
+              </div>
+            </label>
+          )}
 
           <label className="field">
             <span>Activity date from</span>
@@ -565,6 +996,120 @@ export default function ReportsPage() {
               onChange={(e) => setRange((r) => ({ ...r, to: e.target.value }))}
             />
           </label>
+        </div>
+
+        {/* Quick Date Presets */}
+        <div style={{ 
+          display: 'flex', 
+          gap: '8px', 
+          flexWrap: 'wrap', 
+          marginTop: '0.5rem',
+          marginBottom: '0.5rem'
+        }}>
+          <span style={{ 
+            fontSize: '13px', 
+            color: '#6b7280', 
+            fontWeight: 500,
+            alignSelf: 'center',
+            marginRight: '4px'
+          }}>
+            Quick Select:
+          </span>
+          <button
+            type="button"
+            onClick={() => {
+              const today = new Date();
+              const sevenDaysAgo = new Date(today);
+              sevenDaysAgo.setDate(today.getDate() - 7);
+              setRange({
+                from: sevenDaysAgo.toISOString().slice(0, 10),
+                to: today.toISOString().slice(0, 10)
+              });
+            }}
+            style={{
+              padding: '6px 12px',
+              fontSize: '13px',
+              backgroundColor: '#f3f4f6',
+              border: '1px solid #d1d5db',
+              borderRadius: '6px',
+              cursor: 'pointer',
+              fontWeight: 500,
+              color: '#374151'
+            }}
+          >
+            Last 7 Days
+          </button>
+          <button
+            type="button"
+            onClick={() => {
+              const today = new Date();
+              const thirtyDaysAgo = new Date(today);
+              thirtyDaysAgo.setDate(today.getDate() - 30);
+              setRange({
+                from: thirtyDaysAgo.toISOString().slice(0, 10),
+                to: today.toISOString().slice(0, 10)
+              });
+            }}
+            style={{
+              padding: '6px 12px',
+              fontSize: '13px',
+              backgroundColor: '#f3f4f6',
+              border: '1px solid #d1d5db',
+              borderRadius: '6px',
+              cursor: 'pointer',
+              fontWeight: 500,
+              color: '#374151'
+            }}
+          >
+            Last 30 Days
+          </button>
+          <button
+            type="button"
+            onClick={() => {
+              const today = new Date();
+              const firstDayLastMonth = new Date(today.getFullYear(), today.getMonth() - 1, 1);
+              const lastDayLastMonth = new Date(today.getFullYear(), today.getMonth(), 0);
+              setRange({
+                from: firstDayLastMonth.toISOString().slice(0, 10),
+                to: lastDayLastMonth.toISOString().slice(0, 10)
+              });
+            }}
+            style={{
+              padding: '6px 12px',
+              fontSize: '13px',
+              backgroundColor: '#f3f4f6',
+              border: '1px solid #d1d5db',
+              borderRadius: '6px',
+              cursor: 'pointer',
+              fontWeight: 500,
+              color: '#374151'
+            }}
+          >
+            Last Month
+          </button>
+          <button
+            type="button"
+            onClick={() => {
+              const today = new Date();
+              const firstDayOfYear = new Date(today.getFullYear(), 0, 1);
+              setRange({
+                from: firstDayOfYear.toISOString().slice(0, 10),
+                to: today.toISOString().slice(0, 10)
+              });
+            }}
+            style={{
+              padding: '6px 12px',
+              fontSize: '13px',
+              backgroundColor: '#f3f4f6',
+              border: '1px solid #d1d5db',
+              borderRadius: '6px',
+              cursor: 'pointer',
+              fontWeight: 500,
+              color: '#374151'
+            }}
+          >
+            This Year
+          </button>
         </div>
 
         <div className="actions">
