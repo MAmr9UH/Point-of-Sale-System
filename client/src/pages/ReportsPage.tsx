@@ -45,7 +45,7 @@ const sortFieldsByType: Record<ReportType, { key: string; label: string }[]> = {
   locations: [
     { key: "LocationName", label: "Location" },
     { key: "TotalOrders", label: "Total Orders" },
-    { key: "TotalSales", label: "Total Sales" },
+    { key: "TotalSales", label: "Revenue Share (%)" },
     { key: "TotalCost", label: "Total Cost" },
     { key: "TotalProfit", label: "Total Profit" },
     { key: "ProfitMarginPct", label: "Profit Margin (%)" },

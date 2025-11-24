@@ -183,7 +183,7 @@ const employeePerformance = async (startDate, endDate, desc = false) => {
         COUNT(*)                             AS total_orders,
         SUM(IFNULL(o.TotalAmount, 0))        AS total_sales
       FROM \`order\` AS o
-      WHERE o.OrderDate BETWEEN ? AND ?
+      WHERE o.OrderDate >= ? AND o.OrderDate < DATE_ADD(?, INTERVAL 1 DAY)
       GROUP BY o.StaffID
     ) AS orders_filtered
       ON orders_filtered.StaffID = staff.StaffID
@@ -196,7 +196,7 @@ const employeePerformance = async (startDate, endDate, desc = false) => {
           ROUND(TIMESTAMPDIFF(MINUTE, t.ClockInTime, t.ClockOutTime) / 60.0, 2)
         ) AS total_hours
       FROM timecard AS t
-      WHERE DATE(t.ClockInTime) BETWEEN ? AND ?
+      WHERE DATE(t.ClockInTime) >= ? AND DATE(t.ClockInTime) < DATE_ADD(?, INTERVAL 1 DAY)
       GROUP BY t.StaffID
     ) AS timecards_filtered
       ON timecards_filtered.StaffID = staff.StaffID
@@ -349,12 +349,13 @@ const rawTransactionsEmployees = async (startDate, endDate, page = 1, limit = 10
       t.ClockOutTime,
       ROUND(TIMESTAMPDIFF(MINUTE, t.ClockInTime, t.ClockOutTime) / 60.0, 2) AS HoursWorked,
       t.LocationName,
-      COUNT(o.OrderID) AS OrdersHandled,
-      IFNULL(SUM(o.TotalAmount), 0) AS TotalSales
+      COUNT(DISTINCT o.OrderID) AS OrdersHandled,
+      IFNULL(SUM(oi.Quantity * oi.Price), 0) AS TotalSales
     FROM timecard t
     JOIN staff s ON s.StaffID = t.StaffID
     LEFT JOIN \`order\` o ON o.StaffID = t.StaffID 
       AND DATE(o.OrderDate) = DATE(t.ClockInTime)
+    LEFT JOIN order_item oi ON oi.OrderID = o.OrderID
     WHERE DATE(t.ClockInTime) BETWEEN ? AND ?
     GROUP BY t.TimecardID, t.StaffID, s.Fname, s.Lname, s.Role, t.ClockInTime, t.ClockOutTime, t.LocationName
     ORDER BY t.ClockInTime DESC

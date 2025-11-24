@@ -28,13 +28,9 @@ const metricConfig: Record<MetricKey, { title: string; color: string; format: (n
     }
   },
   TotalSales: {
-    title: 'Total Sales by Location',
+    title: 'Revenue Share by Location',
     color: '#3b82f6',
-    format: (n) => {
-      if (n >= 1000000) return `$${(n / 1000000).toFixed(1)}M`;
-      if (n >= 1000) return `$${(n / 1000).toFixed(1)}k`;
-      return `$${n.toFixed(0)}`;
-    }
+    format: (n) => `${n.toFixed(1)}%`
   },
   TotalCost: {
     title: 'Total Cost by Location',
@@ -105,14 +101,14 @@ export default function ProfitLocationChart({ data, metric = 'TotalProfit' }: Pr
   const padding = { top: 20, right: 40, bottom: 80, left: 60 };
 
   // Pie chart specific calculations
-  const isPieChart = validMetric === 'ProfitMarginPct';
+  const isPieChart = validMetric === 'TotalSales';
   const pieRadius = 120;
   const pieCenterX = 200;
   const pieCenterY = 160;
   
   if (isPieChart) {
-    // Calculate total for percentage
-    const total = chartData.reduce((sum, d) => sum + d.value, 0);
+    // Calculate total sales for percentage calculation
+    const totalSales = chartData.reduce((sum, d) => sum + d.sales, 0);
     let currentAngle = -90; // Start from top
     
     return (
@@ -127,7 +123,7 @@ export default function ProfitLocationChart({ data, metric = 'TotalProfit' }: Pr
           >
             {/* Pie slices */}
             {chartData.map((item, index) => {
-              const percentage = (item.value / total) * 100;
+              const percentage = (item.sales / totalSales) * 100;
               const sliceAngle = (percentage / 100) * 360;
               const startAngle = currentAngle;
               const endAngle = currentAngle + sliceAngle;
@@ -207,7 +203,7 @@ export default function ProfitLocationChart({ data, metric = 'TotalProfit' }: Pr
                     fill="#374151"
                   >
                     {item.name.length > 20 ? item.name.substring(0, 20) + '...' : item.name}
-                    {' '}({config.format(item.value)})
+                    {' '}({((item.sales / totalSales) * 100).toFixed(1)}%)
                   </text>
                 </g>
               ))}
