@@ -89,16 +89,6 @@ const formatLocalTime = (utcDateString: string | null | undefined): string => {
   }
 };
 
-// Check if a UTC date falls within a local date range
-const isDateInLocalRange = (utcDateString: string, localFromDate: string, localToDate: string): boolean => {
-  try {
-    const date = new Date(utcDateString);
-    const localDateStr = date.toLocaleDateString('en-CA'); // YYYY-MM-DD format in local time
-    return localDateStr >= localFromDate && localDateStr <= localToDate;
-  } catch {
-    return false;
-  }
-};
 
 // Convert local date string (YYYY-MM-DD) to UTC date string for API queries
 const convertLocalDateToUTC = (localDateStr: string, isEndOfDay: boolean = false): string => {
