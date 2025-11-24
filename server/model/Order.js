@@ -232,7 +232,6 @@ export const createOrder = async (orderItems, phoneNumber = null, userId = null,
 
     let orderData = {
         locationName: locationName,
-        orderDate: new Date().toISOString(), // Convert to UTC ISO string
         wasPlacedOnline: isOnline,
         paymentMethod: paymentMethod,
         usedIncentivePoints: usedIncentivePoints,
@@ -297,14 +296,13 @@ export const createOrder = async (orderItems, phoneNumber = null, userId = null,
     }
 
     const insertOrderQuery = `
-        INSERT INTO pos.Order (CustomerID, StaffID, LocationName, OrderDate, WasPlacedOnline, PaymentMethod, UsedIncentivePoints, TotalAmount)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?);
+        INSERT INTO pos.Order (CustomerID, StaffID, LocationName, WasPlacedOnline, PaymentMethod, UsedIncentivePoints, TotalAmount)
+        VALUES (?, ?, ?, ?, ?, ?, ?);
     `;
     const orderParams = [
         order.customerID,
         order.staffID,
         order.locationName,
-        order.orderDate,
         order.wasPlacedOnline,
         order.paymentMethod,
         order.usedIncentivePoints,
