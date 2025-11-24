@@ -166,12 +166,25 @@ const timecardHandler = async (req, res) => {
 
         // Calculate total hours
         const clockInTime = new Date(timecard.ClockInTime);
-        const clockOutTime = new Date();
-        const totalHours = (clockOutTime.getTime() - clockInTime.getTime()) / (1000 * 60 * 60);
-
+        
         // Update timecard
         await db.execute(
-          'UPDATE Timecard SET ClockOutTime = NOW(), TotalHours = ? WHERE TimecardID = ?',
+          'UPDATE Timecard SET ClockOutTime = NOW() WHERE TimecardID = ?',
+          [timecardId]
+        );
+
+        const [updatedResults] = await db.execute(
+          'SELECT * FROM Timecard WHERE TimecardID = ?',
+          [timecardId]
+        );
+
+        const clockOutTime = new Date(updatedResults[0].ClockOutTime);
+        const totalHours = (clockOutTime.getTime() - clockInTime.getTime()) / (1000 * 60 * 60);
+
+        console.log(clockInTime, clockOutTime, totalHours);
+
+        await db.execute(
+          'UPDATE Timecard SET TotalHours = ? WHERE TimecardID = ?',
           [totalHours.toFixed(2), timecardId]
         );
 

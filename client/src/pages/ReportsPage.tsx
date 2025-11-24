@@ -41,6 +41,87 @@ const API_BASE = "";
 const money = (n: number) =>
   Number(n ?? 0).toLocaleString(undefined, { style: "currency", currency: "USD" });
 
+// Convert UTC date string to local date/time string
+const formatLocalDateTime = (utcDateString: string | null | undefined): string => {
+  if (!utcDateString) return 'N/A';
+  try {
+    const date = new Date(utcDateString);
+    return date.toLocaleString(undefined, {
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit',
+      hour: '2-digit',
+      minute: '2-digit',
+      second: '2-digit',
+      hour12: true
+    });
+  } catch {
+    return 'Invalid Date';
+  }
+};
+
+const formatLocalDate = (utcDateString: string | null | undefined): string => {
+  if (!utcDateString) return 'N/A';
+  try {
+    const date = new Date(utcDateString);
+    return date.toLocaleDateString(undefined, {
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit'
+    });
+  } catch {
+    return 'Invalid Date';
+  }
+};
+
+const formatLocalTime = (utcDateString: string | null | undefined): string => {
+  if (!utcDateString) return 'N/A';
+  try {
+    const date = new Date(utcDateString);
+    return date.toLocaleTimeString(undefined, {
+      hour: '2-digit',
+      minute: '2-digit',
+      second: '2-digit',
+      hour12: true
+    });
+  } catch {
+    return 'Invalid Date';
+  }
+};
+
+// Check if a UTC date falls within a local date range
+const isDateInLocalRange = (utcDateString: string, localFromDate: string, localToDate: string): boolean => {
+  try {
+    const date = new Date(utcDateString);
+    const localDateStr = date.toLocaleDateString('en-CA'); // YYYY-MM-DD format in local time
+    return localDateStr >= localFromDate && localDateStr <= localToDate;
+  } catch {
+    return false;
+  }
+};
+
+// Convert local date string (YYYY-MM-DD) to UTC date string for API queries
+const convertLocalDateToUTC = (localDateStr: string, isEndOfDay: boolean = false): string => {
+  try {
+    // Parse as local date
+    const [year, month, day] = localDateStr.split('-').map(Number);
+    const localDate = new Date(year, month - 1, day);
+    
+    if (isEndOfDay) {
+      // Set to end of day (23:59:59.999) in local time
+      localDate.setHours(23, 59, 59, 999);
+    } else {
+      // Set to start of day (00:00:00.000) in local time
+      localDate.setHours(0, 0, 0, 0);
+    }
+    
+    // Return as ISO string (UTC)
+    return localDate.toISOString();
+  } catch {
+    return localDateStr;
+  }
+};
+
 const sortFieldsByType: Record<ReportType, { key: string; label: string }[]> = {
   locations: [
     { key: "LocationName", label: "Location" },
@@ -182,12 +263,12 @@ export default function ReportsPage() {
     const fetchAvailableLocations = async () => {
       try {
         const params = new URLSearchParams({
-          startDate: range.from,
-          endDate: range.to,
+          startDate: convertLocalDateToUTC(range.from, false),
+          endDate: convertLocalDateToUTC(range.to, true),
           desc: "false",
         });
         const url = `${API_BASE}/api/reports/profit-per-location?${params}`;
-        const res = await fetch(url);
+        const res = await authenticatedFetch(url);
         if (res.ok) {
           const data = await res.json();
           if (data && data.length > 0) {
@@ -210,12 +291,12 @@ export default function ReportsPage() {
     const fetchAvailableItems = async () => {
       try {
         const params = new URLSearchParams({
-          startDate: range.from,
-          endDate: range.to,
+          startDate: convertLocalDateToUTC(range.from, false),
+          endDate: convertLocalDateToUTC(range.to, true),
           desc: "false",
         });
         const url = `${API_BASE}/api/reports/most-popular-items?${params}`;
-        const res = await fetch(url);
+        const res = await authenticatedFetch(url);
         if (res.ok) {
           const data = await res.json();
           if (data && data.length > 0) {
@@ -238,11 +319,11 @@ export default function ReportsPage() {
     const fetchAvailableEmployees = async () => {
       try {
         const params = new URLSearchParams({
-          startDate: range.from,
-          endDate: range.to,
+          startDate: convertLocalDateToUTC(range.from, false),
+          endDate: convertLocalDateToUTC(range.to, true),
         });
         const url = `${API_BASE}/api/reports/employee-performance?${params}`;
-        const res = await fetch(url);
+        const res = await authenticatedFetch(url);
         if (res.ok) {
           const data = await res.json();
           if (data && data.length > 0) {
@@ -278,8 +359,8 @@ export default function ReportsPage() {
     setErr(null);
     try {
       const params = new URLSearchParams({
-        startDate: range.from,
-        endDate: range.to,
+        startDate: convertLocalDateToUTC(range.from, false),
+        endDate: convertLocalDateToUTC(range.to, true),
         desc: String(sortOrder === "desc"),
       });
 
@@ -334,8 +415,8 @@ export default function ReportsPage() {
     setRawDataError(null);
     try {
       const params = new URLSearchParams({
-        startDate: range.from,
-        endDate: range.to,
+        startDate: convertLocalDateToUTC(range.from, false),
+        endDate: convertLocalDateToUTC(range.to, true),
         page: String(page)
       });
       
@@ -385,8 +466,8 @@ export default function ReportsPage() {
     setRawDataItemsError(null);
     try {
       const params = new URLSearchParams({
-        startDate: range.from,
-        endDate: range.to,
+        startDate: convertLocalDateToUTC(range.from, false),
+        endDate: convertLocalDateToUTC(range.to, true),
         page: String(page)
       });
       
@@ -435,8 +516,8 @@ export default function ReportsPage() {
     setRawDataEmployeesError(null);
     try {
       const params = new URLSearchParams({
-        startDate: range.from,
-        endDate: range.to,
+        startDate: convertLocalDateToUTC(range.from, false),
+        endDate: convertLocalDateToUTC(range.to, true),
         page: String(page)
       });
       
@@ -1355,7 +1436,7 @@ export default function ReportsPage() {
                               {filteredRawData.map((row, i) => (
                                 <tr key={`raw-${row.OrderID}-${i}`} style={{ backgroundColor: i % 2 === 0 ? '#fff' : '#f9fafb' }}>
                                   <td>#{row.OrderID}</td>
-                                  <td>{new Date(row.OrderDate).toLocaleString()}</td>
+                                  <td>{formatLocalDateTime(row.OrderDate)}</td>
                                   <td>{row.LocationName || 'N/A'}</td>
                                   <td style={{ textAlign: 'center' }}>
                                     <span style={{ 
@@ -1691,7 +1772,7 @@ export default function ReportsPage() {
                                 <tr key={`raw-item-${row.OrderItemID}-${i}`} style={{ backgroundColor: i % 2 === 0 ? '#fff' : '#f9fafb' }}>
                                   <td>#{row.OrderItemID}</td>
                                   <td>#{row.OrderID}</td>
-                                  <td>{new Date(row.OrderDate).toLocaleString()}</td>
+                                  <td>{formatLocalDateTime(row.OrderDate)}</td>
                                   <td>{row.ItemName || 'N/A'}</td>
                                   <td>{row.Category || 'N/A'}</td>
                                   <td style={{ textAlign: 'center' }}>
@@ -2016,9 +2097,9 @@ export default function ReportsPage() {
                                   <td>#{row.EmployeeID}</td>
                                   <td>{row.EmployeeName || 'N/A'}</td>
                                   <td>{row.Role || 'N/A'}</td>
-                                  <td>{row.ShiftDate ? new Date(row.ShiftDate).toLocaleDateString() : 'N/A'}</td>
-                                  <td>{row.ClockInTime ? new Date(row.ClockInTime).toLocaleTimeString() : 'N/A'}</td>
-                                  <td>{row.ClockOutTime ? new Date(row.ClockOutTime).toLocaleTimeString() : 'Not Clocked Out'}</td>
+                                  <td>{formatLocalDate(row.ShiftDate)}</td>
+                                  <td>{formatLocalTime(row.ClockInTime)}</td>
+                                  <td>{row.ClockOutTime ? formatLocalTime(row.ClockOutTime) : 'Not Clocked Out'}</td>
                                   <td style={{ textAlign: 'right' }}>
                                     {row.HoursWorked ? Number(row.HoursWorked).toFixed(2) : '0.00'}
                                   </td>
@@ -2147,7 +2228,7 @@ export default function ReportsPage() {
             </>
           )}
 
-          <div className="report-footer">Generated on {new Date().toLocaleString()}</div>
+          <div className="report-footer">Generated on {formatLocalDateTime(new Date().toISOString())}</div>
         </div>
       )}
     </div>

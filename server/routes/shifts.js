@@ -1,5 +1,5 @@
 import { getEmployeeShifts, assignStaffToShift, deleteShift } from '../model/Staff.js';
-import { withAuth, isManager, getAuthStaffId } from '../utils/authMiddleware.js';
+import { withAuth, isManager, getAuthStaffId, isEmployee } from '../utils/authMiddleware.js';
 
 export const handleShifts = withAuth(async (req, res) => {
     const { method, url } = req;

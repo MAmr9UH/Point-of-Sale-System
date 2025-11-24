@@ -414,7 +414,7 @@ export const getCurrentActiveLocations = async () => {
         SELECT l.Address, al.*
         FROM Location l
         JOIN Active_Location al ON l.Name = al.LocationName
-        WHERE al.EndOperationOn IS NULL
+        WHERE al.EndOperationOn IS NULL AND al.is_deleted = FALSE
     `;
     const [results] = await db.query(query);
 
