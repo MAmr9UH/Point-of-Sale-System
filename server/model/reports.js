@@ -24,7 +24,18 @@ const profitPerLocation = async (startDate, endDate, desc = false) => {
     SELECT
       orders.LocationName                             AS LocationName,
       COUNT(DISTINCT orders.OrderID)                  AS TotalOrders,
-      SUM(IFNULL(orders.TotalAmount, 0))              AS TotalSales,
+      
+      /* Calculate sales from order_item table to avoid duplication */
+      (
+        SELECT SUM(IFNULL(oi.Quantity * oi.Price, 0))
+        FROM order_item oi
+        WHERE oi.OrderID IN (
+          SELECT o2.OrderID 
+          FROM \`order\` o2 
+          WHERE o2.LocationName = orders.LocationName
+            AND o2.OrderDate BETWEEN ? AND ?
+        )
+      )                                               AS TotalSales,
 
       (
         /* ingredient costs:
@@ -40,7 +51,16 @@ const profitPerLocation = async (startDate, endDate, desc = false) => {
       )                                                AS TotalCost,
 
       /* profit = sales - cost */
-      SUM(IFNULL(orders.TotalAmount, 0))
+      (
+        SELECT SUM(IFNULL(oi.Quantity * oi.Price, 0))
+        FROM order_item oi
+        WHERE oi.OrderID IN (
+          SELECT o2.OrderID 
+          FROM \`order\` o2 
+          WHERE o2.LocationName = orders.LocationName
+            AND o2.OrderDate BETWEEN ? AND ?
+        )
+      )
         - (
             SUM(
               IFNULL(order_items.Quantity, 0)
@@ -54,9 +74,27 @@ const profitPerLocation = async (startDate, endDate, desc = false) => {
       /* profit margin as percentage (safely handle zero sales) */
       ROUND(
         CASE
-          WHEN SUM(IFNULL(orders.TotalAmount, 0)) > 0 THEN
+          WHEN (
+            SELECT SUM(IFNULL(oi.Quantity * oi.Price, 0))
+            FROM order_item oi
+            WHERE oi.OrderID IN (
+              SELECT o2.OrderID 
+              FROM \`order\` o2 
+              WHERE o2.LocationName = orders.LocationName
+                AND o2.OrderDate BETWEEN ? AND ?
+            )
+          ) > 0 THEN
             (
-              SUM(IFNULL(orders.TotalAmount, 0)) -
+              (
+                SELECT SUM(IFNULL(oi.Quantity * oi.Price, 0))
+                FROM order_item oi
+                WHERE oi.OrderID IN (
+                  SELECT o2.OrderID 
+                  FROM \`order\` o2 
+                  WHERE o2.LocationName = orders.LocationName
+                    AND o2.OrderDate BETWEEN ? AND ?
+                )
+              ) -
               (
                 SUM(
                   IFNULL(order_items.Quantity, 0)
@@ -66,7 +104,16 @@ const profitPerLocation = async (startDate, endDate, desc = false) => {
                 +
                 SUM(DISTINCT IFNULL(utility_payments.Amount, 0))
               )
-            ) / SUM(IFNULL(orders.TotalAmount, 0)) * 100
+            ) / (
+              SELECT SUM(IFNULL(oi.Quantity * oi.Price, 0))
+              FROM order_item oi
+              WHERE oi.OrderID IN (
+                SELECT o2.OrderID 
+                FROM \`order\` o2 
+                WHERE o2.LocationName = orders.LocationName
+                  AND o2.OrderDate BETWEEN ? AND ?
+              )
+            ) * 100
           ELSE 0
         END, 2
       )                                                AS ProfitMarginPct
@@ -96,7 +143,7 @@ const profitPerLocation = async (startDate, endDate, desc = false) => {
     ORDER BY TotalProfit ${order};
   `;
 
-  const params = [startDate, endDate];
+  const params = [startDate, endDate, startDate, endDate, startDate, endDate, startDate, endDate, startDate, endDate, startDate, endDate];
   const [results] = await db.query(query, params);
   return results;
 }
