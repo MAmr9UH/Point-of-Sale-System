@@ -262,6 +262,8 @@ export const updateMenuItem = async (menuItemId, updateData) => {
     updatedMenuItem.description = updateData.Description;
     updatedMenuItem.name = updateData.Name;
     updatedMenuItem.price = updateData.Price;
+    const imageURL = updateData.ImageURL || `https://placehold.co/600x400?text=${encodeURIComponent(updateData.Name)}`;
+    updatedMenuItem.imageURL = imageURL;
     const menuItemInstance = new MenuItem(updatedMenuItem);
 
     console.log('New Menu Item:', updatedMenuItem);
@@ -273,7 +275,7 @@ export const updateMenuItem = async (menuItemId, updateData) => {
     const query = `
 
         UPDATE Menu_Item
-        SET Name = ?, Description = ?, Price = ?, Category = ?, Availability = ?
+        SET Name = ?, Description = ?, Price = ?, Category = ?, Availability = ?, ImageURL = ?
         WHERE MenuItemID = ?;
     `;
 
@@ -283,6 +285,7 @@ export const updateMenuItem = async (menuItemId, updateData) => {
         updatedMenuItem.price,
         updatedMenuItem.category,
         updatedMenuItem.availability,
+        updatedMenuItem.imageURL,
         menuItemId
     ]);
 

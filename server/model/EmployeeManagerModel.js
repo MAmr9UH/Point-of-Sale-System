@@ -57,7 +57,7 @@ export async function fetchMenuItems() {
 export async function createMenuItem(payload) {
   const { Name, Description, Price, Category, Availability } = payload;
 
-  console.log(payload)
+  const imageURL = payload.imageURL || `https://placehold.co/600x400?text=${encodeURIComponent(Name)}`;
 
   const categoryMap = {
     food: 'entree',
@@ -72,10 +72,10 @@ export async function createMenuItem(payload) {
 
   const [result] = await db.execute(
     `
-      INSERT INTO Menu_Item (Name, Description, Price, Category, Availability)
-      VALUES (?, ?, ?, ?, ?)
+      INSERT INTO Menu_Item (Name, Description, Price, Category, Availability, ImageURL)
+      VALUES (?, ?, ?, ?, ?, ?)
     `,
-    [Name, Description, Price, normalizedCategory, Availability ? 1 : 0]
+    [Name, Description, Price, normalizedCategory, Availability ? 1 : 0, imageURL]
   );
 
   return {
