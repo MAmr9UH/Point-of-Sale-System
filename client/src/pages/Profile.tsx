@@ -247,10 +247,6 @@ const CustomerProfile: React.FC = () => {
                 {customer.Fname} {customer.Lname}
               </h1>
               <p className="profile-email">{customer.Email}</p>
-              <div className="profile-points">
-                <StarIcon style={{ width: '18px', height: '18px' }} />
-                <span>{customer.IncentivePoints} Points</span>
-              </div>
             </div>
             <button className="edit-profile-btn" onClick={() => setShowEditForm(true)}>
               ✏️ Edit Profile
