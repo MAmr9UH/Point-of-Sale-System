@@ -2028,8 +2028,6 @@ export default function ReportsPage() {
                                 <th>Clock Out</th>
                                 <th style={{ textAlign: 'right' }}>Hours Worked</th>
                                 <th>Location</th>
-                                <th style={{ textAlign: 'center' }}>Orders</th>
-                                <th style={{ textAlign: 'right' }}>Total Sales ($)</th>
                               </tr>
                             </thead>
                             <tbody>
@@ -2046,19 +2044,6 @@ export default function ReportsPage() {
                                     {row.HoursWorked ? Number(row.HoursWorked).toFixed(2) : '0.00'}
                                   </td>
                                   <td>{row.LocationName || 'N/A'}</td>
-                                  <td style={{ textAlign: 'center' }}>
-                                    <span style={{ 
-                                      padding: '2px 8px',
-                                      borderRadius: '4px',
-                                      fontSize: '12px',
-                                      fontWeight: 600,
-                                      backgroundColor: '#f3f4f6',
-                                      color: '#374151'
-                                    }}>
-                                      {row.OrdersHandled || 0}
-                                    </span>
-                                  </td>
-                                  <td style={{ textAlign: 'right' }}>{money(Number(row.TotalSales ?? 0))}</td>
                                 </tr>
                               ))}
                             </tbody>
