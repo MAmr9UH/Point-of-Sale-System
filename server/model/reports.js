@@ -146,6 +146,7 @@ const mostPopularItems = async (startDate, endDate, desc = false) => {
   // params: subquery start/end, then outer start/end
   const params = [startDate, endDate, startDate, endDate];
   const [results] = await db.query(query, params);
+
   return results;
 }
 
@@ -169,8 +170,10 @@ const employeePerformance = async (startDate, endDate, desc = false) => {
       IFNULL(timecards_filtered.total_hours, 0.00)              AS TotalHoursWorked,
       ROUND(
         CASE 
-          WHEN IFNULL(timecards_filtered.total_hours, 0) > 0
+          WHEN IFNULL(timecards_filtered.total_hours, 0) >= 1.0
             THEN IFNULL(orders_filtered.total_sales, 0) / timecards_filtered.total_hours
+          WHEN IFNULL(timecards_filtered.total_hours, 0) > 0 AND IFNULL(timecards_filtered.total_hours, 0) < 1.0
+            THEN IFNULL(orders_filtered.total_sales, 0) / 1.0
           ELSE 0
         END
       , 2)                                                      AS SalesPerHour
@@ -180,9 +183,10 @@ const employeePerformance = async (startDate, endDate, desc = false) => {
     LEFT JOIN (
       SELECT
         o.StaffID,
-        COUNT(*)                             AS total_orders,
-        SUM(IFNULL(o.TotalAmount, 0))        AS total_sales
+        COUNT(DISTINCT o.OrderID)            AS total_orders,
+        SUM(IFNULL(oi.Quantity * oi.Price, 0)) AS total_sales
       FROM \`order\` AS o
+      LEFT JOIN order_item oi ON oi.OrderID = o.OrderID
       WHERE o.OrderDate >= ? AND o.OrderDate < DATE_ADD(?, INTERVAL 1 DAY)
       GROUP BY o.StaffID
     ) AS orders_filtered
@@ -192,14 +196,14 @@ const employeePerformance = async (startDate, endDate, desc = false) => {
     LEFT JOIN (
       SELECT
         t.StaffID,
-        SUM(
-          ROUND(TIMESTAMPDIFF(MINUTE, t.ClockInTime, t.ClockOutTime) / 60.0, 2)
-        ) AS total_hours
+        SUM(IFNULL(
+          ROUND(TIMESTAMPDIFF(MINUTE, t.ClockInTime, t.ClockOutTime) / 60.0, 2),
+          0
+        )) AS total_hours
       FROM timecard AS t
       WHERE DATE(t.ClockInTime) >= ? AND DATE(t.ClockInTime) < DATE_ADD(?, INTERVAL 1 DAY)
         AND t.ClockOutTime IS NOT NULL
         AND t.ClockOutTime > t.ClockInTime
-        AND TIMESTAMPDIFF(MINUTE, t.ClockInTime, t.ClockOutTime) >= 1
       GROUP BY t.StaffID
     ) AS timecards_filtered
       ON timecards_filtered.StaffID = staff.StaffID
@@ -240,7 +244,7 @@ const rawTransactionsLocations = async (startDate, endDate, page = 1, limit = 10
     FROM \`order\` o
     LEFT JOIN staff s ON s.StaffID = o.StaffID
     LEFT JOIN order_item oi ON oi.OrderID = o.OrderID
-    WHERE o.OrderDate BETWEEN ? AND ?
+    WHERE o.OrderDate >= ? AND o.OrderDate < DATE_ADD(?, INTERVAL 1 DAY)
     GROUP BY o.OrderID
     ORDER BY o.OrderDate DESC
     LIMIT ? OFFSET ?
@@ -250,7 +254,7 @@ const rawTransactionsLocations = async (startDate, endDate, page = 1, limit = 10
   const countQuery = `
     SELECT COUNT(*) as total
     FROM \`order\` o
-    WHERE o.OrderDate BETWEEN ? AND ?
+    WHERE o.OrderDate >= ? AND o.OrderDate < DATE_ADD(?, INTERVAL 1 DAY)
   `;
   
   const [dataResults] = await db.query(dataQuery, [startDate, endDate, limit, offset]);
@@ -300,7 +304,7 @@ const rawTransactionsItems = async (startDate, endDate, page = 1, limit = 100) =
     JOIN \`order\` o ON o.OrderID = oi.OrderID
     LEFT JOIN staff s ON s.StaffID = o.StaffID
     LEFT JOIN menu_item mi ON mi.MenuItemID = oi.MenuItemID
-    WHERE o.OrderDate BETWEEN ? AND ?
+    WHERE o.OrderDate >= ? AND o.OrderDate < DATE_ADD(?, INTERVAL 1 DAY)
     ORDER BY o.OrderDate DESC, oi.OrderItemID DESC
     LIMIT ? OFFSET ?
   `;
@@ -310,14 +314,14 @@ const rawTransactionsItems = async (startDate, endDate, page = 1, limit = 100) =
     SELECT COUNT(*) as total
     FROM order_item oi
     JOIN \`order\` o ON o.OrderID = oi.OrderID
-    WHERE o.OrderDate BETWEEN ? AND ?
+    WHERE o.OrderDate >= ? AND o.OrderDate < DATE_ADD(?, INTERVAL 1 DAY)
   `;
   
   const [dataResults] = await db.query(dataQuery, [startDate, endDate, limit, offset]);
   const [countResults] = await db.query(countQuery, [startDate, endDate]);
   
   // Debug: Log first few results
-  console.log("Raw transactions items sample:", dataResults.slice(0, 3));
+  console.log("Raw transactions items sample:", dataResults.filter(item => item.ItemName.startsWith("Loaded")));
   
   const total = countResults[0].total;
   const totalPages = Math.ceil(total / limit);
@@ -359,10 +363,10 @@ const rawTransactionsEmployees = async (startDate, endDate, page = 1, limit = 10
     LEFT JOIN \`order\` o ON o.StaffID = t.StaffID 
       AND DATE(o.OrderDate) = DATE(t.ClockInTime)
     LEFT JOIN order_item oi ON oi.OrderID = o.OrderID
-    WHERE DATE(t.ClockInTime) BETWEEN ? AND ?
+    WHERE DATE(t.ClockInTime) >= ? AND DATE(t.ClockInTime) < DATE_ADD(?, INTERVAL 1 DAY)
       AND t.ClockOutTime IS NOT NULL
       AND t.ClockOutTime > t.ClockInTime
-      AND TIMESTAMPDIFF(MINUTE, t.ClockInTime, t.ClockOutTime) >= 1
+      AND TIMESTAMPDIFF(MINUTE, t.ClockInTime, t.ClockOutTime) >= 15
     GROUP BY t.TimecardID, t.StaffID, s.Fname, s.Lname, s.Role, t.ClockInTime, t.ClockOutTime, t.LocationName
     ORDER BY t.ClockInTime DESC
     LIMIT ? OFFSET ?
@@ -372,7 +376,7 @@ const rawTransactionsEmployees = async (startDate, endDate, page = 1, limit = 10
   const countQuery = `
     SELECT COUNT(*) as total
     FROM timecard t
-    WHERE DATE(t.ClockInTime) BETWEEN ? AND ?
+    WHERE DATE(t.ClockInTime) >= ? AND DATE(t.ClockInTime) < DATE_ADD(?, INTERVAL 1 DAY)
   `;
   
   const [dataResults] = await db.query(dataQuery, [startDate, endDate, limit, offset]);

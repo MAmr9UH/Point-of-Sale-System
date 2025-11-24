@@ -46,6 +46,17 @@ const formatLocalDateTime = (utcDateString: string | null | undefined): string =
   if (!utcDateString) return 'N/A';
   try {
     const date = new Date(utcDateString);
+
+    console.log("before", date.toUTCString(), "string", utcDateString)
+    console.log("after", date.toLocaleString(undefined, {
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit',
+      hour: '2-digit',
+      minute: '2-digit',
+      second: '2-digit',
+      hour12: true
+    }))
     return date.toLocaleString(undefined, {
       year: 'numeric',
       month: '2-digit',
@@ -1590,7 +1601,7 @@ export default function ReportsPage() {
                     <th style={{ textAlign: 'right' }}>Quantity</th>
                     <th style={{ textAlign: 'right' }}>Total sales ($)</th>
                     <th style={{ textAlign: 'right' }}>Avg Item Price</th>
-                    <th style={{ textAlign: 'right' }}>Porcentage of total sales</th>
+                    <th style={{ textAlign: 'right' }}>Percentage of total sales</th>
                   </tr>
                 </thead>
                 <tbody>

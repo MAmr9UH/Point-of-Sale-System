@@ -232,7 +232,7 @@ export const createOrder = async (orderItems, phoneNumber = null, userId = null,
 
     let orderData = {
         locationName: locationName,
-        orderDate: new Date(),
+        orderDate: new Date().toISOString(), // Convert to UTC ISO string
         wasPlacedOnline: isOnline,
         paymentMethod: paymentMethod,
         usedIncentivePoints: usedIncentivePoints,
