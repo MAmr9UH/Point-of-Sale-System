@@ -1,7 +1,10 @@
 # Team 4: Foodtruck POS
 ## Members:
 - Quang Hung Bui
-- 
+- Arphitha Ashokan
+- Diego Dominguez
+- Mohamed Amr
+- Chuka Nwobu
 ## Submission References:
 - Hosted webapp: https://possys.vercel.app/
 - Project Document: https://docs.google.com/document/d/1UOP-uzjgax5Gt0HuEcGxOgvFvu0pxk0QiYBmBcNcKcg/edit?usp=sharing
