@@ -1,7 +1,7 @@
 # Team 4: Foodtruck POS
 ## Members:
 - Quang Hung Bui, Github username: hungqbui
-- Arpitha Ashokan
+- Arpitha Ashokan, Github username: Arpitha2025
 - Diego Dominguez, Github username: DDominguez29
 - Mohamed Amr
 - Chuka Nwobu
