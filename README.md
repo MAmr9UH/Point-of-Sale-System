@@ -2,7 +2,7 @@
 ## Members:
 - Quang Hung Bui
 - Arpitha Ashokan
-- Diego Dominguez
+- Diego Dominguez, Github username: DDominguez29
 - Mohamed Amr
 - Chuka Nwobu
 ## Submission References:
