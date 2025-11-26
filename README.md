@@ -3,8 +3,8 @@
 - Quang Hung Bui, Github username: hungqbui
 - Arpitha Ashokan, Github username: Arpitha2025
 - Diego Dominguez, Github username: DDominguez29
-- Mohamed Amr
-- Chuka Nwobu
+- Mohamed Amr, Github username: MAmr9UH
+- Chuka Nwobu, Github username: chukanwobu
 ## Submission References:
 - Hosted webapp: https://possys.vercel.app/
 - Project Document: https://docs.google.com/document/d/1UOP-uzjgax5Gt0HuEcGxOgvFvu0pxk0QiYBmBcNcKcg/edit?usp=sharing
